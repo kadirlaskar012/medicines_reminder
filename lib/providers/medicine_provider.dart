@@ -139,11 +139,106 @@ class MedicineProvider extends ChangeNotifier {
 
       await _refreshRecords();
     } catch (e) {
-      debugPrint('Error loading initial data: $e');
+      debugPrint('SQLite notice: loading in-memory demo data: $e');
+      _seedInMemoryFallback();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void _seedInMemoryFallback() {
+    final me = UserProfile.defaultProfile;
+    final dad = UserProfile(
+      id: 'profile_dad',
+      name: 'Dad',
+      relation: 'Father',
+      colorValue: 0xFF0284C7,
+      avatarEmoji: '👴',
+    );
+    final mom = UserProfile(
+      id: 'profile_mom',
+      name: 'Mom',
+      relation: 'Mother',
+      colorValue: 0xFFEC4899,
+      avatarEmoji: '👵',
+    );
+    _profiles = [me, dad, mom];
+    _activeProfile = null;
+
+    final med1 = Medicine(
+      id: 'demo_med_1',
+      profileId: me.id,
+      name: 'Atorvastatin',
+      dosage: '20mg (1 Tablet)',
+      type: MedicineType.tablet,
+      colorValue: 0xFFFF6B35, // Warm Orange
+      instruction: FoodInstruction.withMeal,
+      currentStock: 14,
+      refillThreshold: 5,
+      notes: 'Take with breakfast • Cholesterol care',
+      createdAt: DateTime.now(),
+    );
+    final rem1 = ReminderTime(
+      id: 'demo_rem_1',
+      medicineId: med1.id,
+      hour: 9,
+      minute: 0,
+      daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+      isAlarm: true,
+      notificationId: 101,
+    );
+
+    final med2 = Medicine(
+      id: 'demo_med_2',
+      profileId: me.id,
+      name: 'Amoxicillin',
+      dosage: '500mg (1 Capsule)',
+      type: MedicineType.capsule,
+      colorValue: 0xFF0D9488, // Teal
+      instruction: FoodInstruction.afterMeal,
+      currentStock: 10,
+      refillThreshold: 4,
+      notes: 'Take after lunch with water',
+      createdAt: DateTime.now(),
+    );
+    final rem2 = ReminderTime(
+      id: 'demo_rem_2',
+      medicineId: med2.id,
+      hour: 13,
+      minute: 30,
+      daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+      isAlarm: true,
+      notificationId: 102,
+    );
+
+    final med3 = Medicine(
+      id: 'demo_med_3',
+      profileId: me.id,
+      name: 'Elderberry Zinc Elixir',
+      dosage: '10ml (1 Spoon)',
+      type: MedicineType.syrup,
+      colorValue: 0xFF10B981, // Mint Green
+      instruction: FoodInstruction.afterMeal,
+      currentStock: 30,
+      refillThreshold: 7,
+      notes: 'Immunity Boost • Night routine',
+      createdAt: DateTime.now(),
+    );
+    final rem3 = ReminderTime(
+      id: 'demo_rem_3',
+      medicineId: med3.id,
+      hour: 20,
+      minute: 0,
+      daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+      isAlarm: false,
+      notificationId: 103,
+    );
+
+    _medicines = [med1, med2, med3];
+    _remindersByMedicine[med1.id] = [rem1];
+    _remindersByMedicine[med2.id] = [rem2];
+    _remindersByMedicine[med3.id] = [rem3];
   }
 
   Future<void> _seedDemoMedicines() async {
@@ -369,16 +464,22 @@ class MedicineProvider extends ChangeNotifier {
       recordedAt: DateTime.now(),
     );
 
-    await _db.recordIntake(record);
-    _recordsByDoseKey[key] = record;
-
-    // Check updated stock and warn if needed
-    final updatedMed = await _db.getMedicineById(medicine.id);
-    if (updatedMed != null && updatedMed.isLowStock) {
-      await _notifications.showRefillAlert(updatedMed);
+    try {
+      await _db.recordIntake(record);
+      final updatedMed = await _db.getMedicineById(medicine.id);
+      if (updatedMed != null && updatedMed.isLowStock) {
+        await _notifications.showRefillAlert(updatedMed);
+      }
+      await _refreshMedicinesAndReminders();
+    } catch (_) {
+      final idx = _medicines.indexWhere((m) => m.id == medicine.id);
+      if (idx != -1 && _medicines[idx].currentStock > 0) {
+        _medicines[idx] = _medicines[idx].copyWith(
+          currentStock: _medicines[idx].currentStock - 1,
+        );
+      }
     }
-
-    await _refreshMedicinesAndReminders();
+    _recordsByDoseKey[key] = record;
     notifyListeners();
   }
 
@@ -398,31 +499,43 @@ class MedicineProvider extends ChangeNotifier {
       recordedAt: DateTime.now(),
     );
 
-    await _db.recordIntake(record);
+    try {
+      await _db.recordIntake(record);
+    } catch (_) {}
     _recordsByDoseKey[key] = record;
-
     notifyListeners();
   }
 
   Future<void> snoozeDose(Medicine medicine, ReminderTime reminder, {int minutes = 10}) async {
     NotificationService.triggerHaptic(isSuccess: false);
-    await _notifications.snoozeReminder(
-      medicine.name,
-      medicine.dosage,
-      'snooze_${medicine.id}',
-      minutes: minutes,
-    );
+    try {
+      await _notifications.snoozeReminder(
+        medicine.name,
+        medicine.dosage,
+        'snooze_${medicine.id}',
+        minutes: minutes,
+      );
+    } catch (_) {}
   }
 
 
   Future<void> refillStock(String medicineId, int addedQuantity) async {
-    final med = await _db.getMedicineById(medicineId);
-    if (med != null) {
-      final newStock = med.currentStock + addedQuantity;
-      await _db.updateStock(medicineId, newStock);
-      await _refreshMedicinesAndReminders();
-      notifyListeners();
+    try {
+      final med = await _db.getMedicineById(medicineId);
+      if (med != null) {
+        final newStock = med.currentStock + addedQuantity;
+        await _db.updateStock(medicineId, newStock);
+        await _refreshMedicinesAndReminders();
+      }
+    } catch (_) {
+      final idx = _medicines.indexWhere((m) => m.id == medicineId);
+      if (idx != -1) {
+        _medicines[idx] = _medicines[idx].copyWith(
+          currentStock: _medicines[idx].currentStock + addedQuantity,
+        );
+      }
     }
+    notifyListeners();
   }
 
   // Profile Management

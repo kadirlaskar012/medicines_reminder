@@ -47,6 +47,12 @@ class NotificationService {
     if (_isInitialized) return;
     onNotificationAction = onAction;
 
+    if (kIsWeb || (defaultTargetPlatform != TargetPlatform.android && defaultTargetPlatform != TargetPlatform.iOS)) {
+      debugPrint('NotificationService: Skipping mobile notifications on desktop/web.');
+      _isInitialized = true;
+      return;
+    }
+
     // 1. Initialize Timezones
     tz.initializeTimeZones();
     try {
@@ -119,6 +125,8 @@ class NotificationService {
 
   // ==================== PERMISSIONS ====================
   Future<bool> requestPermissions() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return true;
+
     // 1. Android 13+ Notification Runtime Permission
     if (await Permission.notification.isDenied) {
       final status = await Permission.notification.request();
@@ -149,6 +157,14 @@ class NotificationService {
 
   // Check current permission statuses
   Future<Map<String, bool>> checkPermissionStatuses() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return {
+        'notification': true,
+        'exactAlarm': true,
+        'batteryOptimization': true,
+      };
+    }
+
     final notifGranted = await Permission.notification.isGranted;
     bool exactAlarmGranted = true;
     try {
@@ -163,7 +179,7 @@ class NotificationService {
     return {
       'notification': notifGranted,
       'exactAlarm': exactAlarmGranted,
-      'batteryIgnored': batteryIgnored,
+      'batteryOptimization': batteryIgnored,
     };
   }
 
