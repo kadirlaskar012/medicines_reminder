@@ -32,6 +32,7 @@ class MediRemindApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: NotificationService.navigatorKey,
       title: 'MediRemind',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

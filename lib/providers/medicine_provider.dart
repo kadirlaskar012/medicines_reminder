@@ -137,6 +137,7 @@ class MedicineProvider extends ChangeNotifier {
         await _refreshMedicinesAndReminders();
       }
 
+      await rescheduleAllActiveReminders();
       await _refreshRecords();
     } catch (e) {
       debugPrint('SQLite notice: loading in-memory demo data: $e');
@@ -328,6 +329,16 @@ class MedicineProvider extends ChangeNotifier {
     for (final med in _medicines) {
       final rems = await _db.getRemindersForMedicine(med.id);
       _remindersByMedicine[med.id] = rems;
+    }
+  }
+
+  Future<void> rescheduleAllActiveReminders() async {
+    for (final med in _medicines) {
+      if (!med.isActive) continue;
+      final reminders = _remindersByMedicine[med.id] ?? [];
+      for (final rem in reminders) {
+        await _notifications.scheduleMedicineReminder(med, rem);
+      }
     }
   }
 

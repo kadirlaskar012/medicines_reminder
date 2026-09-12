@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/medicine.dart';
 import '../../providers/medicine_provider.dart';
 import '../../widgets/profile_selector_sheet.dart';
 
@@ -169,44 +170,94 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.ring_volume_rounded, color: AppColors.primary),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.ring_volume_rounded, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Test Alarm Notifications', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                          SizedBox(height: 2),
+                          Text('Trigger real notifications with custom medicine icons.', style: TextStyle(fontSize: 12, color: AppColors.lightTextMuted)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Test Alarm Notification', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                      SizedBox(height: 2),
-                      Text('Triggers a sample high-priority alarm immediately.', style: TextStyle(fontSize: 12, color: AppColors.lightTextMuted)),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    await NotificationService.instance.showTestNotification();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Test notification dispatched! Check your notification bar.'),
-                          backgroundColor: AppColors.primary,
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    minimumSize: const Size(60, 36),
-                  ),
-                  child: const Text('Test'),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        await NotificationService.instance.showTestNotification(type: MedicineType.tablet);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('💊 Tablet notification dispatched!'),
+                              backgroundColor: AppColors.primary,
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Text('💊', style: TextStyle(fontSize: 14)),
+                      label: const Text('Tablet'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        await NotificationService.instance.showTestNotification(type: MedicineType.syrup);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('🧪 Syrup notification dispatched!'),
+                              backgroundColor: Color(0xFFD97706),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Text('🧪', style: TextStyle(fontSize: 14)),
+                      label: const Text('Syrup'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD97706),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        await NotificationService.instance.showTestNotification(type: MedicineType.injection);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('💉 Injection notification dispatched!'),
+                              backgroundColor: Color(0xFF2563EB),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Text('💉', style: TextStyle(fontSize: 14)),
+                      label: const Text('Injection'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
