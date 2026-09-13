@@ -685,7 +685,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               },
               icon: const Icon(Icons.login_rounded, size: 18),
-              label: Text(s.phoneLoginTitle),
+              label: Text(s.signInOrLoginTitle),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

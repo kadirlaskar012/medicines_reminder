@@ -345,4 +345,6 @@ class AppStrings {
   String get phoneInvalidValidation => code == 'bn' ? 'অনুগ্রহ করে বৈধ ১০ ডিজিটের মোবাইল নম্বর লিখুন' : (code == 'hi' ? 'कृपया मान्य १० अंकों का फ़ोन नंबर दर्ज करें' : 'Please enter a valid 10-digit mobile number');
   String get signInWithGoogle => code == 'bn' ? 'গুগল দিয়ে সাইন ইন করুন' : (code == 'hi' ? 'गूगल से साइन इन करें' : 'Continue with Google');
   String get orSignInWithPhone => code == 'bn' ? 'অথবা মোবাইল নম্বর দিয়ে' : (code == 'hi' ? 'या मोबाइल नंबर से' : 'OR WITH MOBILE NUMBER');
+  String get signInOrLoginTitle => code == 'bn' ? 'লগইন বা সাইন ইন করুন' : (code == 'hi' ? 'लॉगिन या साइन इन करें' : 'Sign In to Account');
+  String get orTryGoogleSignIn => code == 'bn' ? 'SMS কোড আসছে না? গুগল দিয়ে লগইন করুন' : (code == 'hi' ? 'SMS कोड नहीं आ रहा? गूगल से लॉगिन करें' : 'SMS delayed? Try Google Sign-In');
 }

@@ -455,6 +455,20 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                           ),
                   ),
                 ),
+                const SizedBox(height: 16),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => _isCodeSent = false),
+                    icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                    label: Text(
+                      s.orTryGoogleSignIn,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                    ),
+                  ),
+                ),
               ],
 
               const SizedBox(height: 28),
