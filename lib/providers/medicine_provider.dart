@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../core/database/db_helper.dart';
 import '../core/services/notification_service.dart';
@@ -107,7 +108,19 @@ class MedicineProvider extends ChangeNotifier {
     try {
       _profiles = await _db.getAllProfiles();
       if (_profiles.isEmpty) {
-        final me = UserProfile.defaultProfile;
+        final prefs = await SharedPreferences.getInstance();
+        final savedName = prefs.getString('user_profile_name');
+        final savedAge = prefs.getInt('user_profile_age');
+        final savedAvatar = prefs.getString('user_profile_avatar');
+
+        final me = UserProfile(
+          id: 'default_me',
+          name: (savedName != null && savedName.trim().isNotEmpty) ? savedName.trim() : 'Myself',
+          relation: 'Myself',
+          colorValue: 0xFFFF6B35,
+          avatarEmoji: savedAvatar ?? '👤',
+          age: savedAge,
+        );
         final dad = UserProfile(
           id: 'profile_dad',
           name: 'Dad',
@@ -551,6 +564,47 @@ class MedicineProvider extends ChangeNotifier {
   }
 
   // Profile Management
+  UserProfile get primaryProfile {
+    return _profiles.firstWhere(
+      (p) => p.id == 'default_me',
+      orElse: () => UserProfile.defaultProfile,
+    );
+  }
+
+  Future<void> saveInitialUserProfile({
+    required String name,
+    required int? age,
+    String? avatarEmoji,
+    int? colorValue,
+  }) async {
+    final cleanName = name.trim().isEmpty ? 'Myself' : name.trim();
+    final profile = UserProfile(
+      id: 'default_me',
+      name: cleanName,
+      relation: 'Myself',
+      colorValue: colorValue ?? 0xFFFF6B35,
+      avatarEmoji: avatarEmoji ?? '👤',
+      age: age,
+    );
+    await _db.insertProfile(profile);
+
+    // Save to SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_profile_name', cleanName);
+    if (age != null) {
+      await prefs.setInt('user_profile_age', age);
+    } else {
+      await prefs.remove('user_profile_age');
+    }
+    if (avatarEmoji != null) {
+      await prefs.setString('user_profile_avatar', avatarEmoji);
+    }
+
+    _profiles = await _db.getAllProfiles();
+    _activeProfile = _profiles.firstWhere((p) => p.id == 'default_me', orElse: () => profile);
+    notifyListeners();
+  }
+
   Future<void> addProfile(String name, String relation, int colorValue, String emoji) async {
     final profile = UserProfile(
       id: _uuid.v4(),

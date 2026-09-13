@@ -166,13 +166,15 @@ class TodayScreen extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (activeProfile != null)
-                              AppSvgIcons.render(activeProfile.svgAvatar, width: 22, height: 22)
+                              (activeProfile.avatarEmoji.isNotEmpty && activeProfile.avatarEmoji != '👤')
+                                  ? Text(activeProfile.avatarEmoji, style: const TextStyle(fontSize: 18))
+                                  : AppSvgIcons.render(activeProfile.svgAvatar, width: 22, height: 22)
                             else
                               const Icon(Icons.people_alt_rounded, size: 20, color: AppColors.primary),
                             const SizedBox(width: 8),
                             Text(
                               activeProfile != null
-                                  ? ((activeProfile.id == 'default_me' || activeProfile.name.toLowerCase() == 'myself')
+                                  ? (activeProfile.name.toLowerCase() == 'myself'
                                       ? s.myself
                                       : activeProfile.name)
                                   : s.allFamily,

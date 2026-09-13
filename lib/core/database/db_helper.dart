@@ -23,9 +23,20 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      try {
+        await db.execute('ALTER TABLE profiles ADD COLUMN age INTEGER');
+      } catch (e) {
+        // Ignored if column already exists
+      }
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -36,7 +47,8 @@ class DBHelper {
         name TEXT NOT NULL,
         relation TEXT NOT NULL,
         colorValue INTEGER NOT NULL,
-        avatarEmoji TEXT NOT NULL
+        avatarEmoji TEXT NOT NULL,
+        age INTEGER
       )
     ''');
 

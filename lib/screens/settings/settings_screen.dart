@@ -11,6 +11,7 @@ import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../widgets/profile_selector_sheet.dart';
 import '../auth/phone_login_screen.dart';
+import '../welcome/user_onboarding_profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -298,11 +299,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 ...provider.profiles.map((p) => ListTile(
-                  leading: p.svgAvatar.isNotEmpty
-                      ? AppSvgIcons.render(p.svgAvatar, width: 36, height: 36)
-                      : const Icon(Icons.person, color: AppColors.primary),
-                  title: Text((p.id == 'default_me' || p.name.toLowerCase() == 'myself') ? s.myself : p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text((p.id == 'default_me' || p.relation.toLowerCase() == 'myself') ? s.relationName('myself') : s.relationName(p.relation), style: const TextStyle(fontSize: 12)),
+                  leading: (p.avatarEmoji.isNotEmpty && p.avatarEmoji != '👤')
+                      ? Container(
+                          width: 36,
+                          height: 36,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(p.colorValue).withValues(alpha: 0.15),
+                          ),
+                          child: Text(p.avatarEmoji, style: const TextStyle(fontSize: 20)),
+                        )
+                      : (p.svgAvatar.isNotEmpty
+                          ? AppSvgIcons.render(p.svgAvatar, width: 36, height: 36)
+                          : const Icon(Icons.person, color: AppColors.primary)),
+                  title: Text(
+                    p.name.toLowerCase() == 'myself' ? s.myself : p.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    p.age != null && p.age! > 0
+                        ? '${p.age} ${s.ageYears} • ${p.relation.toLowerCase() == 'myself' ? s.relationName('myself') : s.relationName(p.relation)}'
+                        : (p.relation.toLowerCase() == 'myself' ? s.relationName('myself') : s.relationName(p.relation)),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  trailing: p.id == 'default_me'
+                      ? IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primary),
+                          tooltip: s.editMyProfile,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const UserOnboardingProfileScreen(isEditMode: true),
+                              ),
+                            );
+                          },
+                        )
+                      : null,
                 )),
                 const Divider(height: 1),
                 ListTile(

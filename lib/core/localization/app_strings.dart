@@ -347,4 +347,21 @@ class AppStrings {
   String get orSignInWithPhone => code == 'bn' ? 'অথবা মোবাইল নম্বর দিয়ে' : (code == 'hi' ? 'या मोबाइल नंबर से' : 'OR WITH MOBILE NUMBER');
   String get signInOrLoginTitle => code == 'bn' ? 'লগইন বা সাইন ইন করুন' : (code == 'hi' ? 'लॉगिन या साइन इन करें' : 'Sign In to Account');
   String get orTryGoogleSignIn => code == 'bn' ? 'SMS কোড আসছে না? গুগল দিয়ে লগইন করুন' : (code == 'hi' ? 'SMS कोड नहीं आ रहा? गूगल से लॉगिन करें' : 'SMS delayed? Try Google Sign-In');
+
+  // Profile Setup & Onboarding
+  String get setupProfileTitle => code == 'bn' ? 'আপনার প্রোফাইল সেটআপ' : (code == 'hi' ? 'अपनी प्रोफ़ाइल सेट करें' : 'Set Up Your Profile');
+  String get setupProfileSub => code == 'bn' ? 'ঔষধের সঠিক হিসাব ও রিমাইন্ডারের জন্য নাম ও বয়স লিখুন।' : (code == 'hi' ? 'दवा के सही समय और रिमाइंडर के लिए अपना नाम व आयु दर्ज करें।' : 'Enter your name and age for personalized reminders.');
+  String get yourName => code == 'bn' ? 'আপনার নাম' : (code == 'hi' ? 'आपका नाम' : 'Your Name');
+  String get enterNameHint => code == 'bn' ? 'নাম লিখুন (যেমন: কাদির)' : (code == 'hi' ? 'नाम दर्ज करें (उदा: राहुल)' : 'Enter name (e.g. Kadir)');
+  String get yourAge => code == 'bn' ? 'আপনার বয়স' : (code == 'hi' ? 'आपकी आयु' : 'Your Age');
+  String get enterAgeHint => code == 'bn' ? 'বয়স (যেমন: ২৮)' : (code == 'hi' ? 'आयु (उदा: 28)' : 'Age (e.g. 28)');
+  String get ageYears => code == 'bn' ? 'বছর' : (code == 'hi' ? 'वर्ष' : 'years');
+  String get completeSetupBtn => code == 'bn' ? 'সেটআপ সম্পন্ন করুন' : (code == 'hi' ? 'सेटअप पूरा करें' : 'Complete Setup');
+  String get skipForNow => code == 'bn' ? 'পরে করব' : (code == 'hi' ? 'बाद में करें' : 'Skip for now');
+  String get nameRequired => code == 'bn' ? 'অনুগ্রহ করে আপনার নাম লিখুন' : (code == 'hi' ? 'कृपया अपना नाम दर्ज करें' : 'Please enter your name');
+  String get ageRequired => code == 'bn' ? 'অনুগ্রহ করে সঠিক বয়স লিখুন (১-১২০)' : (code == 'hi' ? 'कृपया मान्य आयु दर्ज करें (1-120)' : 'Please enter a valid age (1-120)');
+  String get editMyProfile => code == 'bn' ? 'আমার প্রোফাইল সম্পাদনা' : (code == 'hi' ? 'मेरी प्रोफाइल संपादित करें' : 'Edit My Profile');
+  String get saveChanges => code == 'bn' ? 'সংরক্ষণ করুন' : (code == 'hi' ? 'सहेजें' : 'Save Changes');
+  String get profileUpdated => code == 'bn' ? 'প্রোফাইল সফলভাবে সংরক্ষিত হয়েছে' : (code == 'hi' ? 'प्रोफाइल सफलतापूर्वक सहेज ली गई' : 'Profile saved successfully');
 }
+

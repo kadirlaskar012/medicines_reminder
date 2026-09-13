@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/language_provider.dart';
-import '../main_navigation_screen.dart';
+import 'user_onboarding_profile_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   final bool isFromSettings;
@@ -13,21 +13,26 @@ class WelcomeScreen extends StatelessWidget {
   static const String prefKeySeenWelcome = 'has_seen_welcome_screen';
 
   Future<void> _completeWelcome(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(prefKeySeenWelcome, true);
-    if (!context.mounted) return;
-
     if (isFromSettings) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(prefKeySeenWelcome, true);
+      if (!context.mounted) return;
       Navigator.pop(context);
     } else {
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         PageRouteBuilder(
-          pageBuilder: (context, anim, secAnim) => const MainNavigationScreen(),
+          pageBuilder: (context, anim, secAnim) => const UserOnboardingProfileScreen(),
           transitionsBuilder: (context, animation, secAnim, child) {
-            return FadeTransition(opacity: animation, child: child);
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(1.0, 0.0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+              child: child,
+            );
           },
-          transitionDuration: const Duration(milliseconds: 500),
+          transitionDuration: const Duration(milliseconds: 350),
         ),
       );
     }

@@ -6,6 +6,7 @@ class UserProfile {
   final String relation; // Myself, Mother, Father, Child, Other
   final int colorValue;
   final String avatarEmoji;
+  final int? age;
 
   UserProfile({
     required this.id,
@@ -13,7 +14,26 @@ class UserProfile {
     required this.relation,
     required this.colorValue,
     required this.avatarEmoji,
+    this.age,
   });
+
+  UserProfile copyWith({
+    String? id,
+    String? name,
+    String? relation,
+    int? colorValue,
+    String? avatarEmoji,
+    int? age,
+  }) {
+    return UserProfile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      relation: relation ?? this.relation,
+      colorValue: colorValue ?? this.colorValue,
+      avatarEmoji: avatarEmoji ?? this.avatarEmoji,
+      age: age ?? this.age,
+    );
+  }
 
   String get svgAvatar {
     final rel = relation.toLowerCase();
@@ -32,6 +52,7 @@ class UserProfile {
       'relation': relation,
       'colorValue': colorValue,
       'avatarEmoji': avatarEmoji,
+      if (age != null) 'age': age,
     };
   }
 
@@ -42,6 +63,7 @@ class UserProfile {
       relation: map['relation'] as String,
       colorValue: map['colorValue'] as int,
       avatarEmoji: map['avatarEmoji'] as String? ?? '👤',
+      age: map['age'] as int?,
     );
   }
 
@@ -50,7 +72,7 @@ class UserProfile {
     name: 'Myself',
     relation: 'Myself',
     colorValue: 0xFFFF6B35, // Warm Orange
-    avatarEmoji: '💊',
+    avatarEmoji: '👤',
   );
 }
 

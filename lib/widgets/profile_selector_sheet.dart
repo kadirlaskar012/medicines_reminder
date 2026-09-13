@@ -116,11 +116,20 @@ class ProfileSelectorSheet extends StatelessWidget {
                     border: Border.all(color: pColor, width: 2),
                   ),
                   child: Center(
-                    child: AppSvgIcons.render(p.svgAvatar, width: 24, height: 24),
+                    child: (p.avatarEmoji.isNotEmpty && p.avatarEmoji != '👤')
+                        ? Text(p.avatarEmoji, style: const TextStyle(fontSize: 22))
+                        : AppSvgIcons.render(p.svgAvatar, width: 24, height: 24),
                   ),
                 ),
-                title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(s.relationName(p.relation)),
+                title: Text(
+                  p.name.toLowerCase() == 'myself' ? s.myself : p.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  p.age != null && p.age! > 0
+                      ? '${p.age} ${s.ageYears} • ${s.relationName(p.relation)}'
+                      : s.relationName(p.relation),
+                ),
                 trailing: isSelected
                     ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
                     : null,
