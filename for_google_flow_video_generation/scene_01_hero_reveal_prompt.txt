@@ -1,25 +1,39 @@
 ================================================================================
-[SCENE 1: THE BRAND REVEAL & HERO INTRO]
+🎬 SCENE 1: THE BRAND REVEAL & HERO INTRO (10 SECONDS)
 Image File: scene_01_mediremind_hero_reveal.jpg
-Video Duration: 0:00 - 0:06 (6 seconds)
+Video Duration: Exactly 10.0 Seconds (0:00 - 0:10)
+App Brand: MediRemind (মেডিরিমাইন্ড)
 ================================================================================
 
-=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
-High-end commercial intro for the "MediRemind" mobile application. 
-Cinematic slow push-in and gentle clockwise camera orbit around a sleek, floating titanium smartphone displaying the "MediRemind" medicine schedule interface. Glossy 3D capsules, calendar checkmark badges, and round pills float weightlessly in zero gravity with realistic glass and specular reflections. Bold, glowing 3D metallic typography reading "MediRemind" and "Smart Medicine Companion" catches radiant soft coral-orange (#FF5722) and medical cyan (#0D9488) rim lighting in a pristine futuristic studio setting. Subtle light streaks dance across the bezel. 4k resolution, 60fps, Apple/Google commercial quality, smooth slow motion.
+=== GOOGLE FLOW / VEO 10-SECOND VIDEO GENERATION PROMPT ===
+10-second cinematic tech commercial introduction for the mobile application "MediRemind".
+[0-3s]: The video begins with a slow, elegant dolly-in towards a floating titanium smartphone against a sleek studio backdrop with ambient coral-orange (#FF5722) and medical cyan (#0D9488) rim lighting. The phone screen brightly displays the "MediRemind" medicine schedule interface.
+[3-7s]: The camera smoothly rotates 8 degrees clockwise while glossy 3D capsules, calendar checkmark badges, and round tablets drift in zero gravity with realistic specular glass reflections. The bold glowing 3D metallic typography reading "MediRemind" and "Smart Medicine Companion" catches radiant volumetric light rays.
+[7-10s]: The camera gently settles into a hero lock with subtle floating dust motes and soft lens flare along the smartphone bezel.
+Ultra-photorealistic 3D render, octane studio lighting, 4k 60fps, Apple/Google commercial grade, continuous fluid 10s motion.
 
-=== CAMERA MOTION DIRECTIVES (FOR GOOGLE FLOW CONTROLS) ===
-- Motion Type: Pan & Dolly In (Forward Push + Subtle 5-degree Clockwise Roll)
-- Motion Speed: Slow / Smooth (Value: 3 or 0.4x)
-- Depth of Field: Shallow focus on "MediRemind" phone screen and logo, gentle background bokeh.
+=== CAMERA MOTION DIRECTIVES (GOOGLE FLOW SETTINGS) ===
+- Motion Mode: Camera Pan & Slow Dolly In (Duration: 10 seconds)
+- Pan: 0.2 (gentle right-to-center)
+- Zoom: 0.3 (smooth push-in)
+- Roll: 0.1 (subtle clockwise drift)
+- Motion Dynamics: Fluid, no abrupt stops, slow-motion feel (0.5x speed)
 
-=== VOICE-OVER SCRIPT (VO) ===
-Bengali (বাংলা):
-"প্রতিদিন সঠিক সময়ে ওষুধ খাওয়ার দায়িত্ব এবার পুরোপুরি নিশ্চিন্ত। আপনার আধুনিক স্বাস্থ্যসঙ্গী — মেডি-রিমাইন্ড (MediRemind)!"
+=== CONSISTENT VOICE-OVER SPECIFICATIONS (VO) ===
+* IMPORTANT: To maintain 100% voice consistency across all 5 scenes, use ONE chosen persona throughout:
+  - Option A (FEMALE): "Dr. Shreya" / "Priya" (Warm, caring, articulate Indian healthcare narrator, steady cadence ~130 wpm, friendly smile in voice).
+  - Option B (MALE): "Arjun" / "Rahul" (Deep, confident, trustworthy tech narrator, empathetic cadence ~130 wpm).
+* Audio Parameters (for ElevenLabs / TTS / Murf): Stability 0.70, Similarity 0.85, Style 0.10.
+* Speech Timing: Starts at 0:01, finishes smoothly at 0:085 (leaving 1.5s for audio ambiance).
 
-English:
-"Taking medications on time is now completely effortless. Meet your intelligent health companion — MediRemind!"
+=== VOICE SCRIPT (EXACTLY TIMED FOR 10-SECOND SCENE) ===
+Bengali (বাংলা) [~7.5 sec]:
+"ব্যস্ত জীবনে সঠিক সময়ে ওষুধ খাওয়ার কথা কি প্রায়ই ভুলে যান? আপনার ও আপনার পুরো পরিবারের স্বাস্থ্য সুরক্ষায় এসে গেছে মেডি-রিমাইন্ড (MediRemind) — আপনার ডিজিটাল স্বাস্থ্য সঙ্গী।"
 
-=== SOUND EFFECTS (SFX) & MUSIC ===
-- Background Music: Uplifting, inspiring modern ambient electronic with warm piano chords and subtle heartbeat synth pulse.
-- SFX: Soft futuristic chime / air whoosh as the 3D pills float and the screen glows to life.
+English [~7.8 sec]:
+"Do you often forget to take your medications on time? Meet MediRemind — the intelligent healthcare companion designed to keep you and your loved ones healthy, every single day."
+
+=== SOUND EFFECTS (SFX) & MUSIC TIMELINE ===
+- [0:00 - 0:02]: Soft cinematic riser + gentle futuristic air whoosh as the 3D pills float.
+- [0:02 - 0:08]: Warm ambient synthesizer with gentle piano chords and heartbeat bass pulse.
+- [0:08 - 0:10]: Clean crystal notification bell chime as the MediRemind logo glows.

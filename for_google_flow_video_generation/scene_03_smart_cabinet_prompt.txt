@@ -1,25 +1,39 @@
 ================================================================================
-[SCENE 3: 3D VIRTUAL MEDICINE CABINET & STOCK TRACKING]
+🎬 SCENE 3: 3D VIRTUAL MEDICINE CABINET & STOCK TRACKING (10 SECONDS)
 Image File: scene_03_mediremind_smart_cabinet.jpg
-Video Duration: 0:12 - 0:18 (6 seconds)
+Video Duration: Exactly 10.0 Seconds (0:20 - 0:30)
+App Brand: MediRemind (মেডিরিমাইন্ড)
 ================================================================================
 
-=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
-Futuristic product showcase video for "MediRemind" medicine inventory and cabinet management.
-Camera initiates a smooth slow tilt-up and slow dolly push toward the smartphone screen displaying the real "MediRemind Medicine Cabinet" with real-time stock counters (Paracetamol, Vitamin D3, Amoxicillin). An amber glass 3D syrup bottle and medical syringe float beside the phone with liquid light caustics and glass refraction. The bold typography "MediRemind" and title "Smart 3D Medicine Cabinet" emit a gentle teal-mint illumination. The pill counters on the interface subtly highlight as if automatically computing remaining days. Sleek, organized, clean healthcare tech aesthetic, 4k 60fps.
+=== GOOGLE FLOW / VEO 10-SECOND VIDEO GENERATION PROMPT ===
+10-second futuristic product showcase featuring "MediRemind" medicine cabinet and stock management.
+[0-3s]: The shot opens with the camera panning smoothly across the left-side text "Smart 3D Medicine Cabinet" and the glowing "3D VIRTUAL CABINET" badge against a deep teal-mint studio backdrop.
+[3-7s]: The camera smoothly dollies forward and sweeps toward the right, revealing the smartphone screen displaying real MediRemind cabinet entries (Paracetamol, Vitamin D3, Amoxicillin with green stock pill badges). Beside the phone, an amber 3D syrup bottle and glass syringe float gracefully, refracting radiant cyan light.
+[7-10s]: A digital holographic ring gently scans the pill counters on screen, demonstrating automated strip inventory deduction and low-stock warning alerts.
+4k resolution, 60fps, clean pharmacy tech aesthetic, buttery smooth 10s cinematic motion.
 
-=== CAMERA MOTION DIRECTIVES (FOR GOOGLE FLOW CONTROLS) ===
-- Motion Type: Tilt Up & Slow Pan Left
-- Motion Speed: Smooth Gentle (Value: 3 or 0.4x)
-- Visual Effects: Subtle liquid reflections inside the floating syrup bottle, glowing refill badge
+=== CAMERA MOTION DIRECTIVES (GOOGLE FLOW SETTINGS) ===
+- Motion Mode: Diagonal Pan Left-to-Right & Slow Push In (Duration: 10 seconds)
+- Pan: 0.3 (smooth lateral movement)
+- Tilt: 0.1 (subtle upward framing adjustment)
+- Zoom: 0.25 (gradual push-in toward the cabinet UI)
+- Motion Dynamics: Ultra-smooth, elegant 0.45x slow-motion.
 
-=== VOICE-OVER SCRIPT (VO) ===
-Bengali (বাংলা):
-"ওষুধের স্টক কবে শেষ হবে? প্রেসক্রিপশন খোঁজার ঝামেলা শেষ! মেডিরিমাইন্ডের ৩ডি ভার্চুয়াল ক্যাবিনেট ওষুধ ফুরিয়ে যাওয়ার আগেই আপনাকে সতর্ক করবে।"
+=== CONSISTENT VOICE-OVER SPECIFICATIONS (VO) ===
+* Use the EXACT SAME Voice Persona selected in Scene 1 & 2 (do not change speaker):
+  - FEMALE: "Dr. Shreya" / "Priya" (Warm, caring healthcare advisor tone).
+  - MALE: "Arjun" / "Rahul" (Deep, confident, trustworthy tech tone).
+* Audio Parameters: Consistency locked (Stability 0.70, Similarity 0.85).
+* Speech Timing: Starts at 0:01, finishes smoothly at 0:085.
 
-English:
-"Running low on pills? Never get caught unprepared. MediRemind's 3D Virtual Cabinet tracks strips and warns you days before stock runs out."
+=== VOICE SCRIPT (EXACTLY TIMED FOR 10-SECOND SCENE) ===
+Bengali (বাংলা) [~7.6 sec]:
+"মেডিরিমাইন্ডের ৩ডি ভার্চুয়াল ক্যাবিনেটে থাকে আপনার ওষুধের আসল স্টক হিসাব। পাতার শেষ ওষুধটি ফুরিয়ে যাওয়ার বেশ কয়েকদিন আগেই অ্যাপ আপনাকে দেবে রিফিল অ্যালার্ট।"
 
-=== SOUND EFFECTS (SFX) & MUSIC ===
-- Background Music: Smooth melodic synth with light technological percussion.
-- SFX: Soft digital scan sound, inventory counter tick, gentle glass clink.
+English [~7.8 sec]:
+"With the intuitive 3D Virtual Medicine Cabinet, automatically track remaining strips and dosages. MediRemind alerts you days in advance before you run out of essential medicines."
+
+=== SOUND EFFECTS (SFX) & MUSIC TIMELINE ===
+- [0:00 - 0:03]: Smooth melodic synth bridge, light electronic marimba beats.
+- [0:03 - 0:06]: Soft digital inventory scanner sweep sound effect (futuristic, subtle).
+- [0:06 - 0:10]: Gentle glass bottle resonance + cheerful alert chime as refill date highlights.

@@ -1,25 +1,38 @@
 ================================================================================
-[SCENE 5: CLOUD SYNC & DOWNLOAD CALL TO ACTION OUTRO]
+🎬 SCENE 5: CLOUD BACKUP & DOWNLOAD CALL-TO-ACTION (10 SECONDS)
 Image File: scene_05_mediremind_cloud_outro.jpg
-Video Duration: 0:24 - 0:30 (6 seconds)
+Video Duration: Exactly 10.0 Seconds (0:40 - 0:50)
+App Brand: MediRemind (মেডিরিমাইন্ড)
 ================================================================================
 
-=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
-Epic commercial finale and brand call-to-action for the "MediRemind" mobile application.
-Dynamic camera zoom out to reveal the floating smartphone showing MediRemind's Account & Cloud Sync screen with the bold "লগইন বা সাইন ইন করুন" (Login / Sign In) button. Above, the iconic circular MediRemind logo glows brilliantly with emerald and cyan energy. The prominent 3D text "MediRemind" shines with metallic reflections under dramatic coral-orange and blue studio floodlights. The "GET STARTED WITH MEDIREMIND" call-to-action button pulses with an inviting vibrant glow. Particle light sparks drift gently in the dark background. 4k resolution, 60fps, high-energy tech commercial outro.
+=== GOOGLE FLOW / VEO 10-SECOND VIDEO GENERATION PROMPT ===
+10-second high-energy commercial finale and brand call-to-action for "MediRemind".
+[0-3s]: The shot opens with the smartphone showcasing the MediRemind Account & Cloud Sync card with the vibrant "লগইন বা সাইন ইন করুন" (Login / Sign In) button. Above, the iconic circular MediRemind emblem radiates brilliant cyan and emerald energy.
+[3-7s]: Dynamic camera dolly-out reveals the full composition: bold metallic 3D typography "MediRemind" shines brightly under dual coral-orange and electric-blue floodlights. Tiny floating particle sparks drift in the dark studio atmosphere.
+[7-10s]: The vibrant coral-orange "GET STARTED WITH MEDIREMIND" call-to-action button gently pulses with an inviting sheen. A smooth lens flare sweeps horizontally across the MediRemind brand name as the video reaches its grand conclusion.
+Octane render, 4k 60fps, epic tech commercial finale, fluid 10-second motion.
 
-=== CAMERA MOTION DIRECTIVES (FOR GOOGLE FLOW CONTROLS) ===
-- Motion Type: Dolly Out & Subtle Center Lock
-- Motion Speed: Medium (Value: 4 or 0.5x)
-- Visual Effects: Logo glow pulse, soft lens flare across the CTA button
+=== CAMERA MOTION DIRECTIVES (GOOGLE FLOW SETTINGS) ===
+- Motion Mode: Cinematic Slow Zoom Out & Center Lock (Duration: 10 seconds)
+- Zoom: -0.35 (steady pull back to frame the full brand outro)
+- Roll: 0.0 (perfectly level, authoritative framing)
+- Motion Dynamics: Grand, confident, cinematic decrescendo (0.5x speed).
 
-=== VOICE-OVER SCRIPT (VO) ===
-Bengali (বাংলা):
-"১-ট্যাপ গুগল সাইন ইন, ক্লাউড ব্যাকআপ এবং ১০০% অফলাইন সুরক্ষা। আপনার ও আপনার পরিবারের স্বাস্থ্য সুরক্ষায় আজই শুরু করুন — মেডি-রিমাইন্ড (MediRemind)!"
+=== CONSISTENT VOICE-OVER SPECIFICATIONS (VO) ===
+* Use the EXACT SAME Voice Persona selected in Scenes 1 through 4 (crucial for branding):
+  - FEMALE: "Dr. Shreya" / "Priya" (Enthusiastic, authoritative, warm call-to-action).
+  - MALE: "Arjun" / "Rahul" (Strong, inspiring, confident call-to-action).
+* Audio Parameters: Consistency locked (Stability 0.70, Similarity 0.85).
+* Speech Timing: Starts at 0:01, finishes with authority at 0:085.
 
-English:
-"1-tap Google Sign-In, instant cloud backup, and 100% offline security. Protect your family's health today with MediRemind!"
+=== VOICE SCRIPT (EXACTLY TIMED FOR 10-SECOND SCENE) ===
+Bengali (বাংলা) [~7.6 sec]:
+"এক ট্যাপে গুগল সাইন-ইন, ক্লাউড ফায়ারস্টোর ব্যাকআপ এবং ১০০% অফলাইন নিরাপত্তা। সুস্থ ও নিয়মমাফিক জীবনের জন্য আজই ডাউনলোড করুন — মেডি-রিমাইন্ড (MediRemind)!"
 
-=== SOUND EFFECTS (SFX) & MUSIC ===
-- Background Music: Grand uplifting crescendo with a final resonant bass hit and sparkling medical chime.
-- SFX: Satisfying digital confirmation tone, whoosh on logo reveal.
+English [~7.8 sec]:
+"One-tap Google Sign-In, instant encrypted cloud backup, and 100% offline reliability. Take control of your daily wellness today with MediRemind — your health, always on time!"
+
+=== SOUND EFFECTS (SFX) & MUSIC TIMELINE ===
+- [0:00 - 0:03]: Music swells to an uplifting, grand orchestral-electronic climax.
+- [0:03 - 0:07]: Deep resonant cinematic bass drop + digital sparkle as the cloud sync lock clicks into place.
+- [0:07 - 0:10]: Brand logo signature audio chord rings out softly into a clean fade-out.

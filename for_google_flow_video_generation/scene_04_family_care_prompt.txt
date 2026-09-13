@@ -1,25 +1,38 @@
 ================================================================================
-[SCENE 4: FAMILY CARE & MULTIPLE PROFILES]
+🎬 SCENE 4: FAMILY CARE & MULTIPLE PROFILES (10 SECONDS)
 Image File: scene_04_mediremind_family_care.jpg
-Video Duration: 0:18 - 0:24 (6 seconds)
+Video Duration: Exactly 10.0 Seconds (0:30 - 0:40)
+App Brand: MediRemind (মেডিরিমাইন্ড)
 ================================================================================
 
-=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
-Heartwarming yet premium commercial shot showcasing the family health capabilities of the "MediRemind" mobile application.
-The camera slowly pulls back with a graceful arc, highlighting the floating smartphone displaying MediRemind's family management settings and multi-language controls (English, Bengali, Hindi). A 3D blue asthma inhaler and green vitamins jar float weightlessly beside the phone with realistic soft-touch clay textures. The title "MediRemind - One App for the Entire Family" glows with warm purple and coral studio rim lighting. Warm volumetric light shafts gently stream across the scene, symbolizing loving care and security. High aesthetic quality, 4k 60fps.
+=== GOOGLE FLOW / VEO 10-SECOND VIDEO GENERATION PROMPT ===
+10-second warm, premium commercial showcase highlighting MediRemind's family health & multi-language features.
+[0-3s]: The sequence opens focused on the floating smartphone displaying MediRemind's Family profiles ("পুরো পরিবার", "আমার জন্য", "নতুন সদস্য যোগ করুন") and language switch buttons (English, বাংলা, हिन्दी). A 3D inhaler and vitamin supplement jar float softly on the periphery.
+[3-7s]: Warm volumetric golden and lavender light streams gently across the studio background. The camera pulls back with a graceful slow arc to the right, highlighting the bold typography "One App for the Entire Family" and the individual profile badges.
+[7-10s]: A soft glowing halo illuminates the language options as they seamlessly transition, symbolizing universal accessibility for parents, kids, and elders alike.
+Warm cinematic lighting, 4k 60fps, emotive healthcare commercial atmosphere, continuous 10s motion.
 
-=== CAMERA MOTION DIRECTIVES (FOR GOOGLE FLOW CONTROLS) ===
-- Motion Type: Slow Dolly Out with subtle Arc Left
-- Motion Speed: Slow, emotional (Value: 2.5 or 0.35x)
-- Visual Effects: Soft warm light bloom across the profile cards
+=== CAMERA MOTION DIRECTIVES (GOOGLE FLOW SETTINGS) ===
+- Motion Mode: Slow Dolly Out & Arc Right (Duration: 10 seconds)
+- Zoom: -0.2 (gentle pull-out to establish the full scene)
+- Pan: 0.25 (slow arc from left to center-right)
+- Motion Dynamics: Very smooth, heartfelt, reassuring 0.4x speed.
 
-=== VOICE-OVER SCRIPT (VO) ===
-Bengali (বাংলা):
-"বয়স্ক মা-বাবা, সন্তান কিংবা নিজের জন্য—একটিমাত্র অ্যাপেই সবার প্রোফাইল। সাথে বাংলা, হিন্দি ও ইংরেজি তিন ভাষাতেই সম্পূর্ণ সুবিধা।"
+=== CONSISTENT VOICE-OVER SPECIFICATIONS (VO) ===
+* Use the EXACT SAME Voice Persona selected in Scenes 1, 2, & 3 (do not change speaker):
+  - FEMALE: "Dr. Shreya" / "Priya" (Warm, caring, empathetic family tone).
+  - MALE: "Arjun" / "Rahul" (Warm, reassuring, trustworthy tone).
+* Audio Parameters: Consistency locked (Stability 0.70, Similarity 0.85).
+* Speech Timing: Starts at 0:01, finishes smoothly at 0:085.
 
-English:
-"Elderly parents, children, or yourself—manage multiple profiles in one single app, fully available in English, Bengali, and Hindi."
+=== VOICE SCRIPT (EXACTLY TIMED FOR 10-SECOND SCENE) ===
+Bengali (বাংলা) [~7.8 sec]:
+"বয়স্ক বাবা-মা, ছোট সন্তান কিংবা নিজের যেকোনো প্রেসক্রিপশন—সবকিছু সামলান একটি অ্যাপেই। সম্পূর্ণ বাংলায়, হিন্দিতে কিংবা ইংরেজিতে নিজের পছন্দের ভাষায় ব্যবহার করুন নিশ্চিন্তে।"
 
-=== SOUND EFFECTS (SFX) & MUSIC ===
-- Background Music: Warm, reassuring acoustic guitar blended with soft modern strings.
-- SFX: Gentle gentle swipe sound effect as member profiles switch.
+English [~7.9 sec]:
+"Manage care for elderly parents, children, and yourself with independent profiles in one single app. Fully customized in Bengali, Hindi, and English for the ultimate peace of mind."
+
+=== SOUND EFFECTS (SFX) & MUSIC TIMELINE ===
+- [0:00 - 0:03]: Warm acoustic guitar melody blended with uplifting cinematic strings.
+- [0:03 - 0:06]: Gentle whoosh as family profile switcher animates smoothly on screen.
+- [0:06 - 0:10]: Soft heart-warming chime pad sustaining into the final transition.

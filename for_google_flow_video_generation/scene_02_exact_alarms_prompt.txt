@@ -1,25 +1,38 @@
 ================================================================================
-[SCENE 2: EXACT ALARMS & NEVER MISS A DOSE]
+🎬 SCENE 2: EXACT ALARMS & NEVER MISS A DOSE (10 SECONDS)
 Image File: scene_02_mediremind_exact_alarms.jpg
-Video Duration: 0:06 - 0:12 (6 seconds)
+Video Duration: Exactly 10.0 Seconds (0:10 - 0:20)
+App Brand: MediRemind (মেডিরিমাইন্ড)
 ================================================================================
 
-=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
-Dynamic tech commercial shot highlighting the precision alarm feature of the "MediRemind" mobile application.
-The camera slowly glides from left to right, focusing on the sleek floating smartphone running the real MediRemind "Today's Schedule" interface with 100% completion ring and medicine dosage cards. Floating beside the screen, a glossy two-tone 3D medicine capsule and white tablet gently tumble in 3D space with specular lighting. The bold header "MediRemind" and feature headline "Never Miss a Single Dose" shimmer with ambient coral and cyan glows. Holographic alarm wave pulses emanate outward from the device to signify Android 12-15+ exact alarm precision. Photorealistic 3D render, octane studio lighting, 4k 60fps.
+=== GOOGLE FLOW / VEO 10-SECOND VIDEO GENERATION PROMPT ===
+10-second commercial sequence spotlighting the exact alarm reliability of "MediRemind".
+[0-3s]: The shot starts focused on the left side where the smartphone displays the real MediRemind "Today's Schedule" with its vibrant 100% completion ring and medicine dosage cards. A two-tone 3D capsule and round pill hover smoothly in the foreground.
+[3-7s]: Concentric holographic soundwaves and neon orange-cyan pulse rings gently ripple out from the phone screen, demonstrating exact second alarms triggering through Android deep doze. The camera smoothly glides rightward to highlight the bold glowing headline "Never Miss a Single Dose" and the 3 precision feature badges.
+[7-10s]: The camera pulls back slightly into a balanced wide shot, with the MediRemind brand header softly gleaming under studio lights.
+Pristine tech aesthetics, cinematic lighting, 4k 60fps, fluid 10-second continuous camera motion.
 
-=== CAMERA MOTION DIRECTIVES (FOR GOOGLE FLOW CONTROLS) ===
-- Motion Type: Pan Right & Subtle Zoom In towards the phone screen
-- Motion Speed: Medium-Slow (Value: 4 or 0.5x)
-- Visual Effects: Subtle pulsating light glow on the notification bell and pills
+=== CAMERA MOTION DIRECTIVES (GOOGLE FLOW SETTINGS) ===
+- Motion Mode: Smooth Lateral Pan Right & Subtle Zoom Out (Duration: 10 seconds)
+- Pan: 0.35 (steady left-to-right translation)
+- Zoom: -0.15 (gentle pull back in the final 3 seconds)
+- Motion Dynamics: Slow, elegant tech glide, no shaking.
 
-=== VOICE-OVER SCRIPT (VO) ===
-Bengali (বাংলা):
-"অ্যান্ড্রয়েড ১২ থেকে ১৫+ ডিভাইসেও সঠিক সেকেন্ডে বাজবে অ্যালার্ম। গভীর ঘুমে কিংবা ফোন লক থাকলেও কোনো ডোজ মিস হবে না।"
+=== CONSISTENT VOICE-OVER SPECIFICATIONS (VO) ===
+* Use the EXACT SAME Voice Persona selected in Scene 1 (do not change speaker):
+  - FEMALE: "Dr. Shreya" / "Priya" (Warm, reassuring, articulate cadence).
+  - MALE: "Arjun" / "Rahul" (Deep, confident, trustworthy tech cadence).
+* Audio Parameters: Consistency locked (Stability 0.70, Similarity 0.85).
+* Speech Timing: Starts at 0:01, completes at 0:085.
 
-English:
-"Exact zero-delay alarms for Android 12 to 15+. Even in deep doze or locked mode, you'll never miss a critical dose."
+=== VOICE SCRIPT (EXACTLY TIMED FOR 10-SECOND SCENE) ===
+Bengali (বাংলা) [~7.8 sec]:
+"অ্যান্ড্রয়েড ১২ থেকে ১৫+ যেকোনো ডিভাইসে এটি বাজায় নিখুঁত জিরো-ডিলে অ্যালার্ম। ফোন সাইলেন্ট বা লক থাকলেও সঠিক সেকেন্ডে আপনি পাবেন স্পষ্ট রিমাইন্ডার এবং ৩ডি মেডিসিন আইকন।"
 
-=== SOUND EFFECTS (SFX) & MUSIC ===
-- Background Music: Pulsing tech rhythm building momentum.
-- SFX: Gentle, pleasant medical alarm chime (3 tones) followed by a reassuring confirmation click.
+English [~8.0 sec]:
+"Powered by zero-delay exact alarms, MediRemind rings with pinpoint precision on Android 12 to 15+. Even in deep doze or silent mode, every single dose is delivered on time."
+
+=== SOUND EFFECTS (SFX) & MUSIC TIMELINE ===
+- [0:00 - 0:03]: Smooth synthesizer transition, rhythmic digital pulse buildup.
+- [0:03 - 0:06]: Realistic melodious 3-tone medical reminder chime (gentle, not harsh).
+- [0:06 - 0:10]: Satisfying haptic confirmation click as the alarm is acknowledged, synth pad rings out.
