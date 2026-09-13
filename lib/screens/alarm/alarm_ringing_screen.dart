@@ -75,11 +75,17 @@ class AlarmRingingScreen extends StatelessWidget {
                       ],
                     ),
                     child: Center(
-                      child: AppSvgIcons.render(
-                        medicine.type.svgString,
-                        width: 72,
-                        height: 72,
-                        color: medColor,
+                      child: Image.asset(
+                        medicine.type.assetPath,
+                        width: 84,
+                        height: 84,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => AppSvgIcons.render(
+                          medicine.type.svgString,
+                          width: 72,
+                          height: 72,
+                          color: medColor,
+                        ),
                       ),
                     ),
                   ).animate(onPlay: (c) => c.repeat(reverse: true))

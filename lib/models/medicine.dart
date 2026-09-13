@@ -17,6 +17,8 @@ enum MedicineType {
   final String svgString;
   const MedicineType(this.label, this.icon, this.svgString);
 
+  String get assetPath => 'assets/icons/3d/med_3d_$name.png';
+
   static MedicineType fromString(String val) {
     return MedicineType.values.firstWhere(
       (e) => e.name.toLowerCase() == val.toLowerCase(),

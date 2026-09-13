@@ -86,9 +86,9 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                 _buildFilterChip('All', allMeds.length),
                 if (lowStockCount > 0)
                   _buildFilterChip('Low Stock', lowStockCount, isWarning: true),
-                _buildFilterChip('Tablet', null, svgIcon: AppSvgIcons.tablet),
-                _buildFilterChip('Capsule', null, svgIcon: AppSvgIcons.capsule),
-                _buildFilterChip('Syrup', null, svgIcon: AppSvgIcons.syrup),
+                _buildFilterChip('Tablet', null, imageAsset: MedicineType.tablet.assetPath),
+                _buildFilterChip('Capsule', null, imageAsset: MedicineType.capsule.assetPath),
+                _buildFilterChip('Syrup', null, imageAsset: MedicineType.syrup.assetPath),
               ],
             ),
           ),
@@ -327,20 +327,22 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, int? count, {bool isWarning = false, String? svgIcon}) {
+  Widget _buildFilterChip(String label, int? count, {bool isWarning = false, String? svgIcon, String? imageAsset}) {
     final isSelected = _selectedFilter == label;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
         selected: isSelected,
-        avatar: svgIcon != null
-            ? AppSvgIcons.render(
-                svgIcon,
-                width: 14,
-                height: 14,
-                color: isSelected ? Colors.white : AppColors.primary,
-              )
-            : null,
+        avatar: imageAsset != null
+            ? Image.asset(imageAsset, width: 16, height: 16, fit: BoxFit.contain)
+            : (svgIcon != null
+                ? AppSvgIcons.render(
+                    svgIcon,
+                    width: 14,
+                    height: 14,
+                    color: isSelected ? Colors.white : AppColors.primary,
+                  )
+                : null),
         label: Text(count != null ? '$label ($count)' : label),
         selectedColor: isWarning ? AppColors.warning : AppColors.primary,
         labelStyle: TextStyle(

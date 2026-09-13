@@ -235,11 +235,17 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     padding: const EdgeInsets.only(right: 10),
                     child: ChoiceChip(
                       selected: isSelected,
-                      avatar: AppSvgIcons.render(
-                        type.svgString,
-                        width: 18,
-                        height: 18,
-                        color: isSelected ? Colors.white : AppColors.primary,
+                      avatar: Image.asset(
+                        type.assetPath,
+                        width: 22,
+                        height: 22,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => AppSvgIcons.render(
+                          type.svgString,
+                          width: 18,
+                          height: 18,
+                          color: isSelected ? Colors.white : AppColors.primary,
+                        ),
                       ),
                       label: Text(type.label),
                       selectedColor: AppColors.primary,
