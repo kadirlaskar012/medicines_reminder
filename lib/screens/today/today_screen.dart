@@ -107,6 +107,7 @@ class TodayScreen extends StatelessWidget {
     final eveningDoses = provider.eveningDoses;
     final nightDoses = provider.nightDoses;
     final totalDoses = provider.dosesForSelectedDate.length;
+    final completedDoses = provider.todayTakenCount;
 
     return Scaffold(
       body: SafeArea(
@@ -143,51 +144,36 @@ class TodayScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // Profile Switcher Chip with SVG avatar
-                    GestureDetector(
-                      onTap: () => ProfileSelectorSheet.show(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkCard : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    // Quick Adherence Score Pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            completedDoses == totalDoses && totalDoses > 0
+                                ? Icons.verified_rounded
+                                : Icons.schedule_rounded,
+                            size: 16,
+                            color: AppColors.primary,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
+                          const SizedBox(width: 6),
+                          Text(
+                            totalDoses > 0 ? '$completedDoses / $totalDoses' : '0',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary,
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (activeProfile != null)
-                              (activeProfile.avatarEmoji.isNotEmpty && activeProfile.avatarEmoji != '👤')
-                                  ? Text(activeProfile.avatarEmoji, style: const TextStyle(fontSize: 18))
-                                  : AppSvgIcons.render(activeProfile.svgAvatar, width: 22, height: 22)
-                            else
-                              const Icon(Icons.people_alt_rounded, size: 20, color: AppColors.primary),
-                            const SizedBox(width: 8),
-                            Text(
-                              activeProfile != null
-                                  ? (activeProfile.name.toLowerCase() == 'myself'
-                                      ? s.myself
-                                      : activeProfile.name)
-                                  : s.allFamily,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 18,
-                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -275,7 +261,75 @@ class TodayScreen extends StatelessWidget {
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+            // 100% Adherence Celebration Banner
+            if (totalDoses > 0 && completedDoses == totalDoses)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [const Color(0xFF064E3B), const Color(0xFF065F46)]
+                            : [const Color(0xFFECFDF5), const Color(0xFFD1FAE5)],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.6 : 0.4),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0F766E) : Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Text('🎉', style: TextStyle(fontSize: 22)),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                s.allDosesCompletedTitle,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                  color: isDark ? Colors.white : const Color(0xFF065F46),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                s.allDosesCompletedSub,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF047857),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
             // If empty, show motivational empty state
             if (totalDoses == 0)

@@ -9,6 +9,7 @@ import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/language_provider.dart';
 import 'providers/medicine_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/welcome/welcome_screen.dart';
 
@@ -46,6 +47,9 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
+          create: (_) => ThemeProvider(),
+        ),
+        ChangeNotifierProvider(
           create: (_) => LanguageProvider(),
         ),
         ChangeNotifierProvider(
@@ -66,14 +70,17 @@ class MediRemindApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+
     return MaterialApp(
       navigatorKey: NotificationService.navigatorKey,
       title: 'MediRemind',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeProvider.themeMode,
       home: showWelcome ? const WelcomeScreen() : const MainNavigationScreen(),
     );
   }
 }
+

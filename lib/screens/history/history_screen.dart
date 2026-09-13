@@ -67,14 +67,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(s.doseHistory),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.primary, size: 26),
-            tooltip: s.exportDoctorPdf,
-            onPressed: () => _exportDoctorPdf(context, totalTaken),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
 
       body: RefreshIndicator(

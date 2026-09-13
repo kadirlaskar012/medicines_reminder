@@ -363,5 +363,15 @@ class AppStrings {
   String get editMyProfile => code == 'bn' ? 'আমার প্রোফাইল সম্পাদনা' : (code == 'hi' ? 'मेरी प्रोफाइल संपादित करें' : 'Edit My Profile');
   String get saveChanges => code == 'bn' ? 'সংরক্ষণ করুন' : (code == 'hi' ? 'सहेजें' : 'Save Changes');
   String get profileUpdated => code == 'bn' ? 'প্রোফাইল সফলভাবে সংরক্ষিত হয়েছে' : (code == 'hi' ? 'प्रोफाइल सफलतापूर्वक सहेज ली गई' : 'Profile saved successfully');
+
+  // Theme & Appearance
+  String get themeOption => code == 'bn' ? 'অ্যাপ থিম (THEME)' : (code == 'hi' ? 'ऐप थीम (THEME)' : 'APP THEME');
+  String get themeSystem => code == 'bn' ? 'সিস্টেম ডিফল্ট' : (code == 'hi' ? 'सिस्टम डिफ़ॉल्ट' : 'System');
+  String get themeLight => code == 'bn' ? 'লাইট মোড' : (code == 'hi' ? 'लाइट मोड' : 'Light');
+  String get themeDark => code == 'bn' ? 'ডার্ক মোড' : (code == 'hi' ? 'डार्क मोड' : 'Dark');
+
+  // Celebration Banner
+  String get allDosesCompletedTitle => code == 'bn' ? 'চমৎকার! আজকের সব ওষুধ সম্পন্ন 🎉' : (code == 'hi' ? 'शाबाश! आज की सभी दवाएं पूरी हुईं 🎉' : 'Great Job! All Doses Completed 🎉');
+  String get allDosesCompletedSub => code == 'bn' ? 'আপনি সফলভাবে আজকের ১০০% নিয়ম মেনে চলেছেন। সুস্থ থাকুন!' : (code == 'hi' ? 'आपने आज १००% समय पर दवा ली है। स्वस्थ रहें!' : 'You reached 100% adherence for today. Keep staying healthy!');
 }
 

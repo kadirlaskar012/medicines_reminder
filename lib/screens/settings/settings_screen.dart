@@ -5,10 +5,10 @@ import '../../core/localization/app_strings.dart';
 import '../../core/services/cloud_sync_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
-import '../../models/medicine.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/profile_selector_sheet.dart';
 import '../auth/phone_login_screen.dart';
 import '../welcome/user_onboarding_profile_screen.dart';
@@ -55,7 +55,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final provider = context.watch<MedicineProvider>();
     final auth = context.watch<AuthProvider>();
     final lang = context.watch<LanguageProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
     final s = lang.strings;
+
+    final hasMissingPermission = _permissionStatuses.values.any((status) => !status);
 
     return Scaffold(
       appBar: AppBar(
@@ -64,230 +67,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
         children: [
-          // Android 12 - 15+ Reliability Header Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.primaryDark,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.35),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.verified_user_rounded, color: Colors.white, size: 24),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        s.androidAlarmReliability,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  s.androidAlarmSub,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: _requestAllPermissions,
-                  icon: const Icon(Icons.security_update_good_rounded, size: 18),
-                  label: Text(s.grantAllPermissions),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryDark,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Diagnostic Health Checks
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildSectionTitle(s.systemPermissions),
-              if (_isChecking)
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else
-                IconButton(
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  onPressed: _checkPermissions,
-                  visualDensity: VisualDensity.compact,
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          _buildDiagnosticTile(
-            title: s.notificationPermission,
-            subtitle: s.notifSub,
-            isGranted: _permissionStatuses['notification'] ?? false,
-            isDark: isDark,
-            s: s,
-          ),
-          const SizedBox(height: 8),
-
-          _buildDiagnosticTile(
-            title: s.exactAlarmPermission,
-            subtitle: s.exactAlarmSub,
-            isGranted: _permissionStatuses['exactAlarm'] ?? false,
-            isDark: isDark,
-            s: s,
-          ),
-          const SizedBox(height: 8),
-
-          _buildDiagnosticTile(
-            title: s.batteryOptimization,
-            subtitle: s.batteryOptimizationSub,
-            isGranted: _permissionStatuses['batteryIgnored'] ?? false,
-            isDark: isDark,
-            s: s,
-          ),
-
-          const SizedBox(height: 24),
-
-          // Instant Test Alarm
-          _buildSectionTitle(s.alarmSoundBannerTest),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkCard : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.ring_volume_rounded, color: AppColors.primary),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(s.testAlarmNotifications, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                          const SizedBox(height: 2),
-                          Text(s.testAlarmSub, style: const TextStyle(fontSize: 12, color: AppColors.lightTextMuted)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        await NotificationService.instance.showTestNotification(type: MedicineType.tablet);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('💊 ${s.notificationDispatched(s.tablet)}'),
-                              backgroundColor: AppColors.primary,
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Text('💊', style: TextStyle(fontSize: 14)),
-                      label: Text(s.tablet),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      ),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        await NotificationService.instance.showTestNotification(type: MedicineType.syrup);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('🧪 ${s.notificationDispatched(s.syrup)}'),
-                              backgroundColor: const Color(0xFFD97706),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Text('🧪', style: TextStyle(fontSize: 14)),
-                      label: Text(s.syrup),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD97706),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      ),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        await NotificationService.instance.showTestNotification(type: MedicineType.injection);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('💉 ${s.notificationDispatched(s.injection)}'),
-                              backgroundColor: const Color(0xFF0284C7),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Text('💉', style: TextStyle(fontSize: 14)),
-                      label: Text(s.injection),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0284C7),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Account & Cloud Sync Section
+          // 1. Account & Supabase Cloud Sync Section (Prominent at Top)
           _buildSectionTitle(s.accountAndCloudSync),
           const SizedBox(height: 10),
           _buildAccountCard(context, auth, provider, s, isDark),
 
           const SizedBox(height: 24),
 
-          // Family Profiles Section
+          // 2. Family Profiles Section
           _buildSectionTitle(s.familyMembersProfiles),
           const SizedBox(height: 10),
           Container(
@@ -350,7 +137,163 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 24),
 
-          // Multi-Language Selector Card
+          // 3. Android Reliability Attention Banner (shown if any permission missing)
+          if (hasMissingPermission) ...[
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primaryDark,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.verified_user_rounded, color: Colors.white, size: 24),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          s.androidAlarmReliability,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    s.androidAlarmSub,
+                    style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _requestAllPermissions,
+                    icon: const Icon(Icons.security_update_good_rounded, size: 18),
+                    label: Text(s.grantAllPermissions),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.primaryDark,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // 4. Diagnostic Health Checks
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionTitle(s.systemPermissions),
+              if (_isChecking)
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  onPressed: _checkPermissions,
+                  visualDensity: VisualDensity.compact,
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          _buildDiagnosticTile(
+            title: s.notificationPermission,
+            subtitle: s.notifSub,
+            isGranted: _permissionStatuses['notification'] ?? false,
+            isDark: isDark,
+            s: s,
+          ),
+          const SizedBox(height: 8),
+
+          _buildDiagnosticTile(
+            title: s.exactAlarmPermission,
+            subtitle: s.exactAlarmSub,
+            isGranted: _permissionStatuses['exactAlarm'] ?? false,
+            isDark: isDark,
+            s: s,
+          ),
+          const SizedBox(height: 8),
+
+          _buildDiagnosticTile(
+            title: s.batteryOptimization,
+            subtitle: s.batteryOptimizationSub,
+            isGranted: _permissionStatuses['batteryIgnored'] ?? false,
+            isDark: isDark,
+            s: s,
+          ),
+
+          const SizedBox(height: 24),
+
+          // 5. App Theme Selector Card
+          _buildSectionTitle(s.themeOption),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkCard : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+            ),
+            child: Row(
+              children: [
+                _buildThemeButton(
+                  context,
+                  ThemeMode.system,
+                  s.themeSystem,
+                  Icons.brightness_auto_rounded,
+                  themeProvider.themeMode == ThemeMode.system,
+                  isDark,
+                ),
+                const SizedBox(width: 8),
+                _buildThemeButton(
+                  context,
+                  ThemeMode.light,
+                  s.themeLight,
+                  Icons.wb_sunny_rounded,
+                  themeProvider.themeMode == ThemeMode.light,
+                  isDark,
+                ),
+                const SizedBox(width: 8),
+                _buildThemeButton(
+                  context,
+                  ThemeMode.dark,
+                  s.themeDark,
+                  Icons.nightlight_round,
+                  themeProvider.themeMode == ThemeMode.dark,
+                  isDark,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // 6. Multi-Language Selector Card
           _buildSectionTitle(s.languageOption),
           const SizedBox(height: 10),
           Container(
@@ -383,7 +326,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 24),
 
-          // About & Medical Disclaimer
+          // 7. About & Medical Disclaimer
           _buildSectionTitle(s.aboutMediRemind),
           const SizedBox(height: 10),
           Container(
@@ -396,7 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${s.appName} v1.0.0', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                Text('${s.appName} v1.0.1 (Build 2)', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                 const SizedBox(height: 4),
                 Text(
                   s.appDescription,
@@ -406,6 +349,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildThemeButton(
+    BuildContext context,
+    ThemeMode mode,
+    String label,
+    IconData icon,
+    bool isSelected,
+    bool isDark,
+  ) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => context.read<ThemeProvider>().setThemeMode(mode),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primary
+                  : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: isSelected
+                    ? Colors.white
+                    : (isDark ? Colors.white70 : Colors.black54),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? Colors.white : Colors.black87),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

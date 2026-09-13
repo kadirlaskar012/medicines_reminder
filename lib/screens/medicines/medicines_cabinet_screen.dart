@@ -64,16 +64,22 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
       appBar: AppBar(
         title: Text(s.medicineCabinet),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary, size: 28),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AddEditMedicineScreen()),
-              );
-            },
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(
+              '${allMeds.length} ${s.activeStatus}',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: Column(
