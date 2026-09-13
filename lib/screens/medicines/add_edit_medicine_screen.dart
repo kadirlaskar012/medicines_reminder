@@ -6,6 +6,8 @@ import '../../core/theme/app_colors.dart';
 import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
 import '../../providers/medicine_provider.dart';
+import '../../providers/language_provider.dart';
+import '../../core/localization/app_strings.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final Medicine? medicineToEdit;
@@ -96,11 +98,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     }
   }
 
-  void _saveMedicine() async {
+  void _saveMedicine(AppStrings s) async {
     if (!_formKey.currentState!.validate()) return;
     if (_reminders.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one reminder time.')),
+        SnackBar(content: Text(s.addAtLeastOneReminder)),
       );
       return;
     }
@@ -147,18 +149,19 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<MedicineProvider>();
     final profiles = provider.profiles;
+    final s = context.watch<LanguageProvider>().strings;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Medicine' : 'Add New Medicine'),
+        title: Text(isEditing ? s.editMedicine : s.addNewMedicine),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: TextButton(
-              onPressed: _saveMedicine,
-              child: const Text(
-                'Save',
-                style: TextStyle(
+              onPressed: () => _saveMedicine(s),
+              child: Text(
+                s.save,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary,
@@ -175,7 +178,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           children: [
             // Profile selector if multiple profiles exist
             if (profiles.length > 1) ...[
-              _buildSectionHeader('Assign To Family Member'),
+              _buildSectionHeader(s.assignToFamilyMember),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: _selectedProfileId ?? provider.activeProfile?.id ?? profiles.first.id,
@@ -189,7 +192,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                       children: [
                         AppSvgIcons.render(p.svgAvatar, width: 20, height: 20),
                         const SizedBox(width: 8),
-                        Text('${p.name} (${p.relation})'),
+                        Text('${(p.id == 'default_me' || p.name.toLowerCase() == 'myself') ? s.myself : p.name} (${s.relationName(p.relation)})'),
                       ],
                     ),
                   );
@@ -200,31 +203,31 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ],
 
             // Basic Info
-            _buildSectionHeader('Medicine Details'),
+            _buildSectionHeader(s.medicineDetails),
             const SizedBox(height: 10),
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Medicine Name *',
-                hintText: 'e.g. Paracetamol, Metformin',
-                prefixIcon: Icon(Icons.medication_rounded),
+              decoration: InputDecoration(
+                labelText: s.medicineName,
+                hintText: s.medicineNameHint,
+                prefixIcon: const Icon(Icons.medication_rounded),
               ),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter medicine name' : null,
+              validator: (v) => (v == null || v.trim().isEmpty) ? s.enterNameValidation : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _dosageController,
-              decoration: const InputDecoration(
-                labelText: 'Dosage / Strength *',
-                hintText: 'e.g. 500 mg, 1 tablet, 10 ml',
-                prefixIcon: Icon(Icons.scale_rounded),
+              decoration: InputDecoration(
+                labelText: s.dosageStrength,
+                hintText: s.strengthHint,
+                prefixIcon: const Icon(Icons.scale_rounded),
               ),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter dosage' : null,
+              validator: (v) => (v == null || v.trim().isEmpty) ? s.enterDosageValidation : null,
             ),
             const SizedBox(height: 24),
 
             // Form / Type Selector
-            _buildSectionHeader('Medicine Form & Icon'),
+            _buildSectionHeader(s.formAndIcon),
             const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -247,7 +250,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           color: isSelected ? Colors.white : AppColors.primary,
                         ),
                       ),
-                      label: Text(type.label),
+                      label: Text(s.medicineTypeName(type.name)),
                       selectedColor: AppColors.primary,
                       labelStyle: TextStyle(
                         color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
@@ -264,7 +267,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             const SizedBox(height: 24),
 
             // Color Picker
-            _buildSectionHeader('Pill Color Tag'),
+            _buildSectionHeader(s.pillColorTag),
             const SizedBox(height: 10),
             Wrap(
               spacing: 12,
@@ -300,7 +303,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             const SizedBox(height: 24),
 
             // Food Instruction
-            _buildSectionHeader('Intake Instruction (Food Timing)'),
+            _buildSectionHeader(s.foodTimingInstruction),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -315,10 +318,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     height: 16,
                     color: isSelected ? Colors.white : AppColors.secondary,
                   ),
-                  label: Text(inst.title),
+                  label: Text(s.foodInstructionName(inst.name)),
                   selectedColor: AppColors.secondary,
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                        color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
                     fontWeight: FontWeight.w600,
                   ),
                   onSelected: (val) {
@@ -333,11 +336,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildSectionHeader('Reminder Schedules'),
+                _buildSectionHeader(s.reminderSchedules),
                 TextButton.icon(
                   onPressed: _addReminderTime,
                   icon: const Icon(Icons.add_alarm_rounded, size: 18),
-                  label: const Text('Add Time'),
+                  label: Text(s.addTime),
                   style: TextButton.styleFrom(foregroundColor: AppColors.primary),
                 ),
               ],
@@ -383,11 +386,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                rem.isAlarm ? 'Loud Alarm (Screen + Sound)' : 'Gentle Notification',
+                                rem.isAlarm ? s.loudAlarm : s.gentleNotification,
                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                               ),
                               Text(
-                                rem.recurrenceSummary,
+                                rem.recurrenceSummaryLocalized(s),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
@@ -430,7 +433,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             const SizedBox(height: 20),
 
             // Stock & Refill Tracker
-            _buildSectionHeader('Stock & Refill Tracker'),
+            _buildSectionHeader(s.stockInventory),
             const SizedBox(height: 10),
             Row(
               children: [
@@ -438,10 +441,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   child: TextFormField(
                     controller: _stockController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Current Stock',
-                      hintText: 'e.g. 30',
-                      prefixIcon: Icon(Icons.inventory_2_rounded),
+                    decoration: InputDecoration(
+                      labelText: s.currentQuantity,
+                      hintText: '30',
+                      prefixIcon: const Icon(Icons.inventory_2_rounded),
                     ),
                   ),
                 ),
@@ -450,10 +453,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   child: TextFormField(
                     controller: _refillThresholdController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Low Alert Limit',
-                      hintText: 'e.g. 5',
-                      prefixIcon: Icon(Icons.notifications_active_outlined),
+                    decoration: InputDecoration(
+                      labelText: s.lowAlertLimit,
+                      hintText: '5',
+                      prefixIcon: const Icon(Icons.notifications_active_outlined),
                     ),
                   ),
                 ),
@@ -462,13 +465,13 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             const SizedBox(height: 20),
 
             // Notes
-            _buildSectionHeader('Doctor Notes & Tips (Optional)'),
+            _buildSectionHeader(s.doctorNotesOptional),
             const SizedBox(height: 10),
             TextFormField(
               controller: _notesController,
               maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: 'e.g. Drink a full glass of water. Avoid dairy products.',
+              decoration: InputDecoration(
+                hintText: s.notesHint,
               ),
             ),
             const SizedBox(height: 32),
@@ -477,9 +480,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             SizedBox(
               height: 54,
               child: ElevatedButton(
-                onPressed: _saveMedicine,
+                onPressed: () => _saveMedicine(s),
                 child: Text(
-                  isEditing ? 'Update Medicine' : 'Save & Set Reminders',
+                  isEditing ? s.updateMedicineBtn : s.saveAndSetReminders,
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
               ),

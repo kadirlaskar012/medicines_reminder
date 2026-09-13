@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../core/constants/app_svg_icons.dart';
 import '../core/theme/app_colors.dart';
+import '../providers/language_provider.dart';
 
 class AdherenceRing extends StatelessWidget {
   final double rate;
@@ -17,6 +19,7 @@ class AdherenceRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final s = context.watch<LanguageProvider>().strings;
     final percentage = (rate * 100).toInt();
 
     String title;
@@ -25,21 +28,21 @@ class AdherenceRing extends StatelessWidget {
     Widget? streakBadge;
 
     if (totalCount == 0) {
-      title = 'No Doses Today';
-      subtitle = 'You are all clear for today!';
+      title = s.noDosesScheduled;
+      subtitle = s.tapToAddFirst;
     } else if (takenCount == totalCount) {
-      title = 'All Done for Today!';
-      subtitle = 'Great job staying on track with your health.';
+      title = s.allDoneToday;
+      subtitle = s.allDoneSub;
       accentColor = AppColors.success;
       streakBadge = AppSvgIcons.render(AppSvgIcons.celebration, width: 36, height: 36);
     } else if (takenCount > 0) {
-      title = '$takenCount of $totalCount Doses Taken';
-      subtitle = 'Keep going, timely medication is key!';
+      title = '$takenCount / $totalCount ${s.taken}';
+      subtitle = '${totalCount - takenCount} ${s.dosesRemaining}';
       accentColor = AppColors.primary;
       streakBadge = AppSvgIcons.render(AppSvgIcons.fireStreak, width: 32, height: 32);
     } else {
-      title = 'Pending Doses';
-      subtitle = 'You have $totalCount doses scheduled today.';
+      title = s.due;
+      subtitle = '$totalCount ${s.dosesRemaining}';
       accentColor = AppColors.warning;
     }
 

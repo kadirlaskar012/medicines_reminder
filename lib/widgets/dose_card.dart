@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../core/constants/app_svg_icons.dart';
+import '../core/localization/app_strings.dart';
 import '../core/services/report_and_alert_service.dart';
 import '../core/theme/app_colors.dart';
+import '../models/medicine.dart';
 import '../models/scheduled_dose.dart';
+import '../providers/language_provider.dart';
 import 'pill_icon_badge.dart';
 
 class DoseCard extends StatelessWidget {
@@ -21,9 +25,27 @@ class DoseCard extends StatelessWidget {
     required this.onSnooze,
   });
 
+  String _getFoodInstructionText(FoodInstruction inst, AppStrings s) {
+    switch (inst) {
+      case FoodInstruction.beforeMeal:
+        return s.beforeMeal;
+      case FoodInstruction.afterMeal:
+        return s.afterMeal;
+      case FoodInstruction.withMeal:
+        return s.withMeal;
+      case FoodInstruction.emptyStomach:
+        return s.emptyStomach;
+      case FoodInstruction.bedtime:
+        return s.bedtime;
+      case FoodInstruction.anytime:
+        return s.anytime;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final s = context.watch<LanguageProvider>().strings;
     final med = dose.medicine;
     final rem = dose.reminder;
     final medColor = Color(med.colorValue);
@@ -143,7 +165,7 @@ class DoseCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        med.instruction.title,
+                        _getFoodInstructionText(med.instruction, s),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -167,7 +189,7 @@ class DoseCard extends StatelessWidget {
                         const Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.warning),
                         const SizedBox(width: 4),
                         Text(
-                          '${med.currentStock} left',
+                          '${med.currentStock} ${s.leftCount}',
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -194,8 +216,8 @@ class DoseCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           dose.record?.recordedAt != null
-                              ? 'Taken at ${DateFormat('hh:mm a').format(dose.record!.recordedAt)}'
-                              : 'Taken',
+                              ? '${s.takenAt} ${DateFormat('hh:mm a').format(dose.record!.recordedAt)}'
+                              : s.taken,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -212,14 +234,14 @@ class DoseCard extends StatelessWidget {
                       color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.cancel_rounded, size: 16, color: AppColors.lightTextMuted),
-                        SizedBox(width: 6),
+                        const Icon(Icons.cancel_rounded, size: 16, color: AppColors.lightTextMuted),
+                        const SizedBox(width: 6),
                         Text(
-                          'Skipped',
-                          style: TextStyle(
+                          s.skipped,
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.lightTextMuted,
@@ -249,33 +271,33 @@ class DoseCard extends StatelessWidget {
                       }
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'snooze',
                         child: Row(
                           children: [
-                            Icon(Icons.snooze_rounded, size: 18, color: AppColors.warning),
-                            SizedBox(width: 10),
-                            Text('Snooze 10 mins'),
+                            const Icon(Icons.snooze_rounded, size: 18, color: AppColors.warning),
+                            const SizedBox(width: 10),
+                            Text(s.snooze10m),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'skip',
                         child: Row(
                           children: [
-                            Icon(Icons.close_rounded, size: 18, color: AppColors.error),
-                            SizedBox(width: 10),
-                            Text('Skip Dose'),
+                            const Icon(Icons.close_rounded, size: 18, color: AppColors.error),
+                            const SizedBox(width: 10),
+                            Text(s.skip),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'caregiver',
                         child: Row(
                           children: [
-                            Icon(Icons.chat_rounded, size: 18, color: Color(0xFF10B981)),
-                            SizedBox(width: 10),
-                            Text('Alert Caregiver (WhatsApp)'),
+                            const Icon(Icons.chat_rounded, size: 18, color: Color(0xFF10B981)),
+                            const SizedBox(width: 10),
+                            Text(s.alertCaregiverWhatsApp),
                           ],
                         ),
                       ),
@@ -294,12 +316,12 @@ class DoseCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_rounded, size: 16),
-                        SizedBox(width: 6),
-                        Text('Take', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                        const Icon(Icons.check_rounded, size: 16),
+                        const SizedBox(width: 6),
+                        Text(s.takeDose, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                       ],
                     ),
                   ),

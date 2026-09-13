@@ -5,6 +5,7 @@ import '../../core/constants/app_svg_icons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
+import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 
 class AlarmRingingScreen extends StatelessWidget {
@@ -20,6 +21,7 @@ class AlarmRingingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final medColor = Color(medicine.colorValue);
+    final s = context.watch<LanguageProvider>().strings;
 
     return Scaffold(
       backgroundColor: const Color(0xFF090D16),
@@ -43,7 +45,7 @@ class AlarmRingingScreen extends StatelessWidget {
                     const Icon(Icons.alarm_on_rounded, color: AppColors.primaryLight, size: 18),
                     const SizedBox(width: 8),
                     Text(
-                      'MEDICINE REMINDER • ${reminder.formattedTime}',
+                      '${s.medicineReminderTag} • ${reminder.formattedTime}',
                       style: const TextStyle(
                         color: AppColors.primaryLight,
                         fontWeight: FontWeight.w700,
@@ -129,7 +131,7 @@ class AlarmRingingScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          medicine.instruction.title,
+                          s.foodInstructionName(medicine.instruction.name),
                           style: const TextStyle(
                             color: Colors.white70,
                             fontWeight: FontWeight.w600,
@@ -170,14 +172,14 @@ class AlarmRingingScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.check_circle_rounded, size: 24),
-                          SizedBox(width: 10),
+                          const Icon(Icons.check_circle_rounded, size: 24),
+                          const SizedBox(width: 10),
                           Text(
-                            'I TOOK MY MEDICINE',
-                            style: TextStyle(
+                            s.iTookMyMedicine,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.5,
@@ -201,9 +203,9 @@ class AlarmRingingScreen extends StatelessWidget {
                             Navigator.pop(context);
                           },
                           icon: const Icon(Icons.snooze_rounded, color: AppColors.warning),
-                          label: const Text(
-                            'Snooze 10m',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          label: Text(
+                            s.snooze10m,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                           ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -222,9 +224,9 @@ class AlarmRingingScreen extends StatelessWidget {
                             Navigator.pop(context);
                           },
                           icon: const Icon(Icons.cancel_rounded, color: Colors.white54),
-                          label: const Text(
-                            'Skip Dose',
-                            style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+                          label: Text(
+                            s.skipDose,
+                            style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
                           ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),

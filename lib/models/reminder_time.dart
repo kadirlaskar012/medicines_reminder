@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../core/localization/app_strings.dart';
 
 enum TimeSlot {
   morning('Morning', '06:00 AM - 12:00 PM', Icons.wb_sunny_rounded, Color(0xFFF59E0B)),
@@ -61,6 +62,15 @@ class ReminderTime {
     const dayNames = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final sorted = List<int>.from(daysOfWeek)..sort();
     return sorted.map((d) => dayNames[d]).join(', ');
+  }
+
+  String recurrenceSummaryLocalized(AppStrings s) {
+    if (isDaily) return s.everyday;
+    if (daysOfWeek.length == 5 && !daysOfWeek.contains(6) && !daysOfWeek.contains(7)) {
+      return s.weekdays;
+    }
+    final sorted = List<int>.from(daysOfWeek)..sort();
+    return sorted.map((d) => s.weekdayShort(d)).join(', ');
   }
 
   Map<String, dynamic> toMap() {

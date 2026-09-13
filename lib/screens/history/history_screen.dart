@@ -6,6 +6,7 @@ import '../../core/services/report_and_alert_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/intake_record.dart';
 import '../../models/reminder_time.dart';
+import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../core/database/db_helper.dart';
 
@@ -57,6 +58,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<MedicineProvider>();
+    final s = context.watch<LanguageProvider>().strings;
 
     final totalTaken = _recentLogs.where((l) => l.status == IntakeStatus.taken).length;
     final totalSkipped = _recentLogs.where((l) => l.status == IntakeStatus.skipped).length;
@@ -64,11 +66,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('History & Analytics'),
+        title: Text(s.doseHistory),
         actions: [
           IconButton(
             icon: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.primary, size: 26),
-            tooltip: 'Export Doctor PDF',
+            tooltip: s.exportDoctorPdf,
             onPressed: () => _exportDoctorPdf(context, totalTaken),
           ),
           const SizedBox(width: 8),
@@ -85,9 +87,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               children: [
                 Expanded(
                   child: _buildMetricCard(
-                    title: 'Adherence',
+                    title: s.adherenceRate,
                     value: '$adherenceScore%',
-                    subtitle: 'Overall score',
+                    subtitle: s.overallScore,
                     icon: Icons.pie_chart_rounded,
                     color: AppColors.primary,
                     isDark: isDark,
@@ -96,9 +98,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 const SizedBox(width: 14),
                 Expanded(
                   child: _buildMetricCard(
-                    title: 'Current Streak',
-                    value: '5 Days',
-                    subtitle: 'Keep it up!',
+                    title: s.currentStreak,
+                    value: '5 ${s.daysUnit}',
+                    subtitle: s.keepItUp,
                     icon: Icons.local_fire_department_rounded,
                     color: AppColors.warning,
                     isDark: isDark,
@@ -111,9 +113,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               children: [
                 Expanded(
                   child: _buildMetricCard(
-                    title: 'Taken',
+                    title: s.taken,
                     value: '$totalTaken',
-                    subtitle: 'Doses confirmed',
+                    subtitle: s.dosesConfirmed,
                     icon: Icons.check_circle_rounded,
                     color: AppColors.success,
                     isDark: isDark,
@@ -122,9 +124,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 const SizedBox(width: 14),
                 Expanded(
                   child: _buildMetricCard(
-                    title: 'Skipped',
+                    title: s.skipped,
                     value: '$totalSkipped',
-                    subtitle: 'Doses missed/skipped',
+                    subtitle: s.dosesMissed,
                     icon: Icons.cancel_rounded,
                     color: AppColors.error,
                     isDark: isDark,
@@ -148,13 +150,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Weekly Adherence Breakdown',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  Text(
+                    s.weeklyAdherenceBreakdown,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Percentage of scheduled medicines taken each day',
+                    s.weeklyAdherenceSub,
                     style: TextStyle(
                       fontSize: 12,
                       color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
@@ -187,12 +189,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             sideTitles: SideTitles(
                               showTitles: true,
                               getTitlesWidget: (val, meta) {
-                                const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
                                 final idx = val.toInt();
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 8),
                                   child: Text(
-                                    idx >= 0 && idx < days.length ? days[idx] : '',
+                                    idx >= 0 && idx < 7 ? s.weekdayInitial(idx) : '',
                                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                                   ),
                                 );
@@ -249,18 +250,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF059669), size: 24),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Doctor Consultation Summary',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF065F46)),
+                          s.doctorConsultationSummary,
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF065F46)),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Export 1-page compliance PDF for physician visit',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF047857), fontWeight: FontWeight.w500),
+                          s.exportDoctorPdfSub,
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF047857), fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
@@ -274,7 +275,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       minimumSize: const Size(60, 36),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('Export', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    child: Text(s.export, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
@@ -287,12 +288,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Recent Activity',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  s.recentActivity,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 Text(
-                  '${_recentLogs.length} Records',
+                  '${_recentLogs.length} ${s.records}',
                   style: const TextStyle(fontSize: 13, color: AppColors.lightTextMuted, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -308,11 +309,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   color: isDark ? AppColors.darkCard : Colors.white,
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    'No intake logs recorded yet.\nTake or skip scheduled medicines to see history here.',
+                    '${s.noIntakeLogsTitle}\n${s.noIntakeLogsSub}',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: AppColors.lightTextMuted),
+                    style: const TextStyle(fontSize: 13, color: AppColors.lightTextMuted),
                   ),
                 ),
               )
@@ -320,6 +321,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ..._recentLogs.map((log) {
                 final isTaken = log.status == IntakeStatus.taken;
                 final dateFormatted = DateFormat('MMM d, hh:mm a').format(log.recordedAt);
+                final statusText = isTaken ? s.taken : s.skipped;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
@@ -351,7 +353,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Dose: ${log.status.label}',
+                              '${s.doseLabel}: $statusText',
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 2),
@@ -372,7 +374,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          log.status.label,
+                          statusText,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,

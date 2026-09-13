@@ -89,6 +89,58 @@ class WelcomeScreen extends StatelessWidget {
 
                   const Spacer(flex: 1),
 
+                  // Brand Header (Logo + MediRemind + Localized Tagline)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.28),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/icons/app_brand_logo.png',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s.appName,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.6,
+                              color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                            ),
+                          ),
+                          Text(
+                            s.appTagline,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.darkTextMuted : const Color(0xFF047857),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2, end: 0),
+
+                  const SizedBox(height: 16),
+
                   // 3D Floating Medicine Cluster
                   SizedBox(
                     height: 180,

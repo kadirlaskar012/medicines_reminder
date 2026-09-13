@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants/app_svg_icons.dart';
 import '../core/theme/app_colors.dart';
+import '../providers/language_provider.dart';
 import '../providers/medicine_provider.dart';
 
 class ProfileSelectorSheet extends StatelessWidget {
@@ -20,6 +21,7 @@ class ProfileSelectorSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<MedicineProvider>();
+    final s = context.watch<LanguageProvider>().strings;
     final profiles = provider.profiles;
     final active = provider.activeProfile;
 
@@ -49,7 +51,7 @@ class ProfileSelectorSheet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Family Profiles',
+                  s.familyProfilesTitle,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -62,7 +64,7 @@ class ProfileSelectorSheet extends StatelessWidget {
                     _showAddProfileDialog(context);
                   },
                   icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-                  label: const Text('Add Member'),
+                  label: Text(s.addMember),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
                   ),
@@ -84,8 +86,8 @@ class ProfileSelectorSheet extends StatelessWidget {
                   child: Icon(Icons.people_alt_rounded, size: 22, color: AppColors.secondary),
                 ),
               ),
-              title: const Text('All Family Members', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('View all combined reminders'),
+              title: Text(s.allFamilyMembersTitle, style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(s.allCombinedReminders),
               trailing: active == null
                   ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
                   : null,
@@ -118,7 +120,7 @@ class ProfileSelectorSheet extends StatelessWidget {
                   ),
                 ),
                 title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(p.relation),
+                subtitle: Text(s.relationName(p.relation)),
                 trailing: isSelected
                     ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
                     : null,
@@ -139,6 +141,7 @@ class ProfileSelectorSheet extends StatelessWidget {
   }
 
   static void _showAddProfileDialog(BuildContext context) {
+    final s = context.read<LanguageProvider>().strings;
     final nameCtrl = TextEditingController();
     String relation = 'Mother';
     String emoji = '👵';
@@ -150,7 +153,7 @@ class ProfileSelectorSheet extends StatelessWidget {
         builder: (context, setState) {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            title: const Text('Add Family Member', style: TextStyle(fontWeight: FontWeight.w700)),
+            title: Text(s.addFamilyMemberTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -158,25 +161,25 @@ class ProfileSelectorSheet extends StatelessWidget {
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      hintText: 'e.g. Mom, Dad, Emma',
-                      prefixIcon: Icon(Icons.person_outline_rounded),
+                    decoration: InputDecoration(
+                      labelText: s.newMemberName,
+                      hintText: s.memberNameHint,
+                      prefixIcon: const Icon(Icons.person_outline_rounded),
                     ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     initialValue: relation,
-                    decoration: const InputDecoration(
-                      labelText: 'Relation',
-                      prefixIcon: Icon(Icons.family_restroom_rounded),
+                    decoration: InputDecoration(
+                      labelText: s.relationLabel,
+                      prefixIcon: const Icon(Icons.family_restroom_rounded),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'Mother', child: Text('Mother')),
-                      DropdownMenuItem(value: 'Father', child: Text('Father')),
-                      DropdownMenuItem(value: 'Partner', child: Text('Partner / Spouse')),
-                      DropdownMenuItem(value: 'Child', child: Text('Child')),
-                      DropdownMenuItem(value: 'Other', child: Text('Other')),
+                    items: [
+                      DropdownMenuItem(value: 'Mother', child: Text(s.relationName('Mother'))),
+                      DropdownMenuItem(value: 'Father', child: Text(s.relationName('Father'))),
+                      DropdownMenuItem(value: 'Partner', child: Text(s.relationName('Partner'))),
+                      DropdownMenuItem(value: 'Child', child: Text(s.relationName('Child'))),
+                      DropdownMenuItem(value: 'Other', child: Text(s.relationName('Other'))),
                     ],
                     onChanged: (v) {
                       if (v != null) {
@@ -191,7 +194,7 @@ class ProfileSelectorSheet extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 16),
-                  const Text('Profile Color', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  Text(s.profileColorLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -222,7 +225,7 @@ class ProfileSelectorSheet extends StatelessWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(s.cancel),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -236,7 +239,7 @@ class ProfileSelectorSheet extends StatelessWidget {
                     Navigator.pop(ctx);
                   }
                 },
-                child: const Text('Save'),
+                child: Text(s.save),
               ),
             ],
           );

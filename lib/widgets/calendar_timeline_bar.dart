@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
+import '../providers/language_provider.dart';
 
 class CalendarTimelineBar extends StatelessWidget {
   final DateTime selectedDate;
@@ -75,18 +77,23 @@ class CalendarTimelineBar extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    DateFormat('E').format(date).toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                      color: isSelected
-                          ? Colors.white.withValues(alpha: 0.9)
-                          : isDark
-                              ? AppColors.darkTextMuted
-                              : AppColors.lightTextMuted,
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final s = context.watch<LanguageProvider>().strings;
+                      return Text(
+                        s.weekdayShort(date.weekday),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: isSelected
+                              ? Colors.white.withValues(alpha: 0.9)
+                              : isDark
+                                  ? AppColors.darkTextMuted
+                                  : AppColors.lightTextMuted,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 6),
                   Text(

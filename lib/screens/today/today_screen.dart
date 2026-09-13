@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_svg_icons.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/reminder_time.dart';
 import '../../models/scheduled_dose.dart';
+import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../widgets/adherence_ring.dart';
 import '../../widgets/calendar_timeline_bar.dart';
@@ -15,6 +16,19 @@ import '../medicines/add_edit_medicine_screen.dart';
 
 class TodayScreen extends StatelessWidget {
   const TodayScreen({super.key});
+
+  String _getTimeSlotTitle(TimeSlot slot, AppStrings s) {
+    switch (slot) {
+      case TimeSlot.morning:
+        return s.morning;
+      case TimeSlot.afternoon:
+        return s.afternoon;
+      case TimeSlot.evening:
+        return s.evening;
+      case TimeSlot.night:
+        return s.night;
+    }
+  }
 
   Widget _buildCareCircleChip(
     BuildContext context, {
@@ -81,6 +95,7 @@ class TodayScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<MedicineProvider>();
+    final s = context.watch<LanguageProvider>().strings;
     final activeProfile = provider.activeProfile;
 
     if (provider.isLoading) {
@@ -109,7 +124,7 @@ class TodayScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          DateFormat('EEEE, MMM d').format(provider.selectedDate),
+                          s.formatHeaderDate(provider.selectedDate),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -118,9 +133,9 @@ class TodayScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'Daily Schedule',
-                          style: TextStyle(
+                        Text(
+                          s.dailySchedule,
+                          style: const TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.5,
@@ -156,7 +171,11 @@ class TodayScreen extends StatelessWidget {
                               const Icon(Icons.people_alt_rounded, size: 20, color: AppColors.primary),
                             const SizedBox(width: 8),
                             Text(
-                              activeProfile?.name ?? 'All Family',
+                              activeProfile != null
+                                  ? ((activeProfile.id == 'default_me' || activeProfile.name.toLowerCase() == 'myself')
+                                      ? s.myself
+                                      : activeProfile.name)
+                                  : s.allFamily,
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(width: 4),
@@ -189,7 +208,7 @@ class TodayScreen extends StatelessWidget {
                       children: [
                         _buildCareCircleChip(
                           context,
-                          label: 'All Family',
+                          label: s.allFamily,
                           isSelected: activeProfile == null,
                           onTap: () => provider.switchProfile(null),
                           icon: Icon(
@@ -200,11 +219,12 @@ class TodayScreen extends StatelessWidget {
                         ),
                         ...provider.profiles.map((p) {
                           final isSelected = activeProfile?.id == p.id;
+                          final pName = (p.id == 'default_me' || p.name.toLowerCase() == 'myself') ? s.myself : p.name;
                           return Padding(
                             padding: const EdgeInsets.only(left: 8),
                             child: _buildCareCircleChip(
                               context,
-                              label: p.name,
+                              label: pName,
                               isSelected: isSelected,
                               onTap: () => provider.switchProfile(p),
                               avatarSvg: p.svgAvatar,
@@ -215,7 +235,7 @@ class TodayScreen extends StatelessWidget {
                           padding: const EdgeInsets.only(left: 8),
                           child: ActionChip(
                             avatar: const Icon(Icons.person_add_alt_1_rounded, size: 16, color: AppColors.primary),
-                            label: const Text('Add Member', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                            label: Text(s.addMember, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                             backgroundColor: isDark ? AppColors.darkCard : const Color(0xFFF0FDF4),
                             side: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFBBF7D0)),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -275,13 +295,13 @@ class TodayScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const Text(
-                          'No Medicines Scheduled',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                        Text(
+                          s.noDosesScheduled,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'There are no reminders for this day.\nTap below to add your medications.',
+                          s.tapToAddFirst,
                           style: TextStyle(
                             fontSize: 14,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
@@ -298,7 +318,7 @@ class TodayScreen extends StatelessWidget {
                             );
                           },
                           icon: const Icon(Icons.add_rounded),
-                          label: const Text('Add Medicine'),
+                          label: Text(s.addMedicine),
                         ),
                       ],
                     ),
@@ -308,16 +328,16 @@ class TodayScreen extends StatelessWidget {
 
             // Time Slots
             if (morningDoses.isNotEmpty)
-              ..._buildTimeSlotSection(context, TimeSlot.morning, morningDoses),
+              ..._buildTimeSlotSection(context, TimeSlot.morning, morningDoses, s),
 
             if (afternoonDoses.isNotEmpty)
-              ..._buildTimeSlotSection(context, TimeSlot.afternoon, afternoonDoses),
+              ..._buildTimeSlotSection(context, TimeSlot.afternoon, afternoonDoses, s),
 
             if (eveningDoses.isNotEmpty)
-              ..._buildTimeSlotSection(context, TimeSlot.evening, eveningDoses),
+              ..._buildTimeSlotSection(context, TimeSlot.evening, eveningDoses, s),
 
             if (nightDoses.isNotEmpty)
-              ..._buildTimeSlotSection(context, TimeSlot.night, nightDoses),
+              ..._buildTimeSlotSection(context, TimeSlot.night, nightDoses, s),
 
             const SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
@@ -330,6 +350,7 @@ class TodayScreen extends StatelessWidget {
     BuildContext context,
     TimeSlot slot,
     List<ScheduledDose> doses,
+    AppStrings s,
   ) {
     final provider = context.read<MedicineProvider>();
 
@@ -349,7 +370,7 @@ class TodayScreen extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                slot.title,
+                _getTimeSlotTitle(slot, s),
                 style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
               const SizedBox(width: 8),
@@ -379,7 +400,7 @@ class TodayScreen extends StatelessWidget {
                   provider.snoozeDose(dose.medicine, dose.reminder, minutes: 10);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Snoozed ${dose.medicine.name} for 10 minutes.'),
+                      content: Text(s.snoozedMessage(dose.medicine.name, 10)),
                       backgroundColor: AppColors.warning,
                     ),
                   );

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_svg_icons.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/medicine.dart';
+import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../widgets/pill_icon_badge.dart';
 import 'add_edit_medicine_screen.dart';
@@ -16,12 +18,30 @@ class MedicinesCabinetScreen extends StatefulWidget {
 
 class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
   String _searchQuery = '';
-  String _selectedFilter = 'All'; // All, Low Stock, Tablet, Capsule, Syrup
+  String _selectedFilter = 'all'; // all, low_stock, tablet, capsule, syrup
+
+  String _getFoodInstructionText(FoodInstruction inst, AppStrings s) {
+    switch (inst) {
+      case FoodInstruction.beforeMeal:
+        return s.beforeMeal;
+      case FoodInstruction.afterMeal:
+        return s.afterMeal;
+      case FoodInstruction.withMeal:
+        return s.withMeal;
+      case FoodInstruction.emptyStomach:
+        return s.emptyStomach;
+      case FoodInstruction.bedtime:
+        return s.bedtime;
+      case FoodInstruction.anytime:
+        return s.anytime;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<MedicineProvider>();
+    final s = context.watch<LanguageProvider>().strings;
     final allMeds = provider.filteredMedicines;
 
     // Apply filtering & search
@@ -30,10 +50,10 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
           m.dosage.toLowerCase().contains(_searchQuery.toLowerCase());
       if (!matchesSearch) return false;
 
-      if (_selectedFilter == 'Low Stock') return m.isLowStock || m.isOutOfStock;
-      if (_selectedFilter == 'Tablet') return m.type == MedicineType.tablet;
-      if (_selectedFilter == 'Capsule') return m.type == MedicineType.capsule;
-      if (_selectedFilter == 'Syrup') return m.type == MedicineType.syrup;
+      if (_selectedFilter == 'low_stock') return m.isLowStock || m.isOutOfStock;
+      if (_selectedFilter == 'tablet') return m.type == MedicineType.tablet;
+      if (_selectedFilter == 'capsule') return m.type == MedicineType.capsule;
+      if (_selectedFilter == 'syrup') return m.type == MedicineType.syrup;
 
       return true;
     }).toList();
@@ -42,7 +62,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Medicine Cabinet'),
+        title: Text(s.medicineCabinet),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary, size: 28),
@@ -64,7 +84,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
             child: TextField(
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
-                hintText: 'Search medicines...',
+                hintText: s.searchMedicines,
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -83,12 +103,12 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                _buildFilterChip('All', allMeds.length),
+                _buildFilterChip('all', s.all, allMeds.length),
                 if (lowStockCount > 0)
-                  _buildFilterChip('Low Stock', lowStockCount, isWarning: true),
-                _buildFilterChip('Tablet', null, imageAsset: MedicineType.tablet.assetPath),
-                _buildFilterChip('Capsule', null, imageAsset: MedicineType.capsule.assetPath),
-                _buildFilterChip('Syrup', null, imageAsset: MedicineType.syrup.assetPath),
+                  _buildFilterChip('low_stock', s.lowStock, lowStockCount, isWarning: true),
+                _buildFilterChip('tablet', s.tablet, null, imageAsset: MedicineType.tablet.assetPath),
+                _buildFilterChip('capsule', s.capsule, null, imageAsset: MedicineType.capsule.assetPath),
+                _buildFilterChip('syrup', s.syrup, null, imageAsset: MedicineType.syrup.assetPath),
               ],
             ),
           ),
@@ -109,14 +129,14 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                         ),
                         const SizedBox(height: 14),
                         Text(
-                          _searchQuery.isEmpty ? 'No Medicines Found' : 'No matches found',
+                          _searchQuery.isEmpty ? s.noMedicinesFound : s.searchMedicines,
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           _searchQuery.isEmpty
-                              ? 'Tap the + icon in the top right to add a medicine.'
-                              : 'Try searching with another keyword.',
+                              ? s.tapToAddMedicinePrompt
+                              : '',
                           style: TextStyle(
                             fontSize: 13,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
@@ -178,7 +198,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        '${med.dosage}  •  ${med.instruction.title}',
+                                        '${med.dosage}  •  ${_getFoodInstructionText(med.instruction, s)}',
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
@@ -198,27 +218,27 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                         ),
                                       );
                                     } else if (val == 'delete') {
-                                      _confirmDelete(context, med);
+                                      _confirmDelete(context, med, s);
                                     }
                                   },
                                   itemBuilder: (context) => [
-                                    const PopupMenuItem(
+                                    PopupMenuItem(
                                       value: 'edit',
                                       child: Row(
                                         children: [
-                                          Icon(Icons.edit_rounded, size: 18),
-                                          SizedBox(width: 8),
-                                          Text('Edit'),
+                                          const Icon(Icons.edit_rounded, size: 18),
+                                          const SizedBox(width: 8),
+                                          Text(s.editMedicine),
                                         ],
                                       ),
                                     ),
-                                    const PopupMenuItem(
+                                    PopupMenuItem(
                                       value: 'delete',
                                       child: Row(
                                         children: [
-                                          Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
-                                          SizedBox(width: 8),
-                                          Text('Delete', style: TextStyle(color: AppColors.error)),
+                                          const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                                          const SizedBox(width: 8),
+                                          Text(s.deleteMedicine, style: const TextStyle(color: AppColors.error)),
                                         ],
                                       ),
                                     ),
@@ -260,60 +280,59 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                   ),
                                 ),
 
-                                  // Stock Info & Dynamic Refill Forecast
-                                  Builder(
-                                    builder: (context) {
-                                      final dailyDoses = provider.getDailyDoseCount(med.id);
-                                      final daysRemaining = med.estimatedDaysRemaining(dailyDoses);
+                                // Stock Info & Dynamic Refill Forecast
+                                Builder(
+                                  builder: (context) {
+                                    final dailyDoses = provider.getDailyDoseCount(med.id);
+                                    final daysRemaining = med.estimatedDaysRemaining(dailyDoses);
 
-                                      return Row(
-                                        children: [
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.end,
-                                            children: [
+                                    return Row(
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              '${med.currentStock} ${s.leftCount}',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: med.isLowStock
+                                                    ? AppColors.warning
+                                                    : isDark
+                                                        ? AppColors.darkTextPrimary
+                                                        : AppColors.lightTextPrimary,
+                                              ),
+                                            ),
+                                            if (daysRemaining > 0 && dailyDoses > 0)
                                               Text(
-                                                '${med.currentStock} left',
+                                                '${s.runsOutIn} $daysRemaining ${s.days}',
                                                 style: TextStyle(
-                                                  fontSize: 13,
+                                                  fontSize: 10,
                                                   fontWeight: FontWeight.w700,
-                                                  color: med.isLowStock
-                                                      ? AppColors.warning
-                                                      : isDark
-                                                          ? AppColors.darkTextPrimary
-                                                          : AppColors.lightTextPrimary,
+                                                  color: daysRemaining <= 3 ? AppColors.error : const Color(0xFF059669),
+                                                ),
+                                              )
+                                            else if (med.isLowStock)
+                                              Text(
+                                                s.lowStock,
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.warning,
                                                 ),
                                               ),
-                                              if (daysRemaining > 0 && dailyDoses > 0)
-                                                Text(
-                                                  'Runs out in $daysRemaining d',
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: daysRemaining <= 3 ? AppColors.error : const Color(0xFF059669),
-                                                  ),
-                                                )
-                                              else if (med.isLowStock)
-                                                const Text(
-                                                  'Low Stock',
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: AppColors.warning,
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                          const SizedBox(width: 8),
-                                          IconButton.filledTonal(
-                                            onPressed: () => _showRefillDialog(context, med),
-                                            icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-                                            visualDensity: VisualDensity.compact,
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-
+                                          ],
+                                        ),
+                                        const SizedBox(width: 8),
+                                        IconButton.filledTonal(
+                                          onPressed: () => _showRefillDialog(context, med, s),
+                                          icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                           ],
@@ -327,8 +346,8 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, int? count, {bool isWarning = false, String? svgIcon, String? imageAsset}) {
-    final isSelected = _selectedFilter == label;
+  Widget _buildFilterChip(String key, String label, int? count, {bool isWarning = false, String? svgIcon, String? imageAsset}) {
+    final isSelected = _selectedFilter == key;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
@@ -350,31 +369,31 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
           fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
-        onSelected: (_) => setState(() => _selectedFilter = label),
+        onSelected: (_) => setState(() => _selectedFilter = key),
       ),
     );
   }
 
-  void _showRefillDialog(BuildContext context, Medicine med) {
+  void _showRefillDialog(BuildContext context, Medicine med, AppStrings s) {
     final qtyCtrl = TextEditingController(text: '30');
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Refill ${med.name}', style: const TextStyle(fontWeight: FontWeight.w700)),
+        title: Text('${s.refillStock}: ${med.name}', style: const TextStyle(fontWeight: FontWeight.w700)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Current stock: ${med.currentStock} units'),
+            Text('${s.currentQuantity}: ${med.currentStock}'),
             const SizedBox(height: 14),
             TextField(
               controller: qtyCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Add Quantity',
-                prefixIcon: Icon(Icons.add_circle_outline_rounded),
+              decoration: InputDecoration(
+                labelText: s.refillStock,
+                prefixIcon: const Icon(Icons.add_circle_outline_rounded),
               ),
             ),
             const SizedBox(height: 12),
@@ -396,7 +415,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(s.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -406,35 +425,35 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Added $addQty units to ${med.name} stock.'),
+                    content: Text('+$addQty ${s.leftCount} (${med.name})'),
                     backgroundColor: AppColors.success,
                   ),
                 );
               }
             },
-            child: const Text('Refill'),
+            child: Text(s.refillStock),
           ),
         ],
       ),
     );
   }
 
-  void _confirmDelete(BuildContext context, Medicine med) {
+  void _confirmDelete(BuildContext context, Medicine med, AppStrings s) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete Medicine?'),
-        content: Text('Are you sure you want to delete ${med.name}? All reminder alarms will be cancelled.'),
+        title: Text(s.deleteMedicine),
+        content: Text('${s.deleteConfirm} (${med.name})'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(s.cancel)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               context.read<MedicineProvider>().deleteMedicine(med.id);
               Navigator.pop(ctx);
             },
-            child: const Text('Delete'),
+            child: Text(s.deleteMedicine),
           ),
         ],
       ),
