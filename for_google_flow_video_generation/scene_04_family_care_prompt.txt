@@ -3,6 +3,7 @@
 Image File: scene_04_mediremind_family_care.jpg
 Video Duration: Exactly 10.0 Seconds (0:30 - 0:40)
 App Brand: MediRemind (মেডিরিমাইন্ড)
+Voiceover Language: 100% Bengali (বাংলা) ONLY
 ================================================================================
 
 === GOOGLE FLOW / VEO 10-SECOND VIDEO GENERATION PROMPT ===
@@ -18,19 +19,22 @@ Warm cinematic lighting, 4k 60fps, emotive healthcare commercial atmosphere, con
 - Pan: 0.25 (slow arc from left to center-right)
 - Motion Dynamics: Very smooth, heartfelt, reassuring 0.4x speed.
 
-=== CONSISTENT VOICE-OVER SPECIFICATIONS (VO) ===
-* Use the EXACT SAME Voice Persona selected in Scenes 1, 2, & 3 (do not change speaker):
-  - FEMALE: "Dr. Shreya" / "Priya" (Warm, caring, empathetic family tone).
-  - MALE: "Arjun" / "Rahul" (Warm, reassuring, trustworthy tone).
-* Audio Parameters: Consistency locked (Stability 0.70, Similarity 0.85).
-* Speech Timing: Starts at 0:01, finishes smoothly at 0:085.
+=== 🎙️ BENGALI VOICE MODEL SPECIFICATIONS (সব দৃশ্যে একই মডেল থাকবে) ===
+* ভয়েস ভাষা: বাংলা (Bengali - Standard Coloquial / মান্য চলিত)
+* স্পিকার পারসোনা: সিন ১, ২ ও ৩-এ ব্যবহৃত একই মডেল (সৌমিতা / অয়ন)।
+* এআই ভয়েস সেটিংস (ElevenLabs / CapCut / Murf):
+  - Model: Eleven Multilingual v2 (or Bengali Neural TTS)
+  - Stability: 0.75
+  - Similarity Boost: 0.85
+  - Style Exaggeration: 0.05
+* স্পিচ টাইমিং: ঠিক ৭.৮ সেকেন্ড (0:01 থেকে 0:088 পর্যন্ত কথা চলবে)।
 
-=== VOICE SCRIPT (EXACTLY TIMED FOR 10-SECOND SCENE) ===
-Bengali (বাংলা) [~7.8 sec]:
+=== 🗣️ একমাত্র বাংলা ভয়েসওভার স্ক্রিপ্ট (BENGALI ONLY) ===
+বাংলা হরফে:
 "বয়স্ক বাবা-মা, ছোট সন্তান কিংবা নিজের যেকোনো প্রেসক্রিপশন—সবকিছু সামলান একটি অ্যাপেই। সম্পূর্ণ বাংলায়, হিন্দিতে কিংবা ইংরেজিতে নিজের পছন্দের ভাষায় ব্যবহার করুন নিশ্চিন্তে।"
 
-English [~7.9 sec]:
-"Manage care for elderly parents, children, and yourself with independent profiles in one single app. Fully customized in Bengali, Hindi, and English for the ultimate peace of mind."
+উচ্চারণ গাইড (Phonetic Guide):
+"Boyoshko baba-ma, chhoto shontan kingba nijer jekono prescription—shobkichhu shamlan ektimatro app-ei. Shompurno Banglaye, Hindite kingba English-e nijer pochhonder bhashaye byabohar korun nishchinte."
 
 === SOUND EFFECTS (SFX) & MUSIC TIMELINE ===
 - [0:00 - 0:03]: Warm acoustic guitar melody blended with uplifting cinematic strings.

@@ -3,6 +3,7 @@
 Image File: scene_01_mediremind_hero_reveal.jpg
 Video Duration: Exactly 10.0 Seconds (0:00 - 0:10)
 App Brand: MediRemind (মেডিরিমাইন্ড)
+Voiceover Language: 100% Bengali (বাংলা) ONLY
 ================================================================================
 
 === GOOGLE FLOW / VEO 10-SECOND VIDEO GENERATION PROMPT ===
@@ -19,19 +20,24 @@ Ultra-photorealistic 3D render, octane studio lighting, 4k 60fps, Apple/Google c
 - Roll: 0.1 (subtle clockwise drift)
 - Motion Dynamics: Fluid, no abrupt stops, slow-motion feel (0.5x speed)
 
-=== CONSISTENT VOICE-OVER SPECIFICATIONS (VO) ===
-* IMPORTANT: To maintain 100% voice consistency across all 5 scenes, use ONE chosen persona throughout:
-  - Option A (FEMALE): "Dr. Shreya" / "Priya" (Warm, caring, articulate Indian healthcare narrator, steady cadence ~130 wpm, friendly smile in voice).
-  - Option B (MALE): "Arjun" / "Rahul" (Deep, confident, trustworthy tech narrator, empathetic cadence ~130 wpm).
-* Audio Parameters (for ElevenLabs / TTS / Murf): Stability 0.70, Similarity 0.85, Style 0.10.
-* Speech Timing: Starts at 0:01, finishes smoothly at 0:085 (leaving 1.5s for audio ambiance).
+=== 🎙️ BENGALI VOICE MODEL SPECIFICATIONS (সব দৃশ্যে একই মডেল থাকবে) ===
+* ভয়েস ভাষা: বাংলা (Bengali - Standard Coloquial / মান্য চলিত)
+* স্পিকার পারসোনা (যেকোনো একটি নির্বাচন করুন এবং ৫টি দৃশ্যেই একই স্পিকার রাখবেন):
+  - অপশন ১ (Female): "সৌমিতা / প্রিয়া" (মিষ্টি, মার্জিত, আন্তরিক ও যত্নশীল তরুণী স্বাস্থ্য বিশেষজ্ঞের কণ্ঠ)।
+  - অপশন ২ (Male): "অয়ন / শুভ" (গম্ভীর, স্পষ্ট, আত্মবিশ্বাসী ও বিশ্বস্ত কথকের কণ্ঠ)।
+* এআই ভয়েস সেটিংস (ElevenLabs / CapCut / Murf):
+  - Model: Eleven Multilingual v2 (or Bengali Neural TTS)
+  - Stability: 0.75 (উচ্চ স্ট্যাবিলিটি রাখলে কণ্ঠের টোন পরিবর্তন হবে না)
+  - Similarity Boost: 0.85
+  - Style Exaggeration: 0.05
+* স্পিচ টাইমিং: ঠিক ৭.৫ সেকেন্ড (0:01 থেকে 0:085 পর্যন্ত কথা চলবে, বাকি ১.৫ সেকেন্ডে ব্যাকগ্রাউন্ড মিউজিক থাকবে)।
 
-=== VOICE SCRIPT (EXACTLY TIMED FOR 10-SECOND SCENE) ===
-Bengali (বাংলা) [~7.5 sec]:
+=== 🗣️ একমাত্র বাংলা ভয়েসওভার স্ক্রিপ্ট (BENGALI ONLY) ===
+বাংলা হরফে:
 "ব্যস্ত জীবনে সঠিক সময়ে ওষুধ খাওয়ার কথা কি প্রায়ই ভুলে যান? আপনার ও আপনার পুরো পরিবারের স্বাস্থ্য সুরক্ষায় এসে গেছে মেডি-রিমাইন্ড (MediRemind) — আপনার ডিজিটাল স্বাস্থ্য সঙ্গী।"
 
-English [~7.8 sec]:
-"Do you often forget to take your medications on time? Meet MediRemind — the intelligent healthcare companion designed to keep you and your loved ones healthy, every single day."
+উচ্চারণ গাইড (Phonetic Guide):
+"Byasto jibone shothik shomoye oshudh khaowar kotha ki prayi bhule jan? Aponar o aponar puro poribarer shastho shurokkhaye eshe geche MediRemind — aponar digital shastho shongi."
 
 === SOUND EFFECTS (SFX) & MUSIC TIMELINE ===
 - [0:00 - 0:02]: Soft cinematic riser + gentle futuristic air whoosh as the 3D pills float.

@@ -3,6 +3,7 @@
 Image File: scene_05_mediremind_cloud_outro.jpg
 Video Duration: Exactly 10.0 Seconds (0:40 - 0:50)
 App Brand: MediRemind (মেডিরিমাইন্ড)
+Voiceover Language: 100% Bengali (বাংলা) ONLY
 ================================================================================
 
 === GOOGLE FLOW / VEO 10-SECOND VIDEO GENERATION PROMPT ===
@@ -18,19 +19,22 @@ Octane render, 4k 60fps, epic tech commercial finale, fluid 10-second motion.
 - Roll: 0.0 (perfectly level, authoritative framing)
 - Motion Dynamics: Grand, confident, cinematic decrescendo (0.5x speed).
 
-=== CONSISTENT VOICE-OVER SPECIFICATIONS (VO) ===
-* Use the EXACT SAME Voice Persona selected in Scenes 1 through 4 (crucial for branding):
-  - FEMALE: "Dr. Shreya" / "Priya" (Enthusiastic, authoritative, warm call-to-action).
-  - MALE: "Arjun" / "Rahul" (Strong, inspiring, confident call-to-action).
-* Audio Parameters: Consistency locked (Stability 0.70, Similarity 0.85).
-* Speech Timing: Starts at 0:01, finishes with authority at 0:085.
+=== 🎙️ BENGALI VOICE MODEL SPECIFICATIONS (সব দৃশ্যে একই মডেল থাকবে) ===
+* ভয়েস ভাষা: বাংলা (Bengali - Standard Coloquial / মান্য চলিত)
+* স্পিকার পারসোনা: সিন ১ থেকে ৪-এ ব্যবহৃত একই মডেল (সৌমিতা / অয়ন)।
+* এআই ভয়েস সেটিংস (ElevenLabs / CapCut / Murf):
+  - Model: Eleven Multilingual v2 (or Bengali Neural TTS)
+  - Stability: 0.75
+  - Similarity Boost: 0.85
+  - Style Exaggeration: 0.05
+* স্পিচ টাইমিং: ঠিক ৭.৬ সেকেন্ড (0:01 থেকে 0:086 পর্যন্ত কথা চলবে)।
 
-=== VOICE SCRIPT (EXACTLY TIMED FOR 10-SECOND SCENE) ===
-Bengali (বাংলা) [~7.6 sec]:
+=== 🗣️ একমাত্র বাংলা ভয়েসওভার স্ক্রিপ্ট (BENGALI ONLY) ===
+বাংলা হরফে:
 "এক ট্যাপে গুগল সাইন-ইন, ক্লাউড ফায়ারস্টোর ব্যাকআপ এবং ১০০% অফলাইন নিরাপত্তা। সুস্থ ও নিয়মমাফিক জীবনের জন্য আজই ডাউনলোড করুন — মেডি-রিমাইন্ড (MediRemind)!"
 
-English [~7.8 sec]:
-"One-tap Google Sign-In, instant encrypted cloud backup, and 100% offline reliability. Take control of your daily wellness today with MediRemind — your health, always on time!"
+উচ্চারণ গাইড (Phonetic Guide):
+"Ek tap-e Google Sign-In, Cloud Firestore backup ebong eksho percent offline nirapotta. Shustho o niyom-mafik jiboner jonno aaji download korun — MediRemind!"
 
 === SOUND EFFECTS (SFX) & MUSIC TIMELINE ===
 - [0:00 - 0:03]: Music swells to an uplifting, grand orchestral-electronic climax.

@@ -3,6 +3,7 @@
 Image File: scene_02_mediremind_exact_alarms.jpg
 Video Duration: Exactly 10.0 Seconds (0:10 - 0:20)
 App Brand: MediRemind (মেডিরিমাইন্ড)
+Voiceover Language: 100% Bengali (বাংলা) ONLY
 ================================================================================
 
 === GOOGLE FLOW / VEO 10-SECOND VIDEO GENERATION PROMPT ===
@@ -18,19 +19,22 @@ Pristine tech aesthetics, cinematic lighting, 4k 60fps, fluid 10-second continuo
 - Zoom: -0.15 (gentle pull back in the final 3 seconds)
 - Motion Dynamics: Slow, elegant tech glide, no shaking.
 
-=== CONSISTENT VOICE-OVER SPECIFICATIONS (VO) ===
-* Use the EXACT SAME Voice Persona selected in Scene 1 (do not change speaker):
-  - FEMALE: "Dr. Shreya" / "Priya" (Warm, reassuring, articulate cadence).
-  - MALE: "Arjun" / "Rahul" (Deep, confident, trustworthy tech cadence).
-* Audio Parameters: Consistency locked (Stability 0.70, Similarity 0.85).
-* Speech Timing: Starts at 0:01, completes at 0:085.
+=== 🎙️ BENGALI VOICE MODEL SPECIFICATIONS (সব দৃশ্যে একই মডেল থাকবে) ===
+* ভয়েস ভাষা: বাংলা (Bengali - Standard Coloquial / মান্য চলিত)
+* স্পিকার পারসোনা: সিন ১-এ আপনি যে মডেলটি নির্বাচন করেছেন (সৌমিতা / অয়ন), হুবহু সেই একই মডেল এখানে ব্যবহার করবেন।
+* এআই ভয়েস সেটিংস (ElevenLabs / CapCut / Murf):
+  - Model: Eleven Multilingual v2 (or Bengali Neural TTS)
+  - Stability: 0.75
+  - Similarity Boost: 0.85
+  - Style Exaggeration: 0.05
+* স্পিচ টাইমিং: ঠিক ৭.৮ সেকেন্ড (0:01 থেকে 0:088 পর্যন্ত কথা চলবে)।
 
-=== VOICE SCRIPT (EXACTLY TIMED FOR 10-SECOND SCENE) ===
-Bengali (বাংলা) [~7.8 sec]:
+=== 🗣️ একমাত্র বাংলা ভয়েসওভার স্ক্রিপ্ট (BENGALI ONLY) ===
+বাংলা হরফে:
 "অ্যান্ড্রয়েড ১২ থেকে ১৫+ যেকোনো ডিভাইসে এটি বাজায় নিখুঁত জিরো-ডিলে অ্যালার্ম। ফোন সাইলেন্ট বা লক থাকলেও সঠিক সেকেন্ডে আপনি পাবেন স্পষ্ট রিমাইন্ডার এবং ৩ডি মেডিসিন আইকন।"
 
-English [~8.0 sec]:
-"Powered by zero-delay exact alarms, MediRemind rings with pinpoint precision on Android 12 to 15+. Even in deep doze or silent mode, every single dose is delivered on time."
+উচ্চারণ গাইড (Phonetic Guide):
+"Android baro theke ponero plus jekono device-eo eti bajaye nikhut zero-delay alarm. Phone silent ba lock thakleo shothik secondey aponi paben sposhtho reminder ebong 3D medicine icon."
 
 === SOUND EFFECTS (SFX) & MUSIC TIMELINE ===
 - [0:00 - 0:03]: Smooth synthesizer transition, rhythmic digital pulse buildup.
