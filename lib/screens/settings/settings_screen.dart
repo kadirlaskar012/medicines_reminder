@@ -29,6 +29,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'batteryIgnored': false,
   };
   bool _isChecking = true;
+  bool _isAdminUnlocked = false;
+  int _buildTapCount = 0;
+  DateTime? _lastBuildTapTime;
 
   @override
   void initState() {
@@ -341,7 +344,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${s.appName} v1.0.1 (Build 2)', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                InkWell(
+                  onTap: () => _handleBuildVersionTap(context),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${s.appName} v1.0.1 (Build 2)',
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                        ),
+                        if (_isAdminUnlocked) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.amber, width: 0.8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.lock_open_rounded, size: 12, color: Colors.amber),
+                                SizedBox(width: 4),
+                                Text(
+                                  'ADMIN UNLOCKED',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   s.appDescription,
@@ -351,15 +394,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
-
-          // 8. Admin & Database Control (Owner Master Access)
-          _buildSectionTitle(s.code == 'bn' ? 'অ্যাডমিন ও ডেটাবেস কন্ট্রোল' : (s.code == 'hi' ? 'एडमिन व डेटाबेस कंट्रोल' : 'ADMIN & DATABASE CONTROL')),
-          const SizedBox(height: 10),
-          _buildAdminAccessCard(context, isDark, s),
+          // 8. Admin & Database Control (Owner Master Access) - Visible ONLY when Unlocked via 5-tap
+          if (_isAdminUnlocked) ...[
+            const SizedBox(height: 24),
+            _buildSectionTitle(s.code == 'bn' ? 'অ্যাডমিন ও ডেটাবেস কন্ট্রোল' : (s.code == 'hi' ? 'एडमिन व डेटाबेस कंट्रोल' : 'ADMIN & DATABASE CONTROL')),
+            const SizedBox(height: 10),
+            _buildAdminAccessCard(context, isDark, s),
+          ],
         ],
       ),
     );
+  }
+
+  void _handleBuildVersionTap(BuildContext context) {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
+    final isBn = lang.languageCode == 'bn';
+    final isHi = lang.languageCode == 'hi';
+
+    if (_isAdminUnlocked) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isBn
+                ? 'অ্যাডমিন মোড ইতিমধ্যে আনলক করা আছে।'
+                : (isHi ? 'एडमिन मोड पहले से अनलॉक है।' : 'Admin mode is already unlocked.'),
+          ),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final now = DateTime.now();
+    if (_lastBuildTapTime == null || now.difference(_lastBuildTapTime!) > const Duration(seconds: 2)) {
+      _buildTapCount = 1;
+    } else {
+      _buildTapCount++;
+    }
+    _lastBuildTapTime = now;
+
+    if (_buildTapCount >= 5) {
+      _buildTapCount = 0;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _promptAdminPasscode(context);
+    } else if (_buildTapCount >= 2) {
+      final remaining = 5 - _buildTapCount;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isBn
+                ? 'অ্যাডমিন মোড আনলক করতে আর $remaining বার ট্যাপ করুন'
+                : (isHi
+                    ? 'एडमिन मोड अनलॉक करने के लिए और $remaining बार टैप करें'
+                    : 'Tap $remaining more time${remaining > 1 ? "s" : ""} to unlock Admin Mode'),
+          ),
+          duration: const Duration(milliseconds: 1000),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Widget _buildAdminAccessCard(BuildContext context, bool isDark, AppStrings s) {
@@ -410,7 +506,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => _promptAdminPasscode(context),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminControlPanelScreen()),
+                );
+              },
               icon: const Icon(Icons.dashboard_customize_rounded, size: 18),
               label: Text(s.code == 'bn' ? 'অ্যাডমিন ড্যাশবোর্ড খুলুন' : (s.code == 'hi' ? 'एडमिन डैशबोर्ड खोलें' : 'Open Admin Dashboard')),
               style: ElevatedButton.styleFrom(
@@ -427,24 +528,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _promptAdminPasscode(BuildContext context) {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
+    final isBn = lang.languageCode == 'bn';
+    final isHi = lang.languageCode == 'hi';
     final controller = TextEditingController();
+
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.security_rounded, color: AppColors.primary),
-              SizedBox(width: 8),
-              Text('অ্যাডমিন ভেরিফিকেশন', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Icon(Icons.security_rounded, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                isBn ? 'অ্যাডমিন ভেরিফিকেশন' : (isHi ? 'एडमिन सत्यापन' : 'Admin Verification'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('অ্যাডমিন প্যানেলে প্রবেশ করতে ৪-সংখ্যার মাস্টার পাসকোড লিখুন (ডিফল্ট: 2026):', style: TextStyle(fontSize: 13, height: 1.4)),
+              Text(
+                isBn
+                    ? 'অ্যাডমিন প্যানেলে প্রবেশ করতে ৪-সংখ্যার মাস্টার পাসকোড লিখুন (ডিফল্ট: 2026):'
+                    : (isHi
+                        ? 'एडमिन पैनल खोलने के लिए 4-अंकों का मास्टर पासकोड दर्ज करें (डिफ़ॉल्ट: 2026):'
+                        : 'Enter 4-digit Master Passcode to access Admin Panel (Default: 2026):'),
+                style: const TextStyle(fontSize: 13, height: 1.4),
+              ),
               const SizedBox(height: 14),
               TextField(
                 controller: controller,
@@ -463,7 +578,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('বাতিল'),
+              child: Text(isBn ? 'বাতিল' : (isHi ? 'रद्द करें' : 'Cancel')),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -475,17 +590,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final code = controller.text.trim();
                 if (code == SupabaseService.masterAdminPasscode) {
                   Navigator.pop(ctx);
+                  setState(() {
+                    _isAdminUnlocked = true;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.check_circle_rounded, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isBn
+                                  ? '🔓 অ্যাডমিন মোড সক্রিয় হয়েছে! নিচে অ্যাডমিন প্যানেল দৃশ্যমান।'
+                                  : (isHi
+                                      ? '🔓 एडमिन मोड सक्रिय! नीचे एडमिन पैनल दिखाई दे रहा है।'
+                                      : '🔓 Admin Mode Activated! Admin panel is now visible below.'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: const Color(0xFF0F766E),
+                      duration: const Duration(seconds: 3),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AdminControlPanelScreen()),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('❌ ভুল অ্যাডমিন পাসকোড!'), backgroundColor: AppColors.error),
+                    SnackBar(
+                      content: Text(
+                        isBn ? '❌ ভুল অ্যাডমিন পাসকোড!' : (isHi ? '❌ गलत एडमिन पासकोड!' : '❌ Incorrect admin passcode!'),
+                      ),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                    ),
                   );
                 }
               },
-              child: const Text('প্রবেশ করুন'),
+              child: Text(isBn ? 'আনলক করুন' : (isHi ? 'अनलॉक करें' : 'Unlock')),
             ),
           ],
         );
