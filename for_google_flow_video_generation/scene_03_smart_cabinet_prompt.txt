@@ -1,0 +1,25 @@
+================================================================================
+[SCENE 3: 3D VIRTUAL MEDICINE CABINET & STOCK TRACKING]
+Image File: scene_03_mediremind_smart_cabinet.jpg
+Video Duration: 0:12 - 0:18 (6 seconds)
+================================================================================
+
+=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
+Futuristic product showcase video for "MediRemind" medicine inventory and cabinet management.
+Camera initiates a smooth slow tilt-up and slow dolly push toward the smartphone screen displaying the real "MediRemind Medicine Cabinet" with real-time stock counters (Paracetamol, Vitamin D3, Amoxicillin). An amber glass 3D syrup bottle and medical syringe float beside the phone with liquid light caustics and glass refraction. The bold typography "MediRemind" and title "Smart 3D Medicine Cabinet" emit a gentle teal-mint illumination. The pill counters on the interface subtly highlight as if automatically computing remaining days. Sleek, organized, clean healthcare tech aesthetic, 4k 60fps.
+
+=== CAMERA MOTION DIRECTIVES (FOR GOOGLE FLOW CONTROLS) ===
+- Motion Type: Tilt Up & Slow Pan Left
+- Motion Speed: Smooth Gentle (Value: 3 or 0.4x)
+- Visual Effects: Subtle liquid reflections inside the floating syrup bottle, glowing refill badge
+
+=== VOICE-OVER SCRIPT (VO) ===
+Bengali (বাংলা):
+"ওষুধের স্টক কবে শেষ হবে? প্রেসক্রিপশন খোঁজার ঝামেলা শেষ! মেডিরিমাইন্ডের ৩ডি ভার্চুয়াল ক্যাবিনেট ওষুধ ফুরিয়ে যাওয়ার আগেই আপনাকে সতর্ক করবে।"
+
+English:
+"Running low on pills? Never get caught unprepared. MediRemind's 3D Virtual Cabinet tracks strips and warns you days before stock runs out."
+
+=== SOUND EFFECTS (SFX) & MUSIC ===
+- Background Music: Smooth melodic synth with light technological percussion.
+- SFX: Soft digital scan sound, inventory counter tick, gentle glass clink.

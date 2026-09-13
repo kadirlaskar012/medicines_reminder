@@ -1,0 +1,25 @@
+================================================================================
+[SCENE 2: EXACT ALARMS & NEVER MISS A DOSE]
+Image File: scene_02_mediremind_exact_alarms.jpg
+Video Duration: 0:06 - 0:12 (6 seconds)
+================================================================================
+
+=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
+Dynamic tech commercial shot highlighting the precision alarm feature of the "MediRemind" mobile application.
+The camera slowly glides from left to right, focusing on the sleek floating smartphone running the real MediRemind "Today's Schedule" interface with 100% completion ring and medicine dosage cards. Floating beside the screen, a glossy two-tone 3D medicine capsule and white tablet gently tumble in 3D space with specular lighting. The bold header "MediRemind" and feature headline "Never Miss a Single Dose" shimmer with ambient coral and cyan glows. Holographic alarm wave pulses emanate outward from the device to signify Android 12-15+ exact alarm precision. Photorealistic 3D render, octane studio lighting, 4k 60fps.
+
+=== CAMERA MOTION DIRECTIVES (FOR GOOGLE FLOW CONTROLS) ===
+- Motion Type: Pan Right & Subtle Zoom In towards the phone screen
+- Motion Speed: Medium-Slow (Value: 4 or 0.5x)
+- Visual Effects: Subtle pulsating light glow on the notification bell and pills
+
+=== VOICE-OVER SCRIPT (VO) ===
+Bengali (বাংলা):
+"অ্যান্ড্রয়েড ১২ থেকে ১৫+ ডিভাইসেও সঠিক সেকেন্ডে বাজবে অ্যালার্ম। গভীর ঘুমে কিংবা ফোন লক থাকলেও কোনো ডোজ মিস হবে না।"
+
+English:
+"Exact zero-delay alarms for Android 12 to 15+. Even in deep doze or locked mode, you'll never miss a critical dose."
+
+=== SOUND EFFECTS (SFX) & MUSIC ===
+- Background Music: Pulsing tech rhythm building momentum.
+- SFX: Gentle, pleasant medical alarm chime (3 tones) followed by a reassuring confirmation click.

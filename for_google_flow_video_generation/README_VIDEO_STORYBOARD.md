@@ -1,67 +1,69 @@
-# 🎬 MediRemind Promotional Video Storyboard (for Google Flow / Veo)
+# 🎬 MediRemind Official Promo Video Assets & Storyboard (For Google Flow / Veo)
 
-This folder contains high-resolution 16:9 cinematic presentation visuals, real app UI captures, and tailored motion prompts designed specifically for generating a promotional commercial in **Google Flow / Google Vids / Veo / Runway**.
+স্বাগতম! আপনার **মেডিরিমাইন্ড (MediRemind)** অ্যাপ্লিকেশনের জন্য একটি সম্পূর্ণ ব্র্যান্ডেড, দৃষ্টিনন্দন এবং প্রফেশনাল প্রমোশনাল/প্রেজেন্টেশন ভিডিও তৈরির জন্য এই ফোল্ডারের সমস্ত অ্যাসেট প্রস্তুত করা হয়েছে।
+
+প্রতিটি দৃশ্যেই **MediRemind** অ্যাপের নাম, লোগো, ৩ডি আইকন এবং মোবাইল স্ক্রিনের আসল UI যুক্ত করা হয়েছে যাতে ভিডিওটি দেখার সাথে সাথেই যে কেউ অ্যাপটির পরিচিতি ও বিশেষত্ব পরিষ্কারভাবে বুঝতে পারে।
 
 ---
 
-## 📁 Files in this Folder
+## 📁 ফোল্ডারের ফাইল তালিকা (Files in this Folder)
 
-| File Name | Type | Description |
+| ফাইল নাম | টাইপ | বর্ণনা |
 | :--- | :--- | :--- |
-| **[`scene_01_hero_intro.jpg`](./scene_01_hero_intro.jpg)** | Visual | Morning routine bedside table, phone alert & floating 3D pills |
-| **[`scene_01_hero_intro_prompt.txt`](./scene_01_hero_intro_prompt.txt)** | Prompt | Camera motion, lighting, and voiceover for Scene 1 |
-| **[`scene_02_smart_schedule.jpg`](./scene_02_smart_schedule.jpg)** | Visual | Hovering smartphone showcasing schedule, 3D syrup, capsule & syringe |
-| **[`scene_02_smart_schedule_prompt.txt`](./scene_02_smart_schedule_prompt.txt)** | Prompt | Orbital camera movement and voiceover for Scene 2 |
-| **[`scene_03_family_care.jpg`](./scene_03_family_care.jpg)** | Visual | 3D multi-generation family diorama under health protection dome |
-| **[`scene_03_family_care_prompt.txt`](./scene_03_family_care_prompt.txt)** | Prompt | Crane motion and family health voiceover for Scene 3 |
-| **[`scene_04_cloud_sync.jpg`](./scene_04_cloud_sync.jpg)** | Visual | Real-time Cloud Sync & Google 1-Tap Sign-In security shield |
-| **[`scene_04_cloud_sync_prompt.txt`](./scene_04_cloud_sync_prompt.txt)** | Prompt | Cybernetic cloud tracking motion and security voiceover for Scene 4 |
-| **[`scene_05_brand_outro.jpg`](./scene_05_brand_outro.jpg)** | Visual | Happy healthy user with '100% Meds Taken' & 3D MediRemind emblem |
-| **[`scene_05_brand_outro_prompt.txt`](./scene_05_brand_outro_prompt.txt)** | Prompt | Climax zoom and brand call-to-action for Scene 5 |
-| **[`app_ui_screen_today.png`](./app_ui_screen_today.png)** | UI Capture | Real app home schedule screen |
-| **[`app_ui_screen_login.png`](./app_ui_screen_login.png)** | UI Capture | Real app Google Sign-In & Phone OTP modal |
-| **[`app_ui_screen_settings.png`](./app_ui_screen_settings.png)** | UI Capture | Real app settings and Cloud Backup status |
+| **`scene_01_mediremind_hero_reveal.jpg`** | 16:9 ইমেজ | ৩ডি স্টুডিও হিরো শট — ভাসমান ফোন ও বোল্ড **MediRemind** থ্রি-ডি টাইপোগ্রাফি |
+| **`scene_01_hero_reveal_prompt.txt`** | টেক্সট প্রম্পট | সিন ১-এর জন্য গুগল ফ্লো প্রম্পট, ভয়েসওভার ও ক্যামেরা ডিরেকশন |
+| **`scene_02_mediremind_exact_alarms.jpg`** | 16:9 ইমেজ | **Never Miss a Single Dose** — সঠিক অ্যালার্ম ও শিডিউল ইন্টারফেস |
+| **`scene_02_exact_alarms_prompt.txt`** | টেক্সট প্রম্পট | সিন ২-এর জন্য গুগল ফ্লো প্রম্পট ও ভয়েসওভার |
+| **`scene_03_mediremind_smart_cabinet.jpg`** | 16:9 ইমেজ | **Smart 3D Medicine Cabinet** — ৩ডি ক্যাবিনেট ও স্টক ট্র্যাকিং |
+| **`scene_03_smart_cabinet_prompt.txt`** | টেক্সট প্রম্পট | সিন ৩-এর জন্য গুগল ফ্লো প্রম্পট ও ভয়েসওভার |
+| **`scene_04_mediremind_family_care.jpg`** | 16:9 ইমেজ | **One App for the Entire Family** — ফ্যামিলি প্রোফাইল ও বহুভাষা |
+| **`scene_04_family_care_prompt.txt`** | টেক্সট প্রম্পট | সিন ৪-এর জন্য গুগল ফ্লো প্রম্পট ও ভয়েসওভার |
+| **`scene_05_mediremind_cloud_outro.jpg`** | 16:9 ইমেজ | **Instant Google Sign-In & Backup** — ক্লাউড ব্যাকআপ ও আউট্রো |
+| **`scene_05_cloud_outro_prompt.txt`** | টেক্সট প্রম্পট | সিন ৫-এর জন্য গুগল ফ্লো প্রম্পট ও আউট্রো কল-টু-অ্যাকশন |
+| **`app_screen_today.png`** | ডিভাইস স্ক্রিনশট | আজকের শিডিউল স্ক্রিনের আসল ফুল-রেজোলিউশন স্ক্রিনশট |
+| **`app_screen_cabinet.png`** | ডিভাইস স্ক্রিনশট | মেডিসিন ক্যাবিনেট স্ক্রিনের আসল ফুল-রেজোলিউশন স্ক্রিনশট |
+| **`app_screen_settings.png`** | ডিভাইস স্ক্রিনশট | সেটিংস ও ফ্যামিলি প্রোফাইল স্ক্রিনের ফুল-রেজোলিউশন স্ক্রিনশট |
+| **`app_screen_login.png`** | ডিভাইস স্ক্রিনশট | গুগল সাইন-ইন ও ফোন লগইন স্ক্রিনের স্ক্রিনশট |
+| **`app_ui_screen_welcome.png`** | ডিভাইস স্ক্রিনশট | ব্র্যান্ডেড ওয়েলকাম স্ক্রিন (৩ডি আইকন ও ভাষা নির্বাচন) |
 
 ---
 
-## ⏱️ Video Storyboard & Voiceover Script (30 Seconds)
+## 🚀 Google Flow-তে ভিডিও বানানোর সহজ গাইড (How to Use in Google Flow)
 
-### 00:00 – 00:06 | Scene 1: The Morning Awakening
-- **Image:** `scene_01_hero_intro.jpg`
-- **Motion:** Gentle push-in towards phone alarm on morning table.
-- **Voiceover (বাংলা):** *"সকালটা শুরু হোক সুস্থতা আর নিশ্চিন্তে। প্রতিদিন সঠিক সময়ে ওষুধ খাওয়ার দায়িত্ব এবার মেডি-রিমাইন্ডারের।"*
-- **Voiceover (English):** *"Start every morning with peace of mind. Taking medications on time is now effortless with MediRemind."*
+Google Flow (বা Veo / Runway / Pika)-তে ভিডিও তৈরি করার সময় নিচের ধাপগুলো অনুসরণ করুন:
 
-### 00:06 – 00:13 | Scene 2: Smart Multi-Form Scheduling
-- **Image:** `scene_02_smart_schedule.jpg`
-- **Motion:** 3D orbit around floating phone and medicine bottles.
-- **Voiceover (বাংলা):** *"ট্যাবলেট, সিরাপ কিংবা ইনজেকশন—আপনার সম্পূর্ণ মেডিসিন শিডিউল থাকবে সুশৃঙ্খল এবং নখদর্পণে।"*
-- **Voiceover (English):** *"Tablets, syrups, or injections—your complete medication schedule, organized intelligently at your fingertips."*
-
-### 00:13 – 00:20 | Scene 3: Dedicated Family Care
-- **Image:** `scene_03_family_care.jpg`
-- **Motion:** Crane down towards family under glowing health shield.
-- **Voiceover (বাংলা):** *"শুধু আপনি নন, পরিবারের বয়োজ্যেষ্ঠ থেকে শুরু করে সবার ওষুধের যত্ন নিন আলাদা আলাদা প্রোফাইলে।"*
-- **Voiceover (English):** *"Not just for you—protect every loved one from grandparents to kids with dedicated family profiles."*
-
-### 00:20 – 00:26 | Scene 4: Instant 1-Tap Google Sync & Security
-- **Image:** `scene_04_cloud_sync.jpg`
-- **Motion:** Upward pan into the glowing cloud database.
-- **Voiceover (বাংলা):** *"গুগল দিয়ে ১-ট্যাপে সাইন ইন—আপনার সমস্ত স্বাস্থ্য ডেটা এবং হিস্ট্রি ক্লাউডে ১০০% সুরক্ষিত।"*
-- **Voiceover (English):** *"One-tap Google Sign-In—all your prescriptions and adherence history safely backed up in the cloud."*
-
-### 00:26 – 00:30 | Scene 5: Outro & Call to Action
-- **Image:** `scene_05_brand_outro.jpg`
-- **Motion:** Slow zoom on MediRemind logo emblem & celebration confetti.
-- **Voiceover (বাংলা):** *"আর কোনো ওষুধ মিস নয়। নিজের ও পরিবারের সুস্থতায় আজই শুরু করুন মেডি-রিমাইন্ডার!"*
-- **Voiceover (English):** *"Never miss a dose again. Take control of your loved ones' wellness today with MediRemind!"*
+1. **Google Flow ওপেন করুন:** ব্রাউজারে গুগল ফ্লো বা আপনার পছন্দের এআই ভিডিও জেনারেটর টুল ওপেন করুন।
+2. **মোড নির্বাচন করুন:** **Image-to-Video** (বা **Keyframe-to-Video**) মোড সিলেক্ট করুন।
+3. **ইমেজ আপলোড করুন:** 
+   * সিন ১-এর জন্য `scene_01_mediremind_hero_reveal.jpg` আপলোড করুন (Starting Frame হিসেবে)।
+4. **প্রম্পট পেস্ট করুন:** 
+   * পাশের `scene_01_hero_reveal_prompt.txt` ফাইলটি খুলে ভেতরের **"GOOGLE FLOW / VEO VIDEO GENERATION PROMPT"** অংশটি কপি করে প্রম্পট বক্সে পেস্ট করুন।
+5. **ক্যামেরা মোশন সেট করুন:** 
+   * প্রম্পট ফাইলে দেওয়া **Motion Directives** অনুযায়ী ক্যামেরা সেটিংস দিন (যেমন: Pan & Dolly In, স্পিড 0.4x)।
+6. **ভিডিও জেনারেট করুন:** Generate বাটনে চাপুন (৫-৬ সেকেন্ডের ক্লিপ তৈরি হবে)।
+7. এভাবে ক্রমান্বয়ে সিন ২, ৩, ৪ এবং ৫ তৈরি করে নিন।
+8. সবশেষে যেকোনো সাধারণ ভিডিও এডিটর (CapCut, Premiere, DaVinci বা Canva)-তে ক্লিপগুলো পরপর বসিয়ে ভয়েসওভার অডিও যোগ করলেই অসাধারণ প্রফেশনাল ৩০ সেকেন্ডের প্রমো ভিডিও তৈরি হয়ে যাবে!
 
 ---
 
-## 🚀 How to Use in Google Flow / Veo / AI Video Studio
+## 🎙️ পূর্ণাঙ্গ ৩০ সেকেন্ডের বাংলা ও ইংরেজি ভয়েসওভার স্ক্রিপ্ট
 
-1. Open **Google Flow** (or Veo / Runway Gen-3 / Pika).
-2. For each scene, upload the corresponding `.jpg` image (Image-to-Video mode).
-3. Copy-paste the exact prompt from the corresponding `_prompt.txt` file.
-4. Set motion slider to **Gentle / Cinematic (3-4)**.
-5. Export clips and combine them in your video editor (CapCut, Premiere, or Google Vids) with the provided voiceover script and warm ambient background music.
+### দৃশ্য ১ (0:00 - 0:06)
+* **বাংলা:** "প্রতিদিন সঠিক সময়ে ওষুধ খাওয়ার দায়িত্ব এবার পুরোপুরি নিশ্চিন্ত। আপনার আধুনিক স্বাস্থ্যসঙ্গী — মেডি-রিমাইন্ড (MediRemind)!"
+* **English:** "Taking medications on time is now completely effortless. Meet your intelligent health companion — MediRemind!"
+
+### দৃশ্য ২ (0:06 - 0:12)
+* **বাংলা:** "অ্যান্ড্রয়েড ১২ থেকে ১৫+ ডিভাইসেও সঠিক সেকেন্ডে বাজবে অ্যালার্ম। গভীর ঘুমে কিংবা ফোন লক থাকলেও কোনো ডোজ মিস হবে না।"
+* **English:** "Exact zero-delay alarms for Android 12 to 15+. Even in deep doze or locked mode, you'll never miss a critical dose."
+
+### দৃশ্য ৩ (0:12 - 0:18)
+* **বাংলা:** "ওষুধের স্টক কবে শেষ হবে? প্রেসক্রিপশন খোঁজার ঝামেলা শেষ! মেডিরিমাইন্ডের ৩ডি ভার্চুয়াল ক্যাবিনেট ওষুধ ফুরিয়ে যাওয়ার আগেই আপনাকে সতর্ক করবে।"
+* **English:** "Running low on pills? Never get caught unprepared. MediRemind's 3D Virtual Cabinet tracks strips and warns you days before stock runs out."
+
+### দৃশ্য ৪ (0:18 - 0:24)
+* **বাংলা:** "বয়স্ক মা-বাবা, সন্তান কিংবা নিজের জন্য—একটিমাত্র অ্যাপেই সবার প্রোফাইল। সাথে বাংলা, হিন্দি ও ইংরেজি তিন ভাষাতেই সম্পূর্ণ সুবিধা।"
+* **English:** "Elderly parents, children, or yourself—manage multiple profiles in one single app, fully available in English, Bengali, and Hindi."
+
+### দৃশ্য ৫ (0:24 - 0:30)
+* **বাংলা:** "১-ট্যাপ গুগল সাইন ইন, ক্লাউড ব্যাকআপ এবং ১০০% অফলাইন সুরক্ষা। আপনার ও আপনার পরিবারের স্বাস্থ্য সুরক্ষায় আজই শুরু করুন — মেডি-রিমাইন্ড (MediRemind)!"
+* **English:** "1-tap Google Sign-In, instant cloud backup, and 100% offline security. Protect your family's health today with MediRemind!"

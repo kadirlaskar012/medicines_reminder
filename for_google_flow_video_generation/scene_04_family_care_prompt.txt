@@ -1,0 +1,25 @@
+================================================================================
+[SCENE 4: FAMILY CARE & MULTIPLE PROFILES]
+Image File: scene_04_mediremind_family_care.jpg
+Video Duration: 0:18 - 0:24 (6 seconds)
+================================================================================
+
+=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
+Heartwarming yet premium commercial shot showcasing the family health capabilities of the "MediRemind" mobile application.
+The camera slowly pulls back with a graceful arc, highlighting the floating smartphone displaying MediRemind's family management settings and multi-language controls (English, Bengali, Hindi). A 3D blue asthma inhaler and green vitamins jar float weightlessly beside the phone with realistic soft-touch clay textures. The title "MediRemind - One App for the Entire Family" glows with warm purple and coral studio rim lighting. Warm volumetric light shafts gently stream across the scene, symbolizing loving care and security. High aesthetic quality, 4k 60fps.
+
+=== CAMERA MOTION DIRECTIVES (FOR GOOGLE FLOW CONTROLS) ===
+- Motion Type: Slow Dolly Out with subtle Arc Left
+- Motion Speed: Slow, emotional (Value: 2.5 or 0.35x)
+- Visual Effects: Soft warm light bloom across the profile cards
+
+=== VOICE-OVER SCRIPT (VO) ===
+Bengali (বাংলা):
+"বয়স্ক মা-বাবা, সন্তান কিংবা নিজের জন্য—একটিমাত্র অ্যাপেই সবার প্রোফাইল। সাথে বাংলা, হিন্দি ও ইংরেজি তিন ভাষাতেই সম্পূর্ণ সুবিধা।"
+
+English:
+"Elderly parents, children, or yourself—manage multiple profiles in one single app, fully available in English, Bengali, and Hindi."
+
+=== SOUND EFFECTS (SFX) & MUSIC ===
+- Background Music: Warm, reassuring acoustic guitar blended with soft modern strings.
+- SFX: Gentle gentle swipe sound effect as member profiles switch.

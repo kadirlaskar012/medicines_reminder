@@ -1,0 +1,25 @@
+================================================================================
+[SCENE 1: THE BRAND REVEAL & HERO INTRO]
+Image File: scene_01_mediremind_hero_reveal.jpg
+Video Duration: 0:00 - 0:06 (6 seconds)
+================================================================================
+
+=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
+High-end commercial intro for the "MediRemind" mobile application. 
+Cinematic slow push-in and gentle clockwise camera orbit around a sleek, floating titanium smartphone displaying the "MediRemind" medicine schedule interface. Glossy 3D capsules, calendar checkmark badges, and round pills float weightlessly in zero gravity with realistic glass and specular reflections. Bold, glowing 3D metallic typography reading "MediRemind" and "Smart Medicine Companion" catches radiant soft coral-orange (#FF5722) and medical cyan (#0D9488) rim lighting in a pristine futuristic studio setting. Subtle light streaks dance across the bezel. 4k resolution, 60fps, Apple/Google commercial quality, smooth slow motion.
+
+=== CAMERA MOTION DIRECTIVES (FOR GOOGLE FLOW CONTROLS) ===
+- Motion Type: Pan & Dolly In (Forward Push + Subtle 5-degree Clockwise Roll)
+- Motion Speed: Slow / Smooth (Value: 3 or 0.4x)
+- Depth of Field: Shallow focus on "MediRemind" phone screen and logo, gentle background bokeh.
+
+=== VOICE-OVER SCRIPT (VO) ===
+Bengali (বাংলা):
+"প্রতিদিন সঠিক সময়ে ওষুধ খাওয়ার দায়িত্ব এবার পুরোপুরি নিশ্চিন্ত। আপনার আধুনিক স্বাস্থ্যসঙ্গী — মেডি-রিমাইন্ড (MediRemind)!"
+
+English:
+"Taking medications on time is now completely effortless. Meet your intelligent health companion — MediRemind!"
+
+=== SOUND EFFECTS (SFX) & MUSIC ===
+- Background Music: Uplifting, inspiring modern ambient electronic with warm piano chords and subtle heartbeat synth pulse.
+- SFX: Soft futuristic chime / air whoosh as the 3D pills float and the screen glows to life.

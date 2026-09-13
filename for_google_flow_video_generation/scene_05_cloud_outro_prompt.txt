@@ -1,0 +1,25 @@
+================================================================================
+[SCENE 5: CLOUD SYNC & DOWNLOAD CALL TO ACTION OUTRO]
+Image File: scene_05_mediremind_cloud_outro.jpg
+Video Duration: 0:24 - 0:30 (6 seconds)
+================================================================================
+
+=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
+Epic commercial finale and brand call-to-action for the "MediRemind" mobile application.
+Dynamic camera zoom out to reveal the floating smartphone showing MediRemind's Account & Cloud Sync screen with the bold "লগইন বা সাইন ইন করুন" (Login / Sign In) button. Above, the iconic circular MediRemind logo glows brilliantly with emerald and cyan energy. The prominent 3D text "MediRemind" shines with metallic reflections under dramatic coral-orange and blue studio floodlights. The "GET STARTED WITH MEDIREMIND" call-to-action button pulses with an inviting vibrant glow. Particle light sparks drift gently in the dark background. 4k resolution, 60fps, high-energy tech commercial outro.
+
+=== CAMERA MOTION DIRECTIVES (FOR GOOGLE FLOW CONTROLS) ===
+- Motion Type: Dolly Out & Subtle Center Lock
+- Motion Speed: Medium (Value: 4 or 0.5x)
+- Visual Effects: Logo glow pulse, soft lens flare across the CTA button
+
+=== VOICE-OVER SCRIPT (VO) ===
+Bengali (বাংলা):
+"১-ট্যাপ গুগল সাইন ইন, ক্লাউড ব্যাকআপ এবং ১০০% অফলাইন সুরক্ষা। আপনার ও আপনার পরিবারের স্বাস্থ্য সুরক্ষায় আজই শুরু করুন — মেডি-রিমাইন্ড (MediRemind)!"
+
+English:
+"1-tap Google Sign-In, instant cloud backup, and 100% offline security. Protect your family's health today with MediRemind!"
+
+=== SOUND EFFECTS (SFX) & MUSIC ===
+- Background Music: Grand uplifting crescendo with a final resonant bass hit and sparkling medical chime.
+- SFX: Satisfying digital confirmation tone, whoosh on logo reveal.
