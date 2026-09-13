@@ -28,6 +28,7 @@ class MedicineProvider extends ChangeNotifier {
   List<Medicine> get medicines => _medicines;
   DateTime get selectedDate => _selectedDate;
   bool get isLoading => _isLoading;
+  List<IntakeRecord> get intakeRecords => _recordsByDoseKey.values.toList();
 
   String get selectedDateStr => DateFormat('yyyy-MM-dd').format(_selectedDate);
 

@@ -320,4 +320,27 @@ class AppStrings {
   // Alarm Ringing Screen
   String get timeForMedicine => code == 'bn' ? 'ওষুধ খাওয়ার সময় হয়েছে!' : (code == 'hi' ? 'দवा लेने का समय हो गया है!' : 'Time for your medicine!');
   String get medicineReminderTag => code == 'bn' ? 'মেডিসিন রিমাইন্ডার' : (code == 'hi' ? 'দवाई रिमाइंडर' : 'MEDICINE REMINDER');
+
+  // Authentication & Cloud Sync
+  String get phoneLoginTitle => code == 'bn' ? 'মোবাইল নম্বর দিয়ে লগইন করুন' : (code == 'hi' ? 'फ़ोन नंबर से लॉगिन करें' : 'Sign In with Mobile');
+  String get phoneLoginSub => code == 'bn' ? 'ওষুধের তালিকা এবং গ্রহণের ইতিহাস নিরাপদে ক্লাউডে ব্যাকআপ রাখুন।' : (code == 'hi' ? 'दवाइयों की सूची और इतिहास सुरक्षित क्लाउड में बैकअप रखें।' : 'Securely backup medications and intake history to the cloud.');
+  String get enterPhoneNumber => code == 'bn' ? 'মোবাইল নম্বর লিখুন' : (code == 'hi' ? 'फ़ोन नंबर दर्ज करें' : 'Enter Mobile Number');
+  String get enterPhoneHint => code == 'bn' ? '১০ ডিজিটের নম্বর' : (code == 'hi' ? '१० अंकों का नंबर' : '10-digit mobile number');
+  String get sendOtpBtn => code == 'bn' ? 'OTP পাঠান' : (code == 'hi' ? 'OTP भेजें' : 'Send OTP');
+  String get verifyOtpTitle => code == 'bn' ? 'OTP যাচাইকরণ' : (code == 'hi' ? 'OTP सत्यापन' : 'Verify OTP');
+  String get otpSentTo => code == 'bn' ? '৬ ডিজিটের কোড পাঠানো হয়েছে:' : (code == 'hi' ? '६ अंकों का कोड भेजा गया:' : '6-digit code sent to:');
+  String get enterOtpHint => code == 'bn' ? '৬ ডিজিটের OTP' : (code == 'hi' ? '६ अंकों का OTP' : '6-digit OTP');
+  String get verifyAndLoginBtn => code == 'bn' ? 'যাচাই করে এগিয়ে যান' : (code == 'hi' ? 'सत्यापित करें और आगे बढ़ें' : 'Verify & Continue');
+  String get resendOtpIn => code == 'bn' ? 'পুনরায় কোড পাঠান' : (code == 'hi' ? 'पुनः कोड भेजें' : 'Resend code in');
+  String get resendOtpBtn => code == 'bn' ? 'আবার কোড পাঠান' : (code == 'hi' ? 'फिर से भेजें' : 'Resend Code');
+  String get continueAsGuest => code == 'bn' ? 'পরে করব (অতিথি মোড)' : (code == 'hi' ? 'बाद में (अतिथि मोड)' : 'Continue as Guest');
+  String get accountAndCloudSync => code == 'bn' ? 'অ্যাকাউন্ট ও ক্লাউড ব্যাকআপ' : (code == 'hi' ? 'खाता और क्लाउड बैकअप' : 'ACCOUNT & CLOUD SYNC');
+  String get cloudSyncActive => code == 'bn' ? 'ক্লাউড সিঙ্ক চালু' : (code == 'hi' ? 'क्लाउड सिंक सक्रिय' : 'Cloud Sync Active');
+  String get cloudSyncInactive => code == 'bn' ? 'শুধুমাত্র অফলাইন (লগইন প্রয়োজন)' : (code == 'hi' ? 'केवल ऑफलाइन (लॉगिन करें)' : 'Offline Only (Login to Sync)');
+  String get loginToBackup => code == 'bn' ? 'লগইন করে ডেটা ব্যাকআপ রাখুন' : (code == 'hi' ? 'डेटा बैकअप के लिए लॉगिन करें' : 'Sign in to backup your health data');
+  String get signOutBtn => code == 'bn' ? 'লগআউট' : (code == 'hi' ? 'लॉगआउट' : 'Sign Out');
+  String get signOutConfirmTitle => code == 'bn' ? 'লগআউট নিশ্চিত করুন' : (code == 'hi' ? 'लॉगआउट की पुष्टि करें' : 'Confirm Sign Out');
+  String get signOutConfirmMessage => code == 'bn' ? 'আপনি কি নিশ্চিতভাবে এই ডিভাইস থেকে লগআউট করতে চান? আপনার সংরক্ষিত ডেটা ক্লাউডে সুরক্ষিত থাকবে।' : (code == 'hi' ? 'क्या आप इस डिवाइस से लॉगआउट करना चाहते हैं? आपका डेटा क्लाउड में सुरक्षित रहेगा।' : 'Are you sure you want to sign out from this device? Your data remains safe in the cloud.');
+  String get otpInvalidValidation => code == 'bn' ? 'অনুগ্রহ করে সঠিক ৬ ডিজিটের OTP লিখুন' : (code == 'hi' ? 'कृपया सही ६ अंकों का OTP दर्ज करें' : 'Please enter a valid 6-digit OTP');
+  String get phoneInvalidValidation => code == 'bn' ? 'অনুগ্রহ করে বৈধ ১০ ডিজিটের মোবাইল নম্বর লিখুন' : (code == 'hi' ? 'कृपया मान्य १० अंकों का फ़ोन नंबर दर्ज करें' : 'Please enter a valid 10-digit mobile number');
 }

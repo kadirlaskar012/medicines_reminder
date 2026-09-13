@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "235512045992",
+    "project_id": "mediremind-app-78f",
+    "storage_bucket": "mediremind-app-78f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:235512045992:android:a4f65980728b2f407cfd9d",
+        "android_client_info": {
+          "package_name": "com.mediremind.app.medicines_reminder"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXITGskaj5dQfACHt4SZifV1EbqByRyjU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
