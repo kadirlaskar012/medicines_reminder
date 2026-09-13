@@ -4,12 +4,14 @@ import '../../core/constants/app_svg_icons.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/services/cloud_sync_service.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/services/supabase_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/profile_selector_sheet.dart';
+import '../admin/admin_control_panel_screen.dart';
 import '../auth/phone_login_screen.dart';
 import '../welcome/user_onboarding_profile_screen.dart';
 
@@ -348,8 +350,146 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
+
+          const SizedBox(height: 24),
+
+          // 8. Admin & Database Control (Owner Master Access)
+          _buildSectionTitle(s.code == 'bn' ? 'অ্যাডমিন ও ডেটাবেস কন্ট্রোল' : (s.code == 'hi' ? 'एडमिन व डेटाबेस कंट्रोल' : 'ADMIN & DATABASE CONTROL')),
+          const SizedBox(height: 10),
+          _buildAdminAccessCard(context, isDark, s),
         ],
       ),
+    );
+  }
+
+  Widget _buildAdminAccessCard(BuildContext context, bool isDark, AppStrings s) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.amber, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.code == 'bn' ? 'অ্যাডমিন কন্ট্রোল প্যানেল' : (s.code == 'hi' ? 'एडमिन कंट्रोल पैनल' : 'Admin Control Panel'),
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      s.code == 'bn'
+                          ? 'সমস্ত ইউজার, ক্লাউড ডেটাবেস এবং পিন রিসেট অনুরোধ নিয়ন্ত্রণ করুন।'
+                          : (s.code == 'hi'
+                              ? 'सभी उपयोगकर्ता, क्लाउड डेटाबेस व पिन रीसेट प्रबंधित करें।'
+                              : 'Manage all users, cloud database and PIN reset requests.'),
+                      style: const TextStyle(fontSize: 12, color: AppColors.lightTextMuted, height: 1.3),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _promptAdminPasscode(context),
+              icon: const Icon(Icons.dashboard_customize_rounded, size: 18),
+              label: Text(s.code == 'bn' ? 'অ্যাডমিন ড্যাশবোর্ড খুলুন' : (s.code == 'hi' ? 'एडमिन डैशबोर्ड खोलें' : 'Open Admin Dashboard')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0F766E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _promptAdminPasscode(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.security_rounded, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text('অ্যাডমিন ভেরিফিকেশন', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('অ্যাডমিন প্যানেলে প্রবেশ করতে ৪-সংখ্যার মাস্টার পাসকোড লিখুন (ডিফল্ট: 2026):', style: TextStyle(fontSize: 13, height: 1.4)),
+              const SizedBox(height: 14),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                obscureText: true,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Passcode',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.key_rounded),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('বাতিল'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                final code = controller.text.trim();
+                if (code == SupabaseService.masterAdminPasscode) {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminControlPanelScreen()),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('❌ ভুল অ্যাডমিন পাসকোড!'), backgroundColor: AppColors.error),
+                  );
+                }
+              },
+              child: const Text('প্রবেশ করুন'),
+            ),
+          ],
+        );
+      },
     );
   }
 
