@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../core/database/db_helper.dart';
+import '../core/services/cloud_sync_service.dart';
 import '../core/services/notification_service.dart';
+import '../core/services/supabase_service.dart';
 import '../models/user_profile.dart';
 import '../models/medicine.dart';
 import '../models/reminder_time.dart';
@@ -27,6 +30,7 @@ class MedicineProvider extends ChangeNotifier {
   List<UserProfile> get profiles => _profiles;
   UserProfile? get activeProfile => _activeProfile;
   List<Medicine> get medicines => _medicines;
+  Map<String, List<ReminderTime>> get remindersByMedicine => _remindersByMedicine;
   DateTime get selectedDate => _selectedDate;
   bool get isLoading => _isLoading;
   List<IntakeRecord> get intakeRecords => _recordsByDoseKey.values.toList();
@@ -246,6 +250,15 @@ class MedicineProvider extends ChangeNotifier {
       await _notifications.scheduleMedicineReminder(newMedicine, rem);
     }
 
+    // Auto-sync to Supabase cloud in background if user is logged in
+    final authPhone = SupabaseService.instance.currentUser?.phoneNumber;
+    if (authPhone != null && authPhone.isNotEmpty) {
+      unawaited(CloudSyncService.instance.saveMedicine(
+        medicine: newMedicine,
+        reminders: updatedReminders,
+      ));
+    }
+
     await _refreshMedicinesAndReminders();
     await _refreshRecords();
     notifyListeners();
@@ -271,6 +284,15 @@ class MedicineProvider extends ChangeNotifier {
       }
     }
 
+    // Auto-sync to Supabase cloud in background if user is logged in
+    final authPhone = SupabaseService.instance.currentUser?.phoneNumber;
+    if (authPhone != null && authPhone.isNotEmpty) {
+      unawaited(CloudSyncService.instance.saveMedicine(
+        medicine: medicine,
+        reminders: reminders,
+      ));
+    }
+
     await _refreshMedicinesAndReminders();
     await _refreshRecords();
     notifyListeners();
@@ -283,9 +305,32 @@ class MedicineProvider extends ChangeNotifier {
     }
 
     await _db.deleteMedicine(id);
+
+    // Remove from Supabase cloud in background
+    final authPhone = SupabaseService.instance.currentUser?.phoneNumber;
+    if (authPhone != null && authPhone.isNotEmpty) {
+      unawaited(CloudSyncService.instance.deleteMedicine(id));
+    }
+
     await _refreshMedicinesAndReminders();
     await _refreshRecords();
     notifyListeners();
+  }
+
+  /// Restores all cloud medicines for a logged-in user into SQLite and updates UI
+  Future<int> restoreUserFromCloud(String phoneNumber) async {
+    final count = await CloudSyncService.instance.restoreFromCloud(
+      phoneNumber: phoneNumber,
+      db: _db,
+      notifications: _notifications,
+    );
+    if (count > 0) {
+      await _refreshMedicinesAndReminders();
+      await rescheduleAllActiveReminders();
+      await _refreshRecords();
+      notifyListeners();
+    }
+    return count;
   }
 
   int getDailyDoseCount(String medicineId) {

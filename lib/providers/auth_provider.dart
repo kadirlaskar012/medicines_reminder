@@ -115,10 +115,14 @@ class AuthProvider extends ChangeNotifier {
 
       if (isSuccess) {
         notifyListeners();
-        // Sync local medicines and reminders to Supabase
+        // 1. First restore previous medicines from cloud (if user reinstalled or cleared data)
+        await medicineProvider.restoreUserFromCloud(_phoneNumber);
+
+        // 2. Sync local medicines/profiles to cloud (merges offline data to cloud)
         await CloudSyncService.instance.syncLocalToCloud(
           profiles: medicineProvider.profiles,
           medicines: medicineProvider.medicines,
+          remindersByMedicine: medicineProvider.remindersByMedicine,
           records: medicineProvider.intakeRecords,
         );
         return true;

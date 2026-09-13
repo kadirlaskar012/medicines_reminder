@@ -612,16 +612,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       try {
-                        await CloudSyncService.instance.syncLocalToCloud(
+                        final ok = await CloudSyncService.instance.syncLocalToCloud(
                           profiles: provider.profiles,
                           medicines: provider.medicines,
+                          remindersByMedicine: provider.remindersByMedicine,
                           records: provider.intakeRecords,
                         );
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('☁️ ${s.cloudSyncActive}'),
-                              backgroundColor: AppColors.success,
+                              content: Text(ok ? '☁️ ${s.cloudSyncActive}' : '⚠️ ক্লাউড সিঙ্ক ব্যর্থ হয়েছে। API কী বা ইন্টারনেট চেক করুন।'),
+                              backgroundColor: ok ? AppColors.success : AppColors.error,
                             ),
                           );
                         }
@@ -636,8 +637,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         }
                       }
                     },
-                    icon: const Icon(Icons.cloud_sync_rounded, size: 18),
-                    label: Text(s.code == 'bn' ? 'সিঙ্ক করুন' : (s.code == 'hi' ? 'सिंक करें' : 'Sync Now')),
+                    icon: const Icon(Icons.cloud_upload_rounded, size: 18),
+                    label: Text(s.code == 'bn' ? 'ব্যাকআপ' : (s.code == 'hi' ? 'बैकअप' : 'Backup')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -646,15 +647,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                OutlinedButton.icon(
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final phone = auth.phoneNumber;
+                      if (phone == null || phone.isEmpty) return;
+                      final count = await provider.restoreUserFromCloud(phone);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('🔄 $count টি ওষুধ ক্লাউড থেকে রিস্টোর হয়েছে!'),
+                            backgroundColor: AppColors.primary,
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.cloud_download_rounded, size: 18, color: AppColors.primary),
+                    label: Text(s.code == 'bn' ? 'রিস্টোর' : (s.code == 'hi' ? 'रीस्टोर' : 'Restore')),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.primary),
+                      foregroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.outlined(
                   onPressed: () => _confirmSignOut(context, auth, s),
                   icon: const Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
-                  label: Text(s.signOutBtn, style: const TextStyle(color: AppColors.error)),
+                  tooltip: s.signOutBtn,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.error),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.all(10),
                   ),
                 ),
               ],
