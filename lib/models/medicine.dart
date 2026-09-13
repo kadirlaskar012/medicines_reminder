@@ -62,6 +62,11 @@ class Medicine {
   final bool isActive;
   final String notes;
   final DateTime createdAt;
+  final int durationDays; // 0 = Ongoing / Chronic, 3, 5, 7, 14, 30, etc.
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final DateTime? expiryDate;
+  final String? photoPath;
 
   Medicine({
     required this.id,
@@ -76,10 +81,18 @@ class Medicine {
     this.isActive = true,
     this.notes = '',
     required this.createdAt,
+    this.durationDays = 0,
+    this.startDate,
+    this.endDate,
+    this.expiryDate,
+    this.photoPath,
   });
 
   bool get isLowStock => currentStock <= refillThreshold && currentStock > 0;
   bool get isOutOfStock => currentStock <= 0;
+  bool get isCourseOngoing => durationDays == 0;
+  bool get isCourseCompleted => durationDays > 0 && endDate != null && DateTime.now().isAfter(endDate!);
+  bool get isExpired => expiryDate != null && DateTime.now().isAfter(expiryDate!);
 
   /// Estimate remaining days based on daily dose count
   int estimatedDaysRemaining(int dailyDoseCount) {
@@ -103,7 +116,6 @@ class Medicine {
     return 'healthy';
   }
 
-
   Medicine copyWith({
     String? id,
     String? profileId,
@@ -117,6 +129,11 @@ class Medicine {
     bool? isActive,
     String? notes,
     DateTime? createdAt,
+    int? durationDays,
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? expiryDate,
+    String? photoPath,
   }) {
     return Medicine(
       id: id ?? this.id,
@@ -131,6 +148,11 @@ class Medicine {
       isActive: isActive ?? this.isActive,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      durationDays: durationDays ?? this.durationDays,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      expiryDate: expiryDate ?? this.expiryDate,
+      photoPath: photoPath ?? this.photoPath,
     );
   }
 
@@ -148,6 +170,11 @@ class Medicine {
       'isActive': isActive ? 1 : 0,
       'notes': notes,
       'createdAt': createdAt.toIso8601String(),
+      'durationDays': durationDays,
+      'startDate': startDate?.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
+      'expiryDate': expiryDate?.toIso8601String(),
+      'photoPath': photoPath,
     };
   }
 
@@ -165,6 +192,12 @@ class Medicine {
       isActive: (map['isActive'] as int? ?? 1) == 1,
       notes: map['notes'] as String? ?? '',
       createdAt: DateTime.tryParse(map['createdAt'] as String? ?? '') ?? DateTime.now(),
+      durationDays: map['durationDays'] as int? ?? 0,
+      startDate: map['startDate'] != null ? DateTime.tryParse(map['startDate'] as String) : null,
+      endDate: map['endDate'] != null ? DateTime.tryParse(map['endDate'] as String) : null,
+      expiryDate: map['expiryDate'] != null ? DateTime.tryParse(map['expiryDate'] as String) : null,
+      photoPath: map['photoPath'] as String?,
     );
   }
 }
+

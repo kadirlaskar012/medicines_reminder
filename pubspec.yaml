@@ -1,4 +1,4 @@
-﻿name: medicines_reminder
+name: medicines_reminder
 description: "A medicine reminder application with Supabase cloud backup."
 publish_to: 'none'
 
@@ -31,6 +31,7 @@ dependencies:
   url_launcher: ^6.3.2
   shared_preferences: ^2.3.5
   supabase_flutter: ^2.8.3
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:

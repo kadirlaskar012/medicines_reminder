@@ -23,7 +23,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -36,6 +36,23 @@ class DBHelper {
       } catch (e) {
         // Ignored if column already exists
       }
+    }
+    if (oldVersion < 3) {
+      try {
+        await db.execute('ALTER TABLE medicines ADD COLUMN durationDays INTEGER DEFAULT 0');
+      } catch (_) {}
+      try {
+        await db.execute('ALTER TABLE medicines ADD COLUMN startDate TEXT');
+      } catch (_) {}
+      try {
+        await db.execute('ALTER TABLE medicines ADD COLUMN endDate TEXT');
+      } catch (_) {}
+      try {
+        await db.execute('ALTER TABLE medicines ADD COLUMN expiryDate TEXT');
+      } catch (_) {}
+      try {
+        await db.execute('ALTER TABLE medicines ADD COLUMN photoPath TEXT');
+      } catch (_) {}
     }
   }
 
@@ -66,7 +83,12 @@ class DBHelper {
         refillThreshold INTEGER NOT NULL,
         isActive INTEGER NOT NULL,
         notes TEXT,
-        createdAt TEXT NOT NULL
+        createdAt TEXT NOT NULL,
+        durationDays INTEGER DEFAULT 0,
+        startDate TEXT,
+        endDate TEXT,
+        expiryDate TEXT,
+        photoPath TEXT
       )
     ''');
 

@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/constants/app_svg_icons.dart';
@@ -31,6 +34,13 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   FoodInstruction _selectedInstruction = FoodInstruction.afterMeal;
   String? _selectedProfileId;
 
+  // New Features
+  int _durationDays = 0; // 0 = Ongoing / Chronic
+  DateTime? _startDate;
+  DateTime? _endDate;
+  DateTime? _expiryDate;
+  String? _photoPath;
+
   final List<ReminderTime> _reminders = [];
 
   bool get isEditing => widget.medicineToEdit != null;
@@ -38,6 +48,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   @override
   void initState() {
     super.initState();
+    _startDate = DateTime.now();
+
     if (isEditing) {
       final med = widget.medicineToEdit!;
       _nameController.text = med.name;
@@ -49,8 +61,12 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       _selectedColorValue = med.colorValue;
       _selectedInstruction = med.instruction;
       _selectedProfileId = med.profileId;
+      _durationDays = med.durationDays;
+      _startDate = med.startDate ?? med.createdAt;
+      _endDate = med.endDate;
+      _expiryDate = med.expiryDate;
+      _photoPath = med.photoPath;
 
-      // Load existing reminders
       final existingRems = context.read<MedicineProvider>().getRemindersForMedicine(med.id);
       _reminders.addAll(existingRems);
     } else {
@@ -77,7 +93,184 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     super.dispose();
   }
 
-  void _addReminderTime() async {
+  // --- Photo Picker ---
+  Future<void> _pickPhoto(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        setState(() {
+          _photoPath = picked.path;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking medicine photo: $e');
+    }
+  }
+
+  // --- Expiry Date Picker ---
+  void _pickExpiryDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _expiryDate ?? DateTime(now.year + 1, now.month, 1),
+      firstDate: now,
+      lastDate: DateTime(now.year + 10),
+    );
+    if (picked != null) {
+      setState(() {
+        _expiryDate = picked;
+      });
+    }
+  }
+
+  // --- Custom End Date Picker for Course ---
+  void _pickCustomEndDate() async {
+    final now = _startDate ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _endDate ?? now.add(const Duration(days: 7)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      final diff = picked.difference(now).inDays;
+      setState(() {
+        _endDate = picked;
+        _durationDays = diff > 0 ? diff : 1;
+      });
+    }
+  }
+
+  // --- Quick Dose Frequency Presets (1+0+0, 1+0+1, 1+1+1, SOS) ---
+  void _applyQuickFrequency(String preset) {
+    setState(() {
+      _reminders.clear();
+      final now = DateTime.now();
+      if (preset == '1-0-0') {
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: 8,
+          minute: 0,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: now.millisecondsSinceEpoch % 100000,
+        ));
+      } else if (preset == '1-0-1') {
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: 8,
+          minute: 0,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: now.millisecondsSinceEpoch % 100000,
+        ));
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: 20,
+          minute: 30,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: (now.millisecondsSinceEpoch + 1) % 100000,
+        ));
+      } else if (preset == '1-1-1') {
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: 8,
+          minute: 0,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: now.millisecondsSinceEpoch % 100000,
+        ));
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: 13,
+          minute: 30,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: (now.millisecondsSinceEpoch + 1) % 100000,
+        ));
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: 20,
+          minute: 30,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: (now.millisecondsSinceEpoch + 2) % 100000,
+        ));
+      } else if (preset == '1-1-1-1') {
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: 8,
+          minute: 0,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: now.millisecondsSinceEpoch % 100000,
+        ));
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: 13,
+          minute: 0,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: (now.millisecondsSinceEpoch + 1) % 100000,
+        ));
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: 18,
+          minute: 0,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: (now.millisecondsSinceEpoch + 2) % 100000,
+        ));
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: 22,
+          minute: 0,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: (now.millisecondsSinceEpoch + 3) % 100000,
+        ));
+      }
+    });
+  }
+
+  // --- Add Reminder from Meal Preset ---
+  void _addMealPreset(int hour, int minute) {
+    // Check if time already exists
+    final exists = _reminders.any((r) => r.hour == hour && r.minute == minute);
+    if (!exists) {
+      setState(() {
+        _reminders.add(ReminderTime(
+          id: const Uuid().v4(),
+          medicineId: widget.medicineToEdit?.id ?? '',
+          hour: hour,
+          minute: minute,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          isAlarm: true,
+          notificationId: DateTime.now().millisecondsSinceEpoch % 100000,
+        ));
+      });
+    }
+  }
+
+  // --- Add Custom Reminder via TimePicker ---
+  void _addCustomReminderTime() async {
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 20, minute: 0),
@@ -96,6 +289,31 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         ));
       });
     }
+  }
+
+  // --- Toggle Day for Reminder ---
+  void _toggleDayForReminder(int reminderIdx, int dayOfWeek) {
+    setState(() {
+      final rem = _reminders[reminderIdx];
+      final days = List<int>.from(rem.daysOfWeek);
+      if (days.contains(dayOfWeek)) {
+        if (days.length > 1) {
+          days.remove(dayOfWeek);
+        }
+      } else {
+        days.add(dayOfWeek);
+        days.sort();
+      }
+      _reminders[reminderIdx] = ReminderTime(
+        id: rem.id,
+        medicineId: rem.medicineId,
+        hour: rem.hour,
+        minute: rem.minute,
+        daysOfWeek: days,
+        isAlarm: rem.isAlarm,
+        notificationId: rem.notificationId,
+      );
+    });
   }
 
   void _saveMedicine(AppStrings s) async {
@@ -122,6 +340,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         refillThreshold: threshold,
         notes: _notesController.text.trim(),
         profileId: _selectedProfileId ?? widget.medicineToEdit!.profileId,
+        durationDays: _durationDays,
+        startDate: _startDate,
+        endDate: _endDate,
+        expiryDate: _expiryDate,
+        photoPath: _photoPath,
       );
       await provider.updateMedicine(medicine: updatedMed, reminders: _reminders);
     } else {
@@ -136,6 +359,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         notes: _notesController.text.trim(),
         reminderTimes: _reminders,
         profileId: _selectedProfileId,
+        durationDays: _durationDays,
+        startDate: _startDate,
+        endDate: _endDate,
+        expiryDate: _expiryDate,
+        photoPath: _photoPath,
       );
     }
 
@@ -174,7 +402,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
           children: [
             // Profile selector if multiple profiles exist
             if (profiles.length > 1) ...[
@@ -202,7 +430,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               const SizedBox(height: 20),
             ],
 
-            // Basic Info
+            // 1. Basic Medicine Info
             _buildSectionHeader(s.medicineDetails),
             const SizedBox(height: 10),
             TextFormField(
@@ -226,39 +454,115 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Form / Type Selector
+            // 2. Medicine Form & 3D Icons (ALL VISIBLE DIRECTLY ON SCREEN - NO HORIZONTAL SLIDE!)
             _buildSectionHeader(s.formAndIcon),
+            const SizedBox(height: 10),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final itemWidth = (constraints.maxWidth - (3 * 8)) / 4;
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: MedicineType.values.map((type) {
+                    final isSelected = _selectedType == type;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedType = type),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: itemWidth,
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.12)
+                              : (isDark ? AppColors.darkCard : Colors.white),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                            width: isSelected ? 2 : 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              type.assetPath,
+                              width: 32,
+                              height: 32,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => AppSvgIcons.render(
+                                type.svgString,
+                                width: 28,
+                                height: 28,
+                                color: isSelected ? AppColors.primary : null,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              s.medicineTypeName(type.name),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : (isDark ? Colors.white70 : Colors.black87),
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // 3. Compact Pill Color Tag
+            _buildSectionHeader(s.pillColorTag),
             const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
               child: Row(
-                children: MedicineType.values.map((type) {
-                  final isSelected = _selectedType == type;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: ChoiceChip(
-                      selected: isSelected,
-                      avatar: Image.asset(
-                        type.assetPath,
-                        width: 22,
-                        height: 22,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => AppSvgIcons.render(
-                          type.svgString,
-                          width: 18,
-                          height: 18,
-                          color: isSelected ? Colors.white : AppColors.primary,
-                        ),
+                children: AppColors.pillColors.map((color) {
+                  final isSelected = color.toARGB32() == _selectedColorValue;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedColorValue = color.toARGB32()),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 10),
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: isSelected
+                            ? Border.all(color: isDark ? Colors.white : Colors.black87, width: 3)
+                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.35),
+                            blurRadius: 5,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      label: Text(s.medicineTypeName(type.name)),
-                      selectedColor: AppColors.primary,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      onSelected: (val) {
-                        if (val) setState(() => _selectedType = type);
-                      },
+                      child: isSelected
+                          ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                          : null,
                     ),
                   );
                 }).toList(),
@@ -266,43 +570,57 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Color Picker
-            _buildSectionHeader(s.pillColorTag),
-            const SizedBox(height: 10),
+            // 4. Treatment Course Duration
+            _buildSectionHeader(s.treatmentCourse),
+            const SizedBox(height: 8),
             Wrap(
-              spacing: 12,
-              runSpacing: 10,
-              children: AppColors.pillColors.map((color) {
-                final isSelected = color.toARGB32() == _selectedColorValue;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedColorValue = color.toARGB32()),
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: isSelected
-                          ? Border.all(color: isDark ? Colors.white : Colors.black87, width: 3)
-                          : null,
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.35),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: isSelected
-                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 20)
-                        : null,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildCourseChip(0, s.courseOngoing),
+                _buildCourseChip(3, s.courseDaysLabel(3)),
+                _buildCourseChip(5, s.courseDaysLabel(5)),
+                _buildCourseChip(7, s.courseDaysLabel(7)),
+                _buildCourseChip(14, s.courseDaysLabel(14)),
+                _buildCourseChip(30, s.courseDaysLabel(30)),
+                ActionChip(
+                  avatar: const Icon(Icons.date_range_rounded, size: 16),
+                  label: Text(
+                    _durationDays > 0 && ![3, 5, 7, 14, 30].contains(_durationDays)
+                        ? s.courseDaysLabel(_durationDays)
+                        : s.customEndDate,
                   ),
-                );
-              }).toList(),
+                  backgroundColor: _durationDays > 0 && ![3, 5, 7, 14, 30].contains(_durationDays)
+                      ? AppColors.primary
+                      : null,
+                  labelStyle: TextStyle(
+                    color: _durationDays > 0 && ![3, 5, 7, 14, 30].contains(_durationDays)
+                        ? Colors.white
+                        : null,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                  onPressed: _pickCustomEndDate,
+                ),
+              ],
             ),
+            if (_durationDays > 0 && _endDate != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${s.courseEndsOn}: ${DateFormat('dd MMM, yyyy').format(_endDate!)} (${s.courseDaysLabel(_durationDays)})',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
 
-            // Food Instruction
+            // 5. Food Instruction
             _buildSectionHeader(s.foodTimingInstruction),
             const SizedBox(height: 10),
             Wrap(
@@ -321,7 +639,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   label: Text(s.foodInstructionName(inst.name)),
                   selectedColor: AppColors.secondary,
                   labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                    color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
                     fontWeight: FontWeight.w600,
                   ),
                   onSelected: (val) {
@@ -330,22 +648,48 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
 
-            // Reminders & Alarm Schedules
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // 6. Quick Dose Frequency Shortcuts (1+0+0, 1+0+1, 1+1+1)
+            _buildSectionHeader(s.quickDoseFrequency),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                _buildSectionHeader(s.reminderSchedules),
-                TextButton.icon(
-                  onPressed: _addReminderTime,
-                  icon: const Icon(Icons.add_alarm_rounded, size: 18),
-                  label: Text(s.addTime),
-                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                _buildFrequencyPresetBtn('1-0-0', s.doseOnceDaily, Icons.wb_sunny_rounded),
+                _buildFrequencyPresetBtn('1-0-1', s.doseTwiceDaily, Icons.timelapse_rounded),
+                _buildFrequencyPresetBtn('1-1-1', s.doseThriceDaily, Icons.repeat_rounded),
+                _buildFrequencyPresetBtn('1-1-1-1', s.doseFourDaily, Icons.alarm_on_rounded),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // 7. Routine & Meal Presets
+            _buildSectionHeader(s.routineMealSlot),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildMealPresetBtn('🍳 ${s.breakfast}', 8, 0),
+                _buildMealPresetBtn('🍛 ${s.lunch}', 13, 30),
+                _buildMealPresetBtn('☕ ${s.eveningSnacks}', 17, 30),
+                _buildMealPresetBtn('🍲 ${s.dinner}', 20, 30),
+                _buildMealPresetBtn('🛏️ ${s.bedtimeSlot}', 22, 30),
+                ActionChip(
+                  avatar: const Icon(Icons.add_alarm_rounded, size: 16, color: AppColors.primary),
+                  label: Text(s.customClock),
+                  labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.primary),
+                  onPressed: _addCustomReminderTime,
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 24),
+
+            // 8. Configured Reminders & Day-of-Week Schedule
+            _buildSectionHeader(s.reminderSchedules),
+            const SizedBox(height: 10),
 
             ..._reminders.asMap().entries.map((entry) {
               final idx = entry.key;
@@ -353,7 +697,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkCard : Colors.white,
                   borderRadius: BorderRadius.circular(18),
@@ -362,11 +706,12 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   ),
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
@@ -374,13 +719,13 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           child: Text(
                             rem.formattedTime,
                             style: const TextStyle(
-                              fontSize: 18,
+                              fontSize: 17,
                               fontWeight: FontWeight.w800,
                               color: AppColors.primary,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,7 +737,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               Text(
                                 rem.recurrenceSummaryLocalized(s),
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                                 ),
                               ),
@@ -425,6 +770,47 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           ),
                       ],
                     ),
+
+                    const SizedBox(height: 10),
+                    const Divider(height: 1),
+                    const SizedBox(height: 8),
+
+                    // Specific Days of the week row for this reminder
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [1, 2, 3, 4, 5, 6, 7].map((day) {
+                        final isSelected = rem.daysOfWeek.contains(day);
+                        return GestureDetector(
+                          onTap: () => _toggleDayForReminder(idx, day),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                              ),
+                            ),
+                            child: Text(
+                              s.weekdayShort(day),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark ? Colors.white70 : Colors.black87),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ],
                 ),
               );
@@ -432,7 +818,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
             const SizedBox(height: 20),
 
-            // Stock & Refill Tracker
+            // 9. Stock & Refill Tracker
             _buildSectionHeader(s.stockInventory),
             const SizedBox(height: 10),
             Row(
@@ -462,9 +848,144 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
-            // Notes
+            // 10. Medicine Strip / Box Photo (Attachment)
+            _buildSectionHeader(s.medicinePhoto),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCard : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                ),
+              ),
+              child: _photoPath != null && File(_photoPath!).existsSync()
+                  ? Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(_photoPath!),
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                s.medicinePhoto,
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                              ),
+                              const SizedBox(height: 4),
+                              TextButton.icon(
+                                onPressed: () => setState(() => _photoPath = null),
+                                icon: const Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.error),
+                                label: Text(s.removePhoto, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+                                style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _pickPhoto(ImageSource.camera),
+                            icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                            label: Text(s.takePhoto),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _pickPhoto(ImageSource.gallery),
+                            icon: const Icon(Icons.photo_library_rounded, size: 18),
+                            label: Text(s.chooseFromGallery),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: 24),
+
+            // 11. Expiry Date Tracker
+            _buildSectionHeader(s.expiryDateTitle),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCard : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.event_available_rounded, color: AppColors.primary, size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _expiryDate != null
+                              ? '${s.expiresOn} ${DateFormat('MMMM yyyy').format(_expiryDate!)}'
+                              : s.selectExpiryDate,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: _expiryDate != null && DateTime.now().isAfter(_expiryDate!)
+                                ? AppColors.error
+                                : (isDark ? Colors.white : Colors.black87),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_expiryDate != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear_rounded, size: 18),
+                      onPressed: () => setState(() => _expiryDate = null),
+                    ),
+                  ElevatedButton(
+                    onPressed: _pickExpiryDate,
+                    style: ElevatedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    ),
+                    child: Text(s.change),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 12. Doctor Notes & Tips
             _buildSectionHeader(s.doctorNotesOptional),
             const SizedBox(height: 10),
             TextFormField(
@@ -476,7 +997,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Submit Button
+            // 13. Primary Save Button
             SizedBox(
               height: 54,
               child: ElevatedButton(
@@ -499,11 +1020,54 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     return Text(
       title,
       style: TextStyle(
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: FontWeight.w700,
         color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextPrimary,
         letterSpacing: 0.2,
       ),
+    );
+  }
+
+  Widget _buildCourseChip(int days, String label) {
+    final isSelected = _durationDays == days;
+    return ChoiceChip(
+      selected: isSelected,
+      label: Text(label),
+      selectedColor: AppColors.primary,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : null,
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+      onSelected: (val) {
+        if (val) {
+          setState(() {
+            _durationDays = days;
+            if (days > 0) {
+              _endDate = (_startDate ?? DateTime.now()).add(Duration(days: days));
+            } else {
+              _endDate = null;
+            }
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildFrequencyPresetBtn(String presetKey, String label, IconData icon) {
+    return ActionChip(
+      avatar: Icon(icon, size: 16, color: AppColors.primary),
+      label: Text(label),
+      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+      onPressed: () => _applyQuickFrequency(presetKey),
+    );
+  }
+
+  Widget _buildMealPresetBtn(String label, int hour, int minute) {
+    return ActionChip(
+      label: Text(label),
+      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+      onPressed: () => _addMealPreset(hour, minute),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_svg_icons.dart';
@@ -185,11 +186,21 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                           children: [
                             Row(
                               children: [
-                                PillIconBadge(
-                                  type: med.type,
-                                  color: medColor,
-                                  size: 46,
-                                ),
+                                (med.photoPath != null && File(med.photoPath!).existsSync())
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.file(
+                                          File(med.photoPath!),
+                                          width: 46,
+                                          height: 46,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : PillIconBadge(
+                                        type: med.type,
+                                        color: medColor,
+                                        size: 46,
+                                      ),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
@@ -210,6 +221,33 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                           color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                                         ),
                                       ),
+                                      if (med.isExpired) ...[
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.error.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            '⚠️ ${s.expiredAlert}',
+                                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.error),
+                                          ),
+                                        ),
+                                      ] else if (med.durationDays > 0 && med.endDate != null) ...[
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            '🗓️ ${s.courseEndsOn} ${med.endDate!.day}/${med.endDate!.month}',
+                                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.primary),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),

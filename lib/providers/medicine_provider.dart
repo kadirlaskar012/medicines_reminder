@@ -198,6 +198,11 @@ class MedicineProvider extends ChangeNotifier {
     required String notes,
     required List<ReminderTime> reminderTimes,
     String? profileId,
+    int durationDays = 0,
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? expiryDate,
+    String? photoPath,
   }) async {
     final medId = _uuid.v4();
     final targetProfileId = profileId ?? _activeProfile?.id ?? UserProfile.defaultProfile.id;
@@ -214,6 +219,11 @@ class MedicineProvider extends ChangeNotifier {
       refillThreshold: refillThreshold,
       notes: notes,
       createdAt: DateTime.now(),
+      durationDays: durationDays,
+      startDate: startDate,
+      endDate: endDate,
+      expiryDate: expiryDate,
+      photoPath: photoPath,
     );
 
     // Ensure reminder medicine IDs match

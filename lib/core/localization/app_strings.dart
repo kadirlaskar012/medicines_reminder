@@ -373,5 +373,47 @@ class AppStrings {
   // Celebration Banner
   String get allDosesCompletedTitle => code == 'bn' ? 'চমৎকার! আজকের সব ওষুধ সম্পন্ন 🎉' : (code == 'hi' ? 'शाबाश! आज की सभी दवाएं पूरी हुईं 🎉' : 'Great Job! All Doses Completed 🎉');
   String get allDosesCompletedSub => code == 'bn' ? 'আপনি সফলভাবে আজকের ১০০% নিয়ম মেনে চলেছেন। সুস্থ থাকুন!' : (code == 'hi' ? 'आपने आज १००% समय पर दवा ली है। स्वस्थ रहें!' : 'You reached 100% adherence for today. Keep staying healthy!');
+
+  // Treatment Course Duration
+  String get treatmentCourse => code == 'bn' ? 'কোর্সের মেয়াদ (Treatment Course)' : (code == 'hi' ? 'इलाज की अवधि (Course)' : 'Treatment Course & Duration');
+  String get courseOngoing => code == 'bn' ? 'চলমান / দীর্ঘমেয়াদী' : (code == 'hi' ? 'दीर्घकालिक / नियमित' : 'Ongoing / Chronic');
+  String courseDaysLabel(int days) => code == 'bn' ? '$days দিন' : (code == 'hi' ? '$days दिन' : '$days Days');
+  String get customEndDate => code == 'bn' ? 'কাস্টম শেষ তারিখ' : (code == 'hi' ? 'कस्टम अंतिम तिथि' : 'Custom End Date');
+  String get courseCompleted => code == 'bn' ? 'কোর্স সম্পন্ন' : (code == 'hi' ? 'कोर्स पूरा हुआ' : 'Course Completed');
+  String get courseEndsOn => code == 'bn' ? 'কোর্স শেষ হবে' : (code == 'hi' ? 'कोर्स समाप्त होगा' : 'Ends on');
+
+  // Quick Frequency Shortcuts
+  String get quickDoseFrequency => code == 'bn' ? '১-ক্লিক ফ্রিকোয়েন্সি শর্টকাট' : (code == 'hi' ? '१-क्लिक खुराक शॉर्टकट' : 'Quick Frequency Shortcuts');
+  String get doseOnceDaily => code == 'bn' ? '১ বার (১+০+০)' : (code == 'hi' ? '१ बार (१+०+०)' : 'Once (1-0-0)');
+  String get doseTwiceDaily => code == 'bn' ? '২ বার (১+০+১)' : (code == 'hi' ? '२ बार (१+०+১)' : 'Twice (1-0-1)');
+  String get doseThriceDaily => code == 'bn' ? '৩ বার (১+১+১)' : (code == 'hi' ? '३ बार (१+१+১)' : '3 Times (1-1-1)');
+  String get doseFourDaily => code == 'bn' ? '৪ বার (১+১+১+১)' : (code == 'hi' ? '४ बार (१+१+১+১)' : '4 Times');
+  String get doseAsNeeded => code == 'bn' ? 'প্রয়োজনে (SOS / As Needed)' : (code == 'hi' ? 'ज़रूरत पड़ने पर (SOS)' : 'As Needed (SOS)');
+
+  // Routine & Meal Presets
+  String get routineMealSlot => code == 'bn' ? 'খাবার ও রুটিন অনুযায়ী সময় (Meal Presets)' : (code == 'hi' ? 'भोजन और दिनचर्या के अनुसार समय' : 'Routine & Meal Time Presets');
+  String get breakfast => code == 'bn' ? 'সকালের নাস্তা (Breakfast)' : (code == 'hi' ? 'सुबह का नाश्ता' : 'Breakfast');
+  String get lunch => code == 'bn' ? 'দুপুরের খাবার (Lunch)' : (code == 'hi' ? 'दोपहर का भोजन' : 'Lunch');
+  String get eveningSnacks => code == 'bn' ? 'বিকেলের নাস্তা (Evening)' : (code == 'hi' ? 'शाम का नाश्ता' : 'Evening Snacks');
+  String get dinner => code == 'bn' ? 'রাতের খাবার (Dinner)' : (code == 'hi' ? 'रात का खाना' : 'Dinner');
+  String get bedtimeSlot => code == 'bn' ? 'ঘুমানোর আগে (Bedtime)' : (code == 'hi' ? 'सोने से पहले' : 'Bedtime');
+  String get customClock => code == 'bn' ? 'কাস্টম সময়' : (code == 'hi' ? 'कस्टम समय' : 'Custom Clock');
+
+  // Days of Week
+  String get daysOfWeekTitle => code == 'bn' ? 'সপ্তাহের নির্দিষ্ট দিন' : (code == 'hi' ? 'सप्ताह के विशिष्ट दिन' : 'Days of the Week');
+  String get everydayOption => code == 'bn' ? 'প্রতিদিন' : (code == 'hi' ? 'प्रतिदिन' : 'Everyday');
+
+  // Medicine Strip Photo
+  String get medicinePhoto => code == 'bn' ? 'ওষুধের পাতার আসল ছবি (ঐচ্ছিক)' : (code == 'hi' ? 'दवा के पत्ते की असली तस्वीर (वैकल्पिक)' : 'Medicine Strip / Box Photo (Optional)');
+  String get takePhoto => code == 'bn' ? 'ক্যামেরা' : (code == 'hi' ? 'कैमरा' : 'Camera');
+  String get chooseFromGallery => code == 'bn' ? 'গ্যালারি' : (code == 'hi' ? 'गैलरी' : 'Gallery');
+  String get removePhoto => code == 'bn' ? 'ছবি মুছুন' : (code == 'hi' ? 'हटाएं' : 'Remove');
+
+  // Expiry Date
+  String get expiryDateTitle => code == 'bn' ? 'ওষুধের মেয়াদোত্তীর্ণের তারিখ (Expiry Date)' : (code == 'hi' ? 'दवा की समाप्ति तिथि (Expiry Date)' : 'Medicine Expiry Date');
+  String get selectExpiryDate => code == 'bn' ? 'মেয়াদ শেষের তারিখ বেছে নিন' : (code == 'hi' ? 'समाप्ति तिथि चुनें' : 'Select Expiry Date');
+  String get expiresOn => code == 'bn' ? 'মেয়াদ শেষ:' : (code == 'hi' ? 'समाप्ति:' : 'Expires:');
+  String get expiredAlert => code == 'bn' ? 'মেয়াদোত্তীর্ণ!' : (code == 'hi' ? 'समाप्त!' : 'Expired!');
+  String get change => code == 'bn' ? 'পরিবর্তন' : (code == 'hi' ? 'बदलें' : 'Change');
 }
 
