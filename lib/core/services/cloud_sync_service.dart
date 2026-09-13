@@ -136,6 +136,25 @@ class CloudSyncService {
 
     try {
       debugPrint('CloudSyncService: Restoring cloud data for phone $cleanPhone...');
+
+      // 1. Restore Profile Name if available in Supabase
+      try {
+        final userRow = await client.from('app_users').select().eq('phone_number', cleanPhone).maybeSingle();
+        if (userRow != null && userRow['name'] != null) {
+          final cloudName = userRow['name'].toString().trim();
+          if (cloudName.isNotEmpty && cloudName != 'User' && cloudName != 'Patient') {
+            final profiles = await db.getAllProfiles();
+            if (profiles.isNotEmpty) {
+              final updatedProfile = profiles.first.copyWith(name: cloudName);
+              await db.insertProfile(updatedProfile);
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('CloudSyncService: Error restoring user profile: $e');
+      }
+
+      // 2. Fetch and restore medicines
       final List<dynamic> rows = await client
           .from('user_medicines')
           .select()
