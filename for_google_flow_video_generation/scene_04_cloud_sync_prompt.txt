@@ -1,0 +1,14 @@
+[SCENE 4: CLOUD SYNC & 1-TAP GOOGLE SIGN-IN]
+Image File: scene_04_cloud_sync.jpg
+
+=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
+Futuristic cinematic tracking shot in a high-tech modern medical clinic. A hand holds a glowing glass smartphone transferring shimmering fiber-optic data streams upward into a floating holographic neon-emerald cloud database. Inside the cloud, a pulsing security shield, checkmark padlock, and official Google Sign-In emblem rotate with electric cybernetic elegance. Holographic floating glass cards display prescription history and dosage records syncing in real time with subtle soundwave vibrations. High-tech, bank-grade encryption aesthetic, photorealistic VFX, 4k 60fps.
+
+=== VOICE-OVER SCRIPT ===
+Bengali (বাংলা): "গুগল দিয়ে ১-ট্যাপে সাইন ইন—আপনার সমস্ত স্বাস্থ্য ডেটা এবং হিস্ট্রি ক্লাউডে ১০০% সুরক্ষিত।"
+English: "One-tap Google Sign-In—all your prescriptions and adherence history safely backed up in the cloud."
+
+=== CAMERA MOVEMENT IN GOOGLE FLOW ===
+- Motion: Upward Tilt & Forward Tracking
+- Speed: Dynamic, 1.2x tech motion
+- Focus: Holographic cloud and Google security shield

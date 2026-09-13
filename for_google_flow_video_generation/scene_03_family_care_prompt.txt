@@ -1,0 +1,14 @@
+[SCENE 3: FAMILY HEALTHCARE & PROFILES]
+Image File: scene_03_family_care.jpg
+
+=== GOOGLE FLOW / VEO VIDEO GENERATION PROMPT ===
+Smooth isometric pedestal camera pan revealing an adorable 3D miniature diorama of a loving multi-generation family standing inside a glowing crystalline protective dome. A grandmother, father, mother, and child smile cheerfully as a luminous medical cross emblem shines above them. Surrounding the base are colorful weekly medicine organizer compartments with days of the week, floating glowing heart rate pulses, and friendly avatar bubbles. Soft warm lighting, playful claymorphism texture, emotional and reassuring health commercial vibe, 4k.
+
+=== VOICE-OVER SCRIPT ===
+Bengali (বাংলা): "শুধু আপনি নন, পরিবারের বয়োজ্যেষ্ঠ থেকে শুরু করে সবার ওষুধের যত্ন নিন আলাদা আলাদা প্রোফাইলে।"
+English: "Not just for you—protect every loved one from grandparents to kids with dedicated family profiles."
+
+=== CAMERA MOVEMENT IN GOOGLE FLOW ===
+- Motion: Diagonal Crane / Jib down and forward
+- Speed: Gentle, 0.7x smooth
+- Focus: Family characters inside the glowing health shield
