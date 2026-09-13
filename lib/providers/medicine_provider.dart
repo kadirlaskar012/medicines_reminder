@@ -121,40 +121,16 @@ class MedicineProvider extends ChangeNotifier {
           avatarEmoji: savedAvatar ?? '👤',
           age: savedAge,
         );
-        final dad = UserProfile(
-          id: 'profile_dad',
-          name: 'Dad',
-          relation: 'Father',
-          colorValue: 0xFF0284C7,
-          avatarEmoji: '👴',
-        );
-        final mom = UserProfile(
-          id: 'profile_mom',
-          name: 'Mom',
-          relation: 'Mother',
-          colorValue: 0xFFEC4899,
-          avatarEmoji: '👵',
-        );
         await _db.insertProfile(me);
-        await _db.insertProfile(dad);
-        await _db.insertProfile(mom);
-        _profiles = [me, dad, mom];
+        _profiles = [me];
       }
       _activeProfile = null; // null represents "All Family"
 
-
       await _refreshMedicinesAndReminders();
-
-      // If brand new installation with no medicines, seed 2 realistic medicines
-      if (_medicines.isEmpty) {
-        await _seedDemoMedicines();
-        await _refreshMedicinesAndReminders();
-      }
-
       await rescheduleAllActiveReminders();
       await _refreshRecords();
     } catch (e) {
-      debugPrint('SQLite notice: loading in-memory demo data: $e');
+      debugPrint('SQLite notice: loading initial fallback: $e');
       _seedInMemoryFallback();
     } finally {
       _isLoading = false;
@@ -164,176 +140,10 @@ class MedicineProvider extends ChangeNotifier {
 
   void _seedInMemoryFallback() {
     final me = UserProfile.defaultProfile;
-    final dad = UserProfile(
-      id: 'profile_dad',
-      name: 'Dad',
-      relation: 'Father',
-      colorValue: 0xFF0284C7,
-      avatarEmoji: '👴',
-    );
-    final mom = UserProfile(
-      id: 'profile_mom',
-      name: 'Mom',
-      relation: 'Mother',
-      colorValue: 0xFFEC4899,
-      avatarEmoji: '👵',
-    );
-    _profiles = [me, dad, mom];
+    _profiles = [me];
     _activeProfile = null;
-
-    final med1 = Medicine(
-      id: 'demo_med_1',
-      profileId: me.id,
-      name: 'Atorvastatin',
-      dosage: '20mg (1 Tablet)',
-      type: MedicineType.tablet,
-      colorValue: 0xFFFF6B35, // Warm Orange
-      instruction: FoodInstruction.withMeal,
-      currentStock: 14,
-      refillThreshold: 5,
-      notes: 'Take with breakfast • Cholesterol care',
-      createdAt: DateTime.now(),
-    );
-    final rem1 = ReminderTime(
-      id: 'demo_rem_1',
-      medicineId: med1.id,
-      hour: 9,
-      minute: 0,
-      daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-      isAlarm: true,
-      notificationId: 101,
-    );
-
-    final med2 = Medicine(
-      id: 'demo_med_2',
-      profileId: me.id,
-      name: 'Amoxicillin',
-      dosage: '500mg (1 Capsule)',
-      type: MedicineType.capsule,
-      colorValue: 0xFF0D9488, // Teal
-      instruction: FoodInstruction.afterMeal,
-      currentStock: 10,
-      refillThreshold: 4,
-      notes: 'Take after lunch with water',
-      createdAt: DateTime.now(),
-    );
-    final rem2 = ReminderTime(
-      id: 'demo_rem_2',
-      medicineId: med2.id,
-      hour: 13,
-      minute: 30,
-      daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-      isAlarm: true,
-      notificationId: 102,
-    );
-
-    final med3 = Medicine(
-      id: 'demo_med_3',
-      profileId: me.id,
-      name: 'Elderberry Zinc Elixir',
-      dosage: '10ml (1 Spoon)',
-      type: MedicineType.syrup,
-      colorValue: 0xFF10B981, // Mint Green
-      instruction: FoodInstruction.afterMeal,
-      currentStock: 30,
-      refillThreshold: 7,
-      notes: 'Immunity Boost • Night routine',
-      createdAt: DateTime.now(),
-    );
-    final rem3 = ReminderTime(
-      id: 'demo_rem_3',
-      medicineId: med3.id,
-      hour: 20,
-      minute: 0,
-      daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-      isAlarm: false,
-      notificationId: 103,
-    );
-
-    _medicines = [med1, med2, med3];
-    _remindersByMedicine[med1.id] = [rem1];
-    _remindersByMedicine[med2.id] = [rem2];
-    _remindersByMedicine[med3.id] = [rem3];
-  }
-
-  Future<void> _seedDemoMedicines() async {
-    // 1. Amoxicillin 500mg (Morning & Evening)
-    await addMedicine(
-      name: 'Amoxicillin',
-      dosage: '500 mg (1 Capsule)',
-      type: MedicineType.capsule,
-      colorValue: 0xFF0D9488, // Teal
-      instruction: FoodInstruction.afterMeal,
-      currentStock: 14,
-      refillThreshold: 4,
-      notes: 'Take with plenty of water after meals.',
-      reminderTimes: [
-        ReminderTime(
-          id: _uuid.v4(),
-          medicineId: '',
-          hour: 8,
-          minute: 30,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: 101,
-        ),
-        ReminderTime(
-          id: _uuid.v4(),
-          medicineId: '',
-          hour: 20,
-          minute: 30,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: 102,
-        ),
-      ],
-    );
-
-    // 2. Vitamin D3 (Afternoon)
-    await addMedicine(
-      name: 'Vitamin D3',
-      dosage: '1000 IU (1 Tablet)',
-      type: MedicineType.tablet,
-      colorValue: 0xFFF59E0B, // Amber
-      instruction: FoodInstruction.withMeal,
-      currentStock: 28,
-      refillThreshold: 5,
-      notes: 'Take during lunch with food.',
-      reminderTimes: [
-        ReminderTime(
-          id: _uuid.v4(),
-          medicineId: '',
-          hour: 13,
-          minute: 0,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: false,
-          notificationId: 103,
-        ),
-      ],
-    );
-
-    // 3. Paracetamol (Evening / As needed)
-    await addMedicine(
-      name: 'Paracetamol',
-      dosage: '650 mg',
-      type: MedicineType.tablet,
-      colorValue: 0xFF3B82F6, // Blue
-      instruction: FoodInstruction.afterMeal,
-      currentStock: 4, // Intentionally low stock to showcase refill alert!
-      refillThreshold: 5,
-      notes: 'Take if fever or headache persists.',
-      reminderTimes: [
-        ReminderTime(
-          id: _uuid.v4(),
-          medicineId: '',
-          hour: 18,
-          minute: 0,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: 104,
-        ),
-      ],
-    );
+    _medicines = [];
+    _remindersByMedicine.clear();
   }
 
   Future<void> _refreshMedicinesAndReminders() async {
