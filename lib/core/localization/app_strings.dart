@@ -343,4 +343,6 @@ class AppStrings {
   String get signOutConfirmMessage => code == 'bn' ? 'আপনি কি নিশ্চিতভাবে এই ডিভাইস থেকে লগআউট করতে চান? আপনার সংরক্ষিত ডেটা ক্লাউডে সুরক্ষিত থাকবে।' : (code == 'hi' ? 'क्या आप इस डिवाइस से लॉगआउट करना चाहते हैं? आपका डेटा क्लाउड में सुरक्षित रहेगा।' : 'Are you sure you want to sign out from this device? Your data remains safe in the cloud.');
   String get otpInvalidValidation => code == 'bn' ? 'অনুগ্রহ করে সঠিক ৬ ডিজিটের OTP লিখুন' : (code == 'hi' ? 'कृपया सही ६ अंकों का OTP दर्ज करें' : 'Please enter a valid 6-digit OTP');
   String get phoneInvalidValidation => code == 'bn' ? 'অনুগ্রহ করে বৈধ ১০ ডিজিটের মোবাইল নম্বর লিখুন' : (code == 'hi' ? 'कृपया मान्य १० अंकों का फ़ोन नंबर दर्ज करें' : 'Please enter a valid 10-digit mobile number');
+  String get signInWithGoogle => code == 'bn' ? 'গুগল দিয়ে সাইন ইন করুন' : (code == 'hi' ? 'गूगल से साइन इन करें' : 'Continue with Google');
+  String get orSignInWithPhone => code == 'bn' ? 'অথবা মোবাইল নম্বর দিয়ে' : (code == 'hi' ? 'या मोबाइल नंबर से' : 'OR WITH MOBILE NUMBER');
 }

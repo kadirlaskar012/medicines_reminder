@@ -34,6 +34,9 @@ class AuthProvider extends ChangeNotifier {
   User? get user => _user;
   bool get isSignedIn => _user != null;
   String? get phoneNumber => _user?.phoneNumber ?? (_phoneNumber.isNotEmpty ? _phoneNumber : null);
+  String? get displayName => _user?.displayName;
+  String? get email => _user?.email;
+  String? get photoUrl => _user?.photoURL;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   int get countdownSeconds => _countdownSeconds;
@@ -140,6 +143,37 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       _errorMessage = e.toString().contains('invalid-verification-code')
           ? 'Invalid OTP code. Please enter the correct 6-digit code.'
+          : e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Sign in with Google and automatically sync data
+  Future<bool> signInWithGoogle(MedicineProvider medicineProvider) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final cred = await _authService.signInWithGoogle();
+      _isLoading = false;
+      notifyListeners();
+
+      if (cred?.user != null) {
+        // Automatically sync all existing local medicines, profiles, and records to Cloud Firestore!
+        await CloudSyncService.instance.syncLocalToCloud(
+          profiles: medicineProvider.profiles,
+          medicines: medicineProvider.medicines,
+          records: medicineProvider.intakeRecords,
+        );
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().contains('network')
+          ? 'Network error. Please check your internet connection.'
           : e.toString();
       notifyListeners();
       return false;

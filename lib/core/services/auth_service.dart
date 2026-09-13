@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   AuthService._internal();
@@ -22,6 +23,12 @@ class AuthService {
   bool get isSignedIn => _auth?.currentUser != null;
 
   String? get userPhoneNumber => _auth?.currentUser?.phoneNumber;
+
+  String? get userDisplayName => _auth?.currentUser?.displayName;
+
+  String? get userEmail => _auth?.currentUser?.email;
+
+  String? get userPhotoUrl => _auth?.currentUser?.photoURL;
 
   String? get userId => _auth?.currentUser?.uid;
 
@@ -97,8 +104,33 @@ class AuthService {
     return await auth.signInWithCredential(credential);
   }
 
-  /// Sign out
+  /// Sign in with Google
+  Future<UserCredential?> signInWithGoogle() async {
+    final auth = _auth;
+    if (auth == null) {
+      throw Exception('Firebase is not initialized on this device.');
+    }
+
+    final GoogleSignIn googleSignIn = GoogleSignIn();
+    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+    if (googleUser == null) {
+      return null; // User canceled sign-in
+    }
+
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final OAuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    return await auth.signInWithCredential(credential);
+  }
+
+  /// Sign out from Firebase and Google
   Future<void> signOut() async {
+    try {
+      await GoogleSignIn().signOut();
+    } catch (_) {}
     await _auth?.signOut();
   }
 }

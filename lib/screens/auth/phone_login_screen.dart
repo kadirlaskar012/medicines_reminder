@@ -78,6 +78,18 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    final authProvider = context.read<AuthProvider>();
+    final medProvider = context.read<MedicineProvider>();
+    final success = await authProvider.signInWithGoogle(medProvider);
+
+    if (success && mounted) {
+      if (widget.isModal) {
+        Navigator.pop(context, true);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -149,7 +161,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
               // Error banner if any
               if (auth.errorMessage != null)
@@ -175,8 +187,90 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   ),
                 ),
 
-              // Step 1: Phone Input
+              // Step 1: Login Options (Google + Phone)
               if (!_isCodeSent) ...[
+                // Google Sign-In Button
+                Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: auth.isLoading ? null : _handleGoogleSignIn,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'G',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF4285F4),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            s.signInWithGoogle,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : const Color(0xFF1E293B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Divider: OR WITH MOBILE NUMBER
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        s.orSignInWithPhone,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
                 Row(
                   children: [
                     // Country Code Dropdown Container

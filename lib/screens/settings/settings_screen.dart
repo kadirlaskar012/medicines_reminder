@@ -511,23 +511,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
+                if (auth.photoUrl != null)
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundImage: NetworkImage(auth.photoUrl!),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      auth.email != null ? Icons.account_circle_rounded : Icons.phone_android_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
                   ),
-                  child: const Icon(Icons.phone_android_rounded, color: AppColors.primary, size: 24),
-                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        auth.phoneNumber ?? 'User',
+                        auth.displayName ?? auth.email ?? auth.phoneNumber ?? 'User',
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                       ),
+                      if (auth.displayName != null && auth.email != null)
+                        Text(
+                          auth.email!,
+                          style: const TextStyle(fontSize: 12, color: AppColors.lightTextMuted),
+                        ),
                       const SizedBox(height: 2),
                       Row(
                         children: [
