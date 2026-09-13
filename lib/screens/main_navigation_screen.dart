@@ -12,6 +12,7 @@ import 'medicines/add_edit_medicine_screen.dart';
 import 'history/history_screen.dart';
 import 'settings/settings_screen.dart';
 import 'alarm/alarm_ringing_screen.dart';
+import '../providers/language_provider.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -236,6 +237,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = context.watch<LanguageProvider>();
+    final s = lang.strings;
 
     return Scaffold(
       body: IndexedStack(
@@ -263,26 +266,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
         indicatorColor: AppColors.primary.withValues(alpha: 0.15),
         onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today_rounded, color: AppColors.primary),
-            label: 'Today',
+            icon: const Icon(Icons.today_outlined),
+            selectedIcon: const Icon(Icons.today_rounded, color: AppColors.primary),
+            label: s.tabToday,
           ),
           NavigationDestination(
-            icon: Icon(Icons.medication_outlined),
-            selectedIcon: Icon(Icons.medication_rounded, color: AppColors.primary),
-            label: 'Cabinet',
+            icon: const Icon(Icons.medication_outlined),
+            selectedIcon: const Icon(Icons.medication_rounded, color: AppColors.primary),
+            label: s.tabCabinet,
           ),
           NavigationDestination(
-            icon: Icon(Icons.insights_outlined),
-            selectedIcon: Icon(Icons.insights_rounded, color: AppColors.primary),
-            label: 'History',
+            icon: const Icon(Icons.insights_outlined),
+            selectedIcon: const Icon(Icons.insights_rounded, color: AppColors.primary),
+            label: s.tabHistory,
           ),
           NavigationDestination(
-            icon: Icon(Icons.tune_outlined),
-            selectedIcon: Icon(Icons.tune_rounded, color: AppColors.primary),
-            label: 'Settings',
+            icon: const Icon(Icons.tune_outlined),
+            selectedIcon: const Icon(Icons.tune_rounded, color: AppColors.primary),
+            label: s.tabSettings,
           ),
         ],
       ),

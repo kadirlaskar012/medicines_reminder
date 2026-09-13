@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/medicine.dart';
+import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../widgets/profile_selector_sheet.dart';
+import '../welcome/welcome_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -46,10 +48,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<MedicineProvider>();
+    final lang = context.watch<LanguageProvider>();
+    final s = lang.strings;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings & Diagnostics'),
+        title: Text(s.settingsAndDiagnostics),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
@@ -301,6 +305,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 24),
 
+          // Language Settings
+          _buildSectionTitle(s.languageOption.toUpperCase()),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkCard : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.selectLanguage,
+                  style: const TextStyle(fontSize: 13, color: AppColors.lightTextMuted),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _buildLanguageButton(context, 'en', 'English', '🇬🇧', lang.languageCode == 'en', isDark),
+                    const SizedBox(width: 8),
+                    _buildLanguageButton(context, 'bn', 'বাংলা', '🇧🇩', lang.languageCode == 'bn', isDark),
+                    const SizedBox(width: 8),
+                    _buildLanguageButton(context, 'hi', 'हिन्दी', '🇮🇳', lang.languageCode == 'hi', isDark),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Welcome Screen Preview & Experience
+          _buildSectionTitle('WELCOME & ONBOARDING'),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkCard : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.auto_awesome_rounded, color: AppColors.primary),
+              title: const Text('View 3D Welcome Screen', style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text('Preview 3D clay onboarding & language quick-picker', style: TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const WelcomeScreen(isFromSettings: true)),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
           // About & Medical Disclaimer
           _buildSectionTitle('ABOUT MEDIREMIND'),
           const SizedBox(height: 10),
@@ -324,6 +386,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLanguageButton(
+    BuildContext context,
+    String code,
+    String label,
+    String flag,
+    bool isSelected,
+    bool isDark,
+  ) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => context.read<LanguageProvider>().setLanguage(code),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primary
+                  : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(flag, style: const TextStyle(fontSize: 20)),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? Colors.white : Colors.black87),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
