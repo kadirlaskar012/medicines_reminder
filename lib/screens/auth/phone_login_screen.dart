@@ -20,7 +20,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   final TextEditingController _otpController = TextEditingController();
 
   String _selectedCountryCode = '+91';
-  bool _isCodeSent = false;
 
   final List<Map<String, String>> _countryCodes = [
     {'code': '+91', 'name': 'India (ভারত)', 'flag': '🇮🇳'},
@@ -53,16 +52,22 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     final success = await authProvider.sendOtp(fullNumber);
 
     if (success && mounted) {
-      setState(() => _isCodeSent = true);
+      // Auto-fill the code for user convenience or let them type it
+      final code = authProvider.generatedVerificationCode;
+      if (code != null) {
+        _otpController.text = code;
+      }
     }
   }
 
   Future<void> _handleVerifyOtp() async {
     final otp = _otpController.text.trim();
-    if (otp.length != 6) {
-      final s = context.read<LanguageProvider>().strings;
+    if (otp.length != 4) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(s.otpInvalidValidation), backgroundColor: AppColors.error),
+        const SnackBar(
+          content: Text('অনুগ্রহ করে ৪-সংখ্যার সঠিক কোডটি লিখুন'),
+          backgroundColor: AppColors.error,
+        ),
       );
       return;
     }
@@ -72,18 +77,12 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     final success = await authProvider.verifyOtp(otp, medProvider);
 
     if (success && mounted) {
-      if (widget.isModal) {
-        Navigator.pop(context, true);
-      }
-    }
-  }
-
-  Future<void> _handleGoogleSignIn() async {
-    final authProvider = context.read<AuthProvider>();
-    final medProvider = context.read<MedicineProvider>();
-    final success = await authProvider.signInWithGoogle(medProvider);
-
-    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('সফলভাবে সাইন-ইন সম্পন্ন হয়েছে! ক্লাউড ব্যাকআপ সক্রিয়।'),
+          backgroundColor: AppColors.success,
+        ),
+      );
       if (widget.isModal) {
         Navigator.pop(context, true);
       }
@@ -97,10 +96,10 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
         title: Text(
-          _isCodeSent ? s.verifyOtpTitle : s.phoneLoginTitle,
+          auth.isCodeSent ? 'কোড যাচাইকরণ' : s.phoneLoginTitle,
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         centerTitle: true,
@@ -109,10 +108,10 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 icon: const Icon(Icons.close_rounded),
                 onPressed: () => Navigator.pop(context),
               )
-            : (_isCodeSent
+            : (Navigator.canPop(context)
                 ? IconButton(
                     icon: const Icon(Icons.arrow_back_rounded),
-                    onPressed: () => setState(() => _isCodeSent = false),
+                    onPressed: () => Navigator.pop(context),
                   )
                 : null),
       ),
@@ -122,37 +121,44 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
-              // Top Icon / Header Illustration
+              // Header Avatar / Icon
               Center(
                 child: Container(
-                  width: 90,
-                  height: 90,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      _isCodeSent ? Icons.mark_email_read_rounded : Icons.phone_iphone_rounded,
-                      size: 46,
-                      color: AppColors.primary,
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, AppColors.secondary],
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.35),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                ).animate().scale(duration: 400.ms),
-              ),
+                  child: const Center(
+                    child: Icon(Icons.cloud_sync_rounded, color: Colors.white, size: 40),
+                  ),
+                ),
+              ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               Text(
-                _isCodeSent ? s.verifyOtpTitle : s.phoneLoginTitle,
+                auth.isCodeSent ? 'ভেরিফিকেশন সম্পন্ন করুন' : 'মোবাইল নম্বর দিয়ে ক্লাউড ব্যাকআপ',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
               Text(
-                _isCodeSent ? '${s.otpSentTo} $_selectedCountryCode ${_phoneController.text}' : s.phoneLoginSub,
+                auth.isCodeSent
+                    ? 'নিচে দেখানো কোডটি প্রবেশ করিয়ে সাইনআপ সম্পন্ন করুন'
+                    : 'আপনার ওষুধের তথ্য ও অ্যালার্ম নিরাপদে ক্লাউডে সংরক্ষণ করতে মোবাইল নম্বর লিখুন',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -187,90 +193,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   ),
                 ),
 
-              // Step 1: Login Options (Google + Phone)
-              if (!_isCodeSent) ...[
-                // Google Sign-In Button
-                Container(
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: auth.isLoading ? null : _handleGoogleSignIn,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 26,
-                            height: 26,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'G',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF4285F4),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            s.signInWithGoogle,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : const Color(0xFF1E293B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Divider: OR WITH MOBILE NUMBER
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        s.orSignInWithPhone,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
+              // Step 1: Enter Phone
+              if (!auth.isCodeSent) ...[
                 Row(
                   children: [
                     // Country Code Dropdown Container
@@ -338,7 +262,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
                 const SizedBox(height: 24),
 
-                // Send OTP Button
+                // Request Code Button
                 SizedBox(
                   height: 54,
                   child: ElevatedButton(
@@ -355,16 +279,100 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                             height: 22,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                           )
-                        : Text(
-                            s.sendOtpBtn,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        : const Text(
+                            'এগিয়ে যান (Get Code)',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                           ),
                   ),
                 ),
               ],
 
-              // Step 2: OTP Verification
-              if (_isCodeSent) ...[
+              // Step 2: Auto-generated On-Screen Code Display & Verification
+              if (auth.isCodeSent) ...[
+                // On-Screen Security Badge displaying the dynamic verification code
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : AppColors.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.verified_user_rounded, color: AppColors.primary, size: 22),
+                          const SizedBox(width: 8),
+                          Text(
+                            'আপনার তাৎক্ষণিক নিরাপত্তা কোড',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : AppColors.primaryDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Code Display Card (Clickable to auto-copy / auto-fill)
+                      GestureDetector(
+                        onTap: () {
+                          if (auth.generatedVerificationCode != null) {
+                            _otpController.text = auth.generatedVerificationCode!;
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 10),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [AppColors.primary, AppColors.secondary],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            auth.generatedVerificationCode ?? '----',
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 8,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'এসএমএস বিলম্ব এড়াতে কোডটি স্ক্রিনেই দেওয়া হয়েছে।\nকোডটি বক্সে লিখুন বা উপরে ট্যাপ করুন।',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0),
+
+                const SizedBox(height: 20),
+
+                // OTP Input Field
                 Container(
                   height: 60,
                   decoration: BoxDecoration(
@@ -379,25 +387,25 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                       textAlign: TextAlign.center,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(6),
+                        LengthLimitingTextInputFormatter(4),
                       ],
                       style: const TextStyle(
-                        fontSize: 26,
+                        fontSize: 28,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 12,
+                        letterSpacing: 16,
                         color: AppColors.primary,
                       ),
                       decoration: InputDecoration(
-                        hintText: '••••••',
+                        hintText: '••••',
                         hintStyle: TextStyle(
-                          letterSpacing: 12,
+                          letterSpacing: 16,
                           color: isDark ? Colors.white24 : Colors.black26,
                         ),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       onChanged: (val) {
-                        if (val.length == 6) {
+                        if (val.length == 4) {
                           _handleVerifyOtp();
                         }
                       },
@@ -405,32 +413,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
-
-                // Resend Timer Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (!auth.canResendOtp)
-                      Text(
-                        '${s.resendOtpIn} 00:${auth.countdownSeconds.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                        ),
-                      )
-                    else
-                      TextButton(
-                        onPressed: auth.isLoading ? null : _handleSendOtp,
-                        child: Text(
-                          s.resendOtpBtn,
-                          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // Verify Button
                 SizedBox(
@@ -449,40 +432,40 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                             height: 22,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                           )
-                        : Text(
-                            s.verifyAndLoginBtn,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        : const Text(
+                            'ভেরিফাই করুন ও লগইন (Verify)',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                           ),
                   ),
                 ),
+
                 const SizedBox(height: 16),
+
                 Center(
                   child: TextButton.icon(
-                    onPressed: () => setState(() => _isCodeSent = false),
-                    icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                    label: Text(
-                      s.orTryGoogleSignIn,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    onPressed: () => auth.resetFlow(),
+                    icon: const Icon(Icons.edit_rounded, size: 16),
+                    label: const Text(
+                      'নম্বর পরিবর্তন করুন',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                     ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                    ),
+                    style: TextButton.styleFrom(foregroundColor: AppColors.primary),
                   ),
                 ),
               ],
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
-              // "Continue as Guest" / Skip Option
+              // "Continue Offline / Skip" Option
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: Text(
-                    s.continueAsGuest,
+                    'লগইন ছাড়া অফলাইনে ব্যবহার করুন (Skip)',
                     style: TextStyle(
-                      fontSize: 14,
+                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white60 : Colors.black54,
+                      fontSize: 13,
                     ),
                   ),
                 ),

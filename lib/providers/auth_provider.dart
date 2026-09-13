@@ -1,21 +1,18 @@
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../core/services/auth_service.dart';
 import '../core/services/cloud_sync_service.dart';
+import '../core/services/supabase_service.dart';
 import 'medicine_provider.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService.instance;
+  final SupabaseService _supabase = SupabaseService.instance;
 
-  User? _user;
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Phone Auth flow states
-  String? _verificationId;
-  int? _resendToken;
   String _phoneNumber = '';
+  String? _generatedVerificationCode;
+  bool _isCodeSent = false;
   int _countdownSeconds = 0;
   Timer? _timer;
 
@@ -23,35 +20,41 @@ class AuthProvider extends ChangeNotifier {
     _init();
   }
 
-  void _init() {
-    _user = _authService.currentUser;
-    _authService.authStateChanges.listen((user) {
-      _user = user;
-      notifyListeners();
-    });
+  Future<void> _init() async {
+    await _supabase.initSession();
+    notifyListeners();
   }
 
-  User? get user => _user;
-  bool get isSignedIn => _user != null;
-  String? get phoneNumber => _user?.phoneNumber ?? (_phoneNumber.isNotEmpty ? _phoneNumber : null);
-  String? get displayName => _user?.displayName;
-  String? get email => _user?.email;
-  String? get photoUrl => _user?.photoURL;
+  bool get isSignedIn => _supabase.isSignedIn;
+  String? get phoneNumber => _supabase.currentUser?.phoneNumber ?? (_phoneNumber.isNotEmpty ? _phoneNumber : null);
+  String? get displayName => _supabase.currentUser?.name;
+  String? get userId => _supabase.currentUser?.id;
+  String? get email => phoneNumber != null ? '$phoneNumber' : null;
+  String? get photoUrl => null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   int get countdownSeconds => _countdownSeconds;
   bool get canResendOtp => _countdownSeconds == 0;
-  String? get verificationId => _verificationId;
-  int? get resendToken => _resendToken;
+  bool get isCodeSent => _isCodeSent;
+  String? get generatedVerificationCode => _generatedVerificationCode;
 
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 
+  void resetFlow() {
+    _isCodeSent = false;
+    _generatedVerificationCode = null;
+    _errorMessage = null;
+    _timer?.cancel();
+    _countdownSeconds = 0;
+    notifyListeners();
+  }
+
   void _startCountdown() {
     _timer?.cancel();
-    _countdownSeconds = 45;
+    _countdownSeconds = 30;
     notifyListeners();
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -64,53 +67,33 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
-  /// Initiate Phone OTP
+  /// Request verification code: saves phone to Supabase and generates on-screen code
   Future<bool> sendOtp(String fullPhoneNumber) async {
     _isLoading = true;
     _errorMessage = null;
     _phoneNumber = fullPhoneNumber;
     notifyListeners();
 
-    final completer = Completer<bool>();
-
-    await _authService.sendOtp(
-      fullPhoneNumber: fullPhoneNumber,
-      onCodeSent: (verificationId, resendToken) {
-        _verificationId = verificationId;
-        _resendToken = resendToken;
-        _isLoading = false;
-        _startCountdown();
-        notifyListeners();
-        if (!completer.isCompleted) completer.complete(true);
-      },
-      onError: (err) {
-        _isLoading = false;
-        _errorMessage = err;
-        notifyListeners();
-        if (!completer.isCompleted) completer.complete(false);
-      },
-      onAutoVerified: (credential) async {
-        try {
-          await _authService.signInWithCredential(credential);
-          _isLoading = false;
-          notifyListeners();
-          if (!completer.isCompleted) completer.complete(true);
-        } catch (e) {
-          _isLoading = false;
-          _errorMessage = e.toString();
-          notifyListeners();
-          if (!completer.isCompleted) completer.complete(false);
-        }
-      },
-    );
-
-    return completer.future;
+    try {
+      final code = await _supabase.requestVerificationCode(fullPhoneNumber);
+      _generatedVerificationCode = code;
+      _isCodeSent = true;
+      _isLoading = false;
+      _startCountdown();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Failed to generate code: $e';
+      notifyListeners();
+      return false;
+    }
   }
 
-  /// Verify 6-digit OTP code and sync local data to cloud
-  Future<bool> verifyOtp(String smsCode, MedicineProvider medicineProvider) async {
-    if (_verificationId == null) {
-      _errorMessage = 'Verification session expired. Please request OTP again.';
+  /// Verify on-screen code and automatically sync local SQLite data with Supabase
+  Future<bool> verifyOtp(String enteredCode, MedicineProvider medicineProvider) async {
+    if (_generatedVerificationCode == null) {
+      _errorMessage = 'No active verification session. Please request code again.';
       notifyListeners();
       return false;
     }
@@ -120,61 +103,33 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final cred = await _authService.verifyOtp(
-        verificationId: _verificationId!,
-        smsCode: smsCode,
+      final isSuccess = await _supabase.verifyCode(
+        phoneNumber: _phoneNumber,
+        enteredCode: enteredCode,
+        expectedCode: _generatedVerificationCode!,
+        userName: medicineProvider.profiles.isNotEmpty ? medicineProvider.profiles.first.name : 'User',
       );
 
       _isLoading = false;
       _timer?.cancel();
-      notifyListeners();
 
-      if (cred?.user != null) {
-        // Automatically sync all existing local medicines, profiles, and records to Cloud Firestore!
+      if (isSuccess) {
+        notifyListeners();
+        // Sync local medicines and reminders to Supabase
         await CloudSyncService.instance.syncLocalToCloud(
           profiles: medicineProvider.profiles,
           medicines: medicineProvider.medicines,
           records: medicineProvider.intakeRecords,
         );
         return true;
+      } else {
+        _errorMessage = 'ভুল কোড দেওয়া হয়েছে! অনুগ্রহ করে স্ক্রিনে দেখানো কোডটি সঠিক লিখুন।';
+        notifyListeners();
+        return false;
       }
-      return false;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = e.toString().contains('invalid-verification-code')
-          ? 'Invalid OTP code. Please enter the correct 6-digit code.'
-          : e.toString();
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Sign in with Google and automatically sync data
-  Future<bool> signInWithGoogle(MedicineProvider medicineProvider) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      final cred = await _authService.signInWithGoogle();
-      _isLoading = false;
-      notifyListeners();
-
-      if (cred?.user != null) {
-        // Automatically sync all existing local medicines, profiles, and records to Cloud Firestore!
-        await CloudSyncService.instance.syncLocalToCloud(
-          profiles: medicineProvider.profiles,
-          medicines: medicineProvider.medicines,
-          records: medicineProvider.intakeRecords,
-        );
-        return true;
-      }
-      return false;
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = e.toString().contains('network')
-          ? 'Network error. Please check your internet connection.'
-          : e.toString();
+      _errorMessage = e.toString();
       notifyListeners();
       return false;
     }
@@ -184,8 +139,8 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signOut() async {
     _isLoading = true;
     notifyListeners();
-    await _authService.signOut();
-    _user = null;
+    await _supabase.signOut();
+    resetFlow();
     _isLoading = false;
     notifyListeners();
   }

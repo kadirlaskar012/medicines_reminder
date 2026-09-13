@@ -1,130 +1,144 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/medicine.dart';
 import '../../models/user_profile.dart';
 import '../../models/intake_record.dart';
-import 'auth_service.dart';
+import 'supabase_service.dart';
 
 class CloudSyncService {
   CloudSyncService._internal();
   static final CloudSyncService instance = CloudSyncService._internal();
 
-  FirebaseFirestore? get _firestore {
-    try {
-      return FirebaseFirestore.instance;
-    } catch (e) {
-      debugPrint('Firestore not initialized: $e');
-      return null;
-    }
-  }
+  SupabaseService get _supabase => SupabaseService.instance;
 
-  String? get _currentUserId => AuthService.instance.userId;
+  String? get _userPhone => _supabase.currentUser?.phoneNumber;
 
-  /// Sync all current local data (profiles, medicines, records) to Firestore
+  /// Sync all current local data (medicines, reminders, records) to Supabase
   Future<void> syncLocalToCloud({
     required List<UserProfile> profiles,
     required List<Medicine> medicines,
     required List<IntakeRecord> records,
   }) async {
-    final uid = _currentUserId;
-    final db = _firestore;
-    if (uid == null || db == null) return;
+    final phone = _userPhone;
+    final client = _supabase.client;
+    if (phone == null || client == null) return;
 
     try {
-      final userDoc = db.collection('users').doc(uid);
-
-      // 1. Update user root document
-      await userDoc.set({
-        'lastSync': FieldValue.serverTimestamp(),
-        'phoneNumber': AuthService.instance.userPhoneNumber ?? '',
-      }, SetOptions(merge: true));
-
-      final batch = db.batch();
-
-      // 2. Profiles
-      for (final profile in profiles) {
-        final ref = userDoc.collection('profiles').doc(profile.id);
-        batch.set(ref, profile.toMap(), SetOptions(merge: true));
+      // 1. Sync Medicines to Supabase user_medicines table
+      for (final med in medicines) {
+        await client.from('user_medicines').upsert(
+          {
+            'id': med.id,
+            'phone_number': phone,
+            'profile_id': med.profileId,
+            'name': med.name,
+            'dosage': med.dosage,
+            'type': med.type.name,
+            'color_value': med.colorValue,
+            'instruction': med.instruction.name,
+            'current_stock': med.currentStock,
+            'is_active': med.isActive,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          onConflict: 'id',
+        );
       }
 
-      // 3. Medicines
-      for (final medicine in medicines) {
-        final ref = userDoc.collection('medicines').doc(medicine.id);
-        batch.set(ref, medicine.toMap(), SetOptions(merge: true));
+      // 2. Sync Recent Intake Logs
+      final recentRecords = records.length > 50 ? records.sublist(records.length - 50) : records;
+      for (final rec in recentRecords) {
+        final schedTimeStr = '${rec.scheduledDate}T${rec.scheduledHour.toString().padLeft(2, '0')}:${rec.scheduledMinute.toString().padLeft(2, '0')}:00Z';
+        await client.from('user_dose_logs').upsert(
+          {
+            'id': rec.id,
+            'phone_number': phone,
+            'medicine_id': rec.medicineId,
+            'scheduled_time': schedTimeStr,
+            'status': rec.status.name,
+            'taken_at': rec.recordedAt.toIso8601String(),
+            'synced_at': DateTime.now().toIso8601String(),
+          },
+          onConflict: 'id',
+        );
       }
 
-      // 4. Intake Records (recent 100 records)
-      final recentRecords = records.length > 100 ? records.sublist(records.length - 100) : records;
-      for (final record in recentRecords) {
-        final ref = userDoc.collection('intake_records').doc(record.id);
-        batch.set(ref, record.toMap(), SetOptions(merge: true));
-      }
-
-      await batch.commit();
-      debugPrint('CloudSyncService: Successfully uploaded local data to Cloud Firestore.');
+      debugPrint('CloudSyncService: Local data synced successfully with Supabase.');
     } catch (e) {
-      debugPrint('CloudSyncService error syncing local to cloud: $e');
+      debugPrint('CloudSyncService Supabase sync note: $e');
     }
   }
 
-  /// Push a single medicine to Firestore
+  /// Push a single medicine to Supabase
   Future<void> saveMedicine(Medicine medicine) async {
-    final uid = _currentUserId;
-    final db = _firestore;
-    if (uid == null || db == null) return;
+    final phone = _userPhone;
+    final client = _supabase.client;
+    if (phone == null || client == null) return;
 
     try {
-      await db.collection('users').doc(uid).collection('medicines').doc(medicine.id).set(
-        medicine.toMap(),
-        SetOptions(merge: true),
-      );
+      await client.from('user_medicines').upsert({
+        'id': medicine.id,
+        'phone_number': phone,
+        'profile_id': medicine.profileId,
+        'name': medicine.name,
+        'dosage': medicine.dosage,
+        'type': medicine.type.name,
+        'color_value': medicine.colorValue,
+        'instruction': medicine.instruction.name,
+        'current_stock': medicine.currentStock,
+        'is_active': medicine.isActive,
+        'updated_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'id');
     } catch (e) {
-      debugPrint('CloudSyncService saveMedicine error: $e');
+      debugPrint('CloudSyncService saveMedicine note: $e');
     }
   }
 
-  /// Remove a medicine from Firestore
+  /// Remove a medicine from Supabase
   Future<void> deleteMedicine(String medicineId) async {
-    final uid = _currentUserId;
-    final db = _firestore;
-    if (uid == null || db == null) return;
+    final client = _supabase.client;
+    if (client == null) return;
 
     try {
-      await db.collection('users').doc(uid).collection('medicines').doc(medicineId).delete();
+      await client.from('user_medicines').delete().eq('id', medicineId);
     } catch (e) {
-      debugPrint('CloudSyncService deleteMedicine error: $e');
+      debugPrint('CloudSyncService deleteMedicine note: $e');
     }
   }
 
-  /// Push a single profile to Firestore
+  /// Push a single profile to Supabase
   Future<void> saveProfile(UserProfile profile) async {
-    final uid = _currentUserId;
-    final db = _firestore;
-    if (uid == null || db == null) return;
+    final phone = _userPhone;
+    final client = _supabase.client;
+    if (phone == null || client == null) return;
 
     try {
-      await db.collection('users').doc(uid).collection('profiles').doc(profile.id).set(
-        profile.toMap(),
-        SetOptions(merge: true),
-      );
+      await client.from('app_users').update({
+        'name': profile.name,
+        'last_login': DateTime.now().toIso8601String(),
+      }).eq('phone_number', phone);
     } catch (e) {
-      debugPrint('CloudSyncService saveProfile error: $e');
+      debugPrint('CloudSyncService saveProfile note: $e');
     }
   }
 
-  /// Record an intake record to Firestore
-  Future<void> saveIntakeRecord(IntakeRecord record) async {
-    final uid = _currentUserId;
-    final db = _firestore;
-    if (uid == null || db == null) return;
+  /// Record dose intake event in Supabase
+  Future<void> recordDoseIntake(IntakeRecord record) async {
+    final phone = _userPhone;
+    final client = _supabase.client;
+    if (phone == null || client == null) return;
 
     try {
-      await db.collection('users').doc(uid).collection('intake_records').doc(record.id).set(
-        record.toMap(),
-        SetOptions(merge: true),
-      );
+      final schedTimeStr = '${record.scheduledDate}T${record.scheduledHour.toString().padLeft(2, '0')}:${record.scheduledMinute.toString().padLeft(2, '0')}:00Z';
+      await client.from('user_dose_logs').upsert({
+        'id': record.id,
+        'phone_number': phone,
+        'medicine_id': record.medicineId,
+        'scheduled_time': schedTimeStr,
+        'status': record.status.name,
+        'taken_at': record.recordedAt.toIso8601String(),
+        'synced_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'id');
     } catch (e) {
-      debugPrint('CloudSyncService saveIntakeRecord error: $e');
+      debugPrint('CloudSyncService recordDoseIntake note: $e');
     }
   }
 }

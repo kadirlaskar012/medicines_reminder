@@ -197,27 +197,36 @@ class NotificationService {
       tz.setLocalLocation(tz.local);
     }
 
-    // 2. Android Initialization Settings with monochrome stencil small icon
-    const androidSettings = AndroidInitializationSettings('@drawable/ic_notification');
+    // 2. Android Initialization Settings with fallback protection
+    bool initSuccess = false;
+    for (final iconName in ['@drawable/ic_notification', '@mipmap/ic_launcher']) {
+      try {
+        final androidSettings = AndroidInitializationSettings(iconName);
+        final initSettings = InitializationSettings(android: androidSettings);
 
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-    );
-
-    // 3. Initialize plugin
-    await _notificationsPlugin.initialize(
-      settings: initSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        if (response.payload != null && response.payload!.isNotEmpty) {
-          if (_onNotificationAction != null) {
-            _onNotificationAction!(response.payload!, response.actionId);
-          } else {
-            _pendingResponse = response;
-          }
-        }
-      },
-      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
-    );
+        // 3. Initialize plugin
+        await _notificationsPlugin.initialize(
+          settings: initSettings,
+          onDidReceiveNotificationResponse: (NotificationResponse response) {
+            if (response.payload != null && response.payload!.isNotEmpty) {
+              if (_onNotificationAction != null) {
+                _onNotificationAction!(response.payload!, response.actionId);
+              } else {
+                _pendingResponse = response;
+              }
+            }
+          },
+          onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+        );
+        initSuccess = true;
+        break;
+      } catch (e) {
+        debugPrint('Notification init with $iconName failed: $e, trying fallback...');
+      }
+    }
+    if (!initSuccess) {
+      debugPrint('Warning: Local notifications could not be initialized with custom icons.');
+    }
 
     // Check if app was launched via notification click
     try {

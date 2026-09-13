@@ -1,8 +1,10 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/constants/supabase_config.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/supabase_service.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/language_provider.dart';
@@ -13,11 +15,22 @@ import 'screens/welcome/welcome_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Safely initialize Firebase (handles offline or unconfigured environments)
+  // Safely initialize Supabase
   try {
-    await Firebase.initializeApp();
+    await Supabase.initialize(
+      url: SupabaseConfig.projectUrl,
+      // ignore: deprecated_member_use
+      anonKey: SupabaseConfig.anonKey,
+    );
   } catch (e) {
-    debugPrint('Firebase initialization note: $e');
+    debugPrint('Supabase initialization note: $e');
+  }
+
+  // Initialize Supabase user session from persistent storage
+  try {
+    await SupabaseService.instance.initSession();
+  } catch (e) {
+    debugPrint('Supabase session init note: $e');
   }
 
   // Initialize notification service and channels
@@ -64,4 +77,3 @@ class MediRemindApp extends StatelessWidget {
     );
   }
 }
-
