@@ -78,8 +78,8 @@ class ReportAndAlertService {
     final dateStr = DateFormat('MMMM d, yyyy').format(DateTime.now());
     final adherencePercent = (adherenceRate * 100).toInt();
 
-    // Palette for PDF (Warm Orange & Mint Green)
-    final primaryOrange = PdfColor.fromHex('#FF6B35');
+    // Palette for PDF (Royal Teal & Mint Green)
+    final primaryTeal = PdfColor.fromHex('#0D9488');
     final mintGreen = PdfColor.fromHex('#10B981');
     final darkNavy = PdfColor.fromHex('#1A1E1C');
     final lightBg = PdfColor.fromHex('#FCFBF7');
@@ -97,7 +97,7 @@ class ReportAndAlertService {
               pw.Container(
                 padding: const pw.EdgeInsets.all(16),
                 decoration: pw.BoxDecoration(
-                  color: primaryOrange,
+                  color: primaryTeal,
                   borderRadius: pw.BorderRadius.circular(12),
                 ),
                 child: pw.Row(
@@ -212,7 +212,7 @@ class ReportAndAlertService {
               pw.TableHelper.fromTextArray(
                 border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
                 headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.white),
-                headerDecoration: pw.BoxDecoration(color: primaryOrange),
+                headerDecoration: pw.BoxDecoration(color: primaryTeal),
                 cellStyle: const pw.TextStyle(fontSize: 9),
                 cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
                 headers: ['Medicine Name', 'Strength / Dosage', 'Form', 'Timing Instruction', 'Scheduled Times', 'Stock Left'],

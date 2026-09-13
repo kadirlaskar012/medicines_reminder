@@ -70,7 +70,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           name: medicineName,
           dosage: dosage,
           type: MedicineType.tablet,
-          colorValue: 0xFFFF6B35,
+          colorValue: 0xFF0D9488,
           instruction: FoodInstruction.afterMeal,
           createdAt: DateTime.now(),
         ),

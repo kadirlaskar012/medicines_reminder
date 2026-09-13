@@ -117,7 +117,7 @@ class MedicineProvider extends ChangeNotifier {
           id: 'default_me',
           name: (savedName != null && savedName.trim().isNotEmpty) ? savedName.trim() : 'Myself',
           relation: 'Myself',
-          colorValue: 0xFFFF6B35,
+          colorValue: 0xFF0D9488,
           avatarEmoji: savedAvatar ?? '👤',
           age: savedAge,
         );
@@ -392,7 +392,7 @@ class MedicineProvider extends ChangeNotifier {
       id: 'default_me',
       name: cleanName,
       relation: 'Myself',
-      colorValue: colorValue ?? 0xFFFF6B35,
+      colorValue: colorValue ?? 0xFF0D9488,
       avatarEmoji: avatarEmoji ?? '👤',
       age: age,
     );

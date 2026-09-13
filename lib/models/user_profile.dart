@@ -71,7 +71,7 @@ class UserProfile {
     id: 'default_me',
     name: 'Myself',
     relation: 'Myself',
-    colorValue: 0xFFFF6B35, // Warm Orange
+    colorValue: 0xFF0D9488, // Royal Teal
     avatarEmoji: '👤',
   );
 }

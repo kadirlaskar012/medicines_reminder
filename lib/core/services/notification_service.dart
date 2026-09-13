@@ -85,7 +85,7 @@ class NotificationService {
   static const String actionSkip = 'action_skip';
 
   // Notification Theme Color
-  static const Color brandPrimaryColor = Color(0xFFFF6B35);
+  static const Color brandPrimaryColor = Color(0xFF0D9488);
 
   // ==================== MEDICINE TYPE ICON MAPPINGS ====================
   /// Returns high-resolution custom PNG icon for the large notification avatar

@@ -29,7 +29,7 @@ class _UserOnboardingProfileScreenState extends State<UserOnboardingProfileScree
     {'emoji': '👧', 'label': 'তরুণী', 'color': 0xFF8B5CF6},
     {'emoji': '👴', 'label': 'প্রবীণ', 'color': 0xFFD97706},
     {'emoji': '👵', 'label': 'প্রবীণা', 'color': 0xFFE11D48},
-    {'emoji': '👤', 'label': 'সাধারণ', 'color': 0xFFFF6B35},
+    {'emoji': '👤', 'label': 'সাধারণ', 'color': 0xFF10B981},
   ];
 
   late String _selectedEmoji;
