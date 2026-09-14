@@ -9,7 +9,7 @@ import '../providers/medicine_provider.dart';
 import 'today/today_screen.dart';
 import 'medicines/medicines_cabinet_screen.dart';
 import 'medicines/add_edit_medicine_screen.dart';
-import 'history/history_screen.dart';
+import 'reports/reports_analytics_screen.dart';
 import 'settings/settings_screen.dart';
 import 'alarm/alarm_ringing_screen.dart';
 import '../providers/language_provider.dart';
@@ -27,7 +27,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _screens = const [
     TodayScreen(),
     MedicinesCabinetScreen(),
-    HistoryScreen(),
+    ReportsAnalyticsScreen(),
     SettingsScreen(),
   ];
 
@@ -268,24 +268,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
         destinations: [
           NavigationDestination(
-            icon: const Icon(Icons.today_outlined),
-            selectedIcon: const Icon(Icons.today_rounded, color: AppColors.primary),
-            label: s.tabToday,
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home_rounded, color: AppColors.primary),
+            label: s.todayTab,
           ),
           NavigationDestination(
             icon: const Icon(Icons.medication_outlined),
             selectedIcon: const Icon(Icons.medication_rounded, color: AppColors.primary),
-            label: s.tabCabinet,
+            label: s.medicinesTab,
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart_rounded, color: AppColors.primary),
+            label: 'Reports',
           ),
           NavigationDestination(
-            icon: const Icon(Icons.insights_outlined),
-            selectedIcon: const Icon(Icons.insights_rounded, color: AppColors.primary),
-            label: s.tabHistory,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.tune_outlined),
-            selectedIcon: const Icon(Icons.tune_rounded, color: AppColors.primary),
-            label: s.tabSettings,
+            icon: const Icon(Icons.more_horiz_rounded),
+            selectedIcon: const Icon(Icons.more_horiz_rounded, color: AppColors.primary),
+            label: s.settingsTab,
           ),
         ],
       ),

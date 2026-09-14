@@ -1,15 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import '../core/constants/app_svg_icons.dart';
-import '../core/localization/app_strings.dart';
-import '../core/services/report_and_alert_service.dart';
 import '../core/theme/app_colors.dart';
-import '../models/medicine.dart';
 import '../models/scheduled_dose.dart';
-import '../providers/language_provider.dart';
-import 'pill_icon_badge.dart';
+import '../screens/medicines/medicine_details_screen.dart';
+import 'dual_tone_capsule.dart';
 
 class DoseCard extends StatelessWidget {
   final ScheduledDose dose;
@@ -25,309 +18,148 @@ class DoseCard extends StatelessWidget {
     required this.onSnooze,
   });
 
-  String _getFoodInstructionText(FoodInstruction inst, AppStrings s) {
-    switch (inst) {
-      case FoodInstruction.beforeMeal:
-        return s.beforeMeal;
-      case FoodInstruction.afterMeal:
-        return s.afterMeal;
-      case FoodInstruction.withMeal:
-        return s.withMeal;
-      case FoodInstruction.emptyStomach:
-        return s.emptyStomach;
-      case FoodInstruction.bedtime:
-        return s.bedtime;
-      case FoodInstruction.anytime:
-        return s.anytime;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final s = context.watch<LanguageProvider>().strings;
     final med = dose.medicine;
     final rem = dose.reminder;
-    final medColor = Color(med.colorValue);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: dose.isTaken
-              ? AppColors.success.withValues(alpha: 0.3)
-              : dose.isOverdue
-                  ? AppColors.error.withValues(alpha: 0.3)
-                  : isDark
-                      ? AppColors.darkBorder
-                      : AppColors.lightBorder,
-          width: dose.isTaken || dose.isOverdue ? 1.5 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    final now = DateTime.now();
+    final isUpcoming = !dose.isTaken && !dose.isSkipped && dose.scheduledDate.isAfter(now.add(const Duration(minutes: 30)));
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MedicineDetailsScreen(medicine: med),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+        );
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: dose.isTaken
+                ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                PillIconBadge(
-                  type: med.type,
-                  color: medColor,
-                  size: 50,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              med.name,
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (rem.isAlarm)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 6),
-                              child: Icon(
-                                Icons.notifications_active_rounded,
-                                size: 18,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            med.dosage,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: medColor,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '•  ${rem.formattedTime}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            // 3D Dual Tone Capsule
+            DualToneCapsule.fromIndex(
+              med.colorValue,
+              size: 46,
             ),
-            const SizedBox(height: 12),
-            const Divider(height: 1, thickness: 0.8),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                // Food instruction pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.lightBackground,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppSvgIcons.render(
-                        med.instruction.svgString,
-                        width: 15,
-                        height: 15,
-                        color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _getFoodInstructionText(med.instruction, s),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (med.isLowStock) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppColors.warningLight,
-                      borderRadius: BorderRadius.circular(10),
+            const SizedBox(width: 14),
+
+            // Medicine Information
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    med.name,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.warning),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${med.currentStock} ${s.leftCount}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.warning,
-                          ),
-                        ),
-                      ],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${med.dosage.isNotEmpty ? med.dosage : "500 mg"} (${med.type.name})',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    rem.formattedTime,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFEF4444),
                     ),
                   ),
                 ],
-                const Spacer(),
-                // Status or Actions
-                if (dose.isTaken)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.successLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.check_circle_rounded, size: 16, color: AppColors.success),
-                        const SizedBox(width: 6),
-                        Text(
-                          dose.record?.recordedAt != null
-                              ? '${s.takenAt} ${DateFormat('hh:mm a').format(dose.record!.recordedAt)}'
-                              : s.taken,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.success,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ).animate().scale(duration: 200.ms)
-                else if (dose.isSkipped)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.cancel_rounded, size: 16, color: AppColors.lightTextMuted),
-                        const SizedBox(width: 6),
-                        Text(
-                          s.skipped,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.lightTextMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else ...[
-                  // Popup menu for snooze & skip
-                  PopupMenuButton<String>(
-                    icon: Icon(
-                      Icons.more_vert_rounded,
-                      size: 20,
-                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                    ),
-                    onSelected: (val) {
-                      if (val == 'snooze') onSnooze();
-                      if (val == 'skip') onSkip();
-                      if (val == 'caregiver') {
-                        ReportAndAlertService.instance.sendCaregiverWhatsAppAlert(
-                          memberName: dose.medicine.profileId == 'default_me' ? 'Patient' : 'Family Member',
-                          medicineName: med.name,
-                          dosage: med.dosage,
-                          scheduledTime: rem.formattedTime,
-                        );
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'snooze',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.snooze_rounded, size: 18, color: AppColors.warning),
-                            const SizedBox(width: 10),
-                            Text(s.snooze10m),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'skip',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.close_rounded, size: 18, color: AppColors.error),
-                            const SizedBox(width: 10),
-                            Text(s.skip),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'caregiver',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.chat_rounded, size: 18, color: Color(0xFF10B981)),
-                            const SizedBox(width: 10),
-                            Text(s.alertCaregiverWhatsApp),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 4),
-                  ElevatedButton(
-                    onPressed: onTake,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                      minimumSize: const Size(80, 36),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.check_rounded, size: 16),
-                        const SizedBox(width: 6),
-                        Text(s.takeDose, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
+              ),
             ),
+
+            // Right Action / Status Badge
+            if (dose.isTaken)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_rounded, color: Color(0xFF10B981), size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      'Taken',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF10B981),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (isUpcoming)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Upcoming',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkTextMuted : const Color(0xFF94A3B8),
+                  ),
+                ),
+              )
+            else
+              ElevatedButton(
+                onPressed: onTake,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF10B981),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  minimumSize: const Size(88, 36),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text(
+                  'Take Now',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ),
           ],
         ),
       ),

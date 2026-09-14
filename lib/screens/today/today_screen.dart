@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants/app_svg_icons.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/reminder_time.dart';
 import '../../models/scheduled_dose.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
-import '../../widgets/adherence_ring.dart';
 import '../../widgets/calendar_timeline_bar.dart';
 import '../../widgets/dose_card.dart';
-import '../../widgets/profile_selector_sheet.dart';
+import '../../widgets/dual_tone_capsule.dart';
+import '../../widgets/empty_medicines_view.dart';
 import '../medicines/add_edit_medicine_screen.dart';
+import '../medicines/medicines_cabinet_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 class TodayScreen extends StatelessWidget {
   const TodayScreen({super.key});
@@ -30,67 +31,6 @@ class TodayScreen extends StatelessWidget {
     }
   }
 
-  Widget _buildCareCircleChip(
-    BuildContext context, {
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-    String? avatarSvg,
-    Widget? icon,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary
-              : (isDark ? AppColors.darkCard : const Color(0xFFF0FDF4)),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.primary
-                : (isDark ? AppColors.darkBorder : const Color(0xFFBBF7D0)),
-            width: isSelected ? 1.5 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (avatarSvg != null)
-              AppSvgIcons.render(avatarSvg, width: 20, height: 20)
-            else
-              ?icon,
-
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isSelected
-                    ? Colors.white
-                    : (isDark ? AppColors.darkTextPrimary : const Color(0xFF065F46)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -107,151 +47,141 @@ class TodayScreen extends StatelessWidget {
     final eveningDoses = provider.eveningDoses;
     final nightDoses = provider.nightDoses;
     final totalDoses = provider.dosesForSelectedDate.length;
-    final completedDoses = provider.todayTakenCount;
+
+    final userName = activeProfile != null
+        ? (activeProfile.id == 'default_me' || activeProfile.name.toLowerCase() == 'myself' ? 'Kadir' : activeProfile.name)
+        : 'Kadir';
 
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // Top App Bar / Profile Header
+            // Top App Bar / Profile Header (Screen 07: Good Morning, Kadir + Bell icon)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                padding: const EdgeInsets.fromLTRB(20, 14, 16, 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
                       children: [
-                        Text(
-                          s.formatHeaderDate(provider.selectedDate),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                            letterSpacing: 0.3,
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.person, color: Color(0xFF2563EB), size: 24),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          s.dailySchedule,
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
-                          ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Good Morning,',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                            Text(
+                              '$userName 👋',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    // Quick Adherence Score Pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    IconButton(
+                      icon: Stack(
                         children: [
-                          Icon(
-                            completedDoses == totalDoses && totalDoses > 0
-                                ? Icons.verified_rounded
-                                : Icons.schedule_rounded,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            totalDoses > 0 ? '$completedDoses / $totalDoses' : '0',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
+                          const Icon(Icons.notifications_outlined, size: 26),
+                          Positioned(
+                            right: 2,
+                            top: 2,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFEF4444),
+                                shape: BoxShape.circle,
+                              ),
                             ),
                           ),
                         ],
                       ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
             ),
 
-            // Care Circle Horizontal Switcher Bar
+            // Health Motivation Banner (Screen 07: Take care today for a healthier tomorrow)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: SizedBox(
-                  height: 42,
-                  child: ScrollConfiguration(
-                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      children: [
-                        _buildCareCircleChip(
-                          context,
-                          label: s.allFamily,
-                          isSelected: activeProfile == null,
-                          onTap: () => provider.switchProfile(null),
-                          icon: Icon(
-                            Icons.people_alt_rounded,
-                            size: 17,
-                            color: activeProfile == null ? Colors.white : AppColors.primary,
-                          ),
-                        ),
-                        ...provider.profiles.map((p) {
-                          final isSelected = activeProfile?.id == p.id;
-                          final pName = (p.id == 'default_me' || p.name.toLowerCase() == 'myself') ? s.myself : p.name;
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: _buildCareCircleChip(
-                              context,
-                              label: pName,
-                              isSelected: isSelected,
-                              onTap: () => provider.switchProfile(p),
-                              avatarSvg: p.svgAvatar,
-                            ),
-                          );
-                        }),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: ActionChip(
-                            avatar: const Icon(Icons.person_add_alt_1_rounded, size: 16, color: AppColors.primary),
-                            label: Text(s.addMember, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                            backgroundColor: isDark ? AppColors.darkCard : const Color(0xFFF0FDF4),
-                            side: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFBBF7D0)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            onPressed: () => ProfileSelectorSheet.show(context),
-                          ),
-                        ),
-                      ],
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.4) : const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF047857) : const Color(0xFFC8E6C9),
                     ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Take care today\nfor a healthier\ntomorrow',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            height: 1.3,
+                            color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF065F46),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(20),
+                                bottomLeft: Radius.circular(20),
+                              ),
+                            ),
+                            child: const Icon(Icons.eco_rounded, color: Color(0xFF10B981), size: 22),
+                          ),
+                          const SizedBox(width: 8),
+                          DualToneCapsule.paracetamol(size: 42),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-
-
-
-            // Adherence Progress Card
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: AdherenceRing(
-                  rate: provider.todayAdherenceRate,
-                  takenCount: provider.todayTakenCount,
-                  totalCount: provider.todayTotalCount,
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
             // Calendar Timeline Strip
             SliverToBoxAdapter(
@@ -261,124 +191,53 @@ class TodayScreen extends StatelessWidget {
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-            // 100% Adherence Celebration Banner
-            if (totalDoses > 0 && completedDoses == totalDoses)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isDark
-                            ? [const Color(0xFF064E3B), const Color(0xFF065F46)]
-                            : [const Color(0xFFECFDF5), const Color(0xFFD1FAE5)],
+            // Today's Medicines Header + View All
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Today\'s Medicines',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
+                        letterSpacing: -0.4,
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.6 : 0.4),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MedicinesCabinetScreen()),
+                        );
+                      },
+                      child: const Text(
+                        'View All',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF0F766E) : Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Text('🎉', style: TextStyle(fontSize: 22)),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                s.allDosesCompletedTitle,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                  color: isDark ? Colors.white : const Color(0xFF065F46),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                s.allDosesCompletedSub,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF047857),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
               ),
+            ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
-
-            // If empty, show motivational empty state
+            // If empty, show motivational EmptyMedicinesView (Screen 18)
             if (totalDoses == 0)
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight.withValues(alpha: 0.4),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                            child: Icon(Icons.check_circle_outline_rounded, size: 44, color: AppColors.primary),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          s.noDosesScheduled,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          s.tapToAddFirst,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const AddEditMedicineScreen()),
-                            );
-                          },
-                          icon: const Icon(Icons.add_rounded),
-                          label: Text(s.addMedicine),
-                        ),
-                      ],
-                    ),
-                  ),
+                child: EmptyMedicinesView(
+                  onAdd: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AddEditMedicineScreen()),
+                    );
+                  },
                 ),
               ),
 

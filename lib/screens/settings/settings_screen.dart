@@ -13,6 +13,7 @@ import '../../providers/theme_provider.dart';
 import '../../widgets/profile_selector_sheet.dart';
 import '../admin/admin_control_panel_screen.dart';
 import '../auth/phone_login_screen.dart';
+import '../family/family_members_screen.dart';
 import '../welcome/user_onboarding_profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -130,6 +131,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         )
                       : null,
                 )),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.people_outline_rounded, color: AppColors.primary),
+                  title: const Text('Manage Family Members', style: TextStyle(fontWeight: FontWeight.w700)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const FamilyMembersScreen()),
+                    );
+                  },
+                ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),

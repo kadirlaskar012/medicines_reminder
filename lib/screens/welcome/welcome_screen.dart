@@ -4,38 +4,49 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/language_provider.dart';
+import '../auth/phone_login_screen.dart';
 import 'user_onboarding_profile_screen.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   final bool isFromSettings;
   const WelcomeScreen({super.key, this.isFromSettings = false});
 
   static const String prefKeySeenWelcome = 'has_seen_welcome_screen';
 
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
   Future<void> _completeWelcome(BuildContext context) async {
-    if (isFromSettings) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(prefKeySeenWelcome, true);
-      if (!context.mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(WelcomeScreen.prefKeySeenWelcome, true);
+    if (!context.mounted) return;
+
+    if (widget.isFromSettings) {
       Navigator.pop(context);
     } else {
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
-        PageRouteBuilder(
-          pageBuilder: (context, anim, secAnim) => const UserOnboardingProfileScreen(),
-          transitionsBuilder: (context, animation, secAnim, child) {
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1.0, 0.0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 350),
-        ),
+        MaterialPageRoute(builder: (_) => const UserOnboardingProfileScreen()),
       );
     }
+  }
+
+  void _goToSignIn(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -45,280 +56,200 @@ class WelcomeScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F7F6),
+      backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Stack(
           children: [
-            // Ambient soft glowing background orbs
+            // Ambient glowing background orbs
             Positioned(
               top: -60,
-              right: -60,
+              right: -50,
               child: Container(
-                width: 240,
-                height: 240,
+                width: 220,
+                height: 220,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.15),
+                  color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
                 ),
               ),
             ),
             Positioned(
-              bottom: 80,
-              left: -80,
+              bottom: 120,
+              left: -60,
               child: Container(
-                width: 260,
-                height: 260,
+                width: 200,
+                height: 200,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.secondary.withValues(alpha: isDark ? 0.2 : 0.12),
+                  color: AppColors.accentMint.withValues(alpha: isDark ? 0.15 : 0.08),
                 ),
               ),
             ),
 
-            // Main Content
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-
-                  // Close button if opened from Settings
-                  if (isFromSettings)
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: IconButton(
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-
-                  const Spacer(flex: 1),
-
-                  // Brand Header (Logo + MediRemind + Localized Tagline)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+            Column(
+              children: [
+                // Top bar: Skip button & language selector
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.28),
-                              blurRadius: 14,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/icons/app_brand_logo.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            s.appName,
+                      // Language Chip
+                      _buildLangChip(context, lang),
+
+                      // Skip / Close
+                      if (widget.isFromSettings)
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.pop(context),
+                        )
+                      else if (_currentPage < 3)
+                        TextButton(
+                          onPressed: () => _completeWelcome(context),
+                          child: Text(
+                            s.skip,
                             style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.6,
-                              color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                            ),
-                          ),
-                          Text(
-                            s.appTagline,
-                            style: TextStyle(
-                              fontSize: 12,
+                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                               fontWeight: FontWeight.w600,
-                              color: isDark ? AppColors.darkTextMuted : const Color(0xFF047857),
+                              fontSize: 14,
                             ),
                           ),
-                        ],
+                        )
+                      else
+                        const SizedBox(width: 48),
+                    ],
+                  ),
+                ),
+
+                // PageView for Screens 01, 02, 03, 04
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: (idx) => setState(() => _currentPage = idx),
+                    children: [
+                      // SCREEN 01: Splash / Welcome
+                      _buildSplashPage(isDark, s),
+                      // SCREEN 02: Onboarding 1
+                      _buildOnboardingPage(
+                        isDark: isDark,
+                        assetImage: 'assets/icons/3d/med_3d_tablet.png',
+                        title: lang.languageCode == 'bn' ? 'নিয়ম মেনে চলুন, সুস্থ থাকুন' : (lang.languageCode == 'hi' ? 'समय पर दवा, स्वस्थ जीवन' : 'Stay on Track, Stay Healthy'),
+                        subtitle: lang.languageCode == 'bn' ? 'কখনও ডোজ মিস করবেন না। সহজে ওষুধের সময়সূচী নির্ধারণ করুন।' : (lang.languageCode == 'hi' ? 'कभी कोई खुराक न भूलें। आसानी से दवाओं का समय तय करें।' : 'Never miss a dose again. Set personalized medicine schedules effortlessly.'),
+                      ),
+                      // SCREEN 03: Onboarding 2
+                      _buildOnboardingPage(
+                        isDark: isDark,
+                        assetImage: 'assets/icons/3d/med_3d_syrup.png',
+                        title: lang.languageCode == 'bn' ? 'নিজের ও পরিবারের যত্ন নিন' : (lang.languageCode == 'hi' ? 'अपने और परिवार का ख्याल रखें' : 'Manage for You & Your Family'),
+                        subtitle: lang.languageCode == 'bn' ? 'একই অ্যাপে নিজের ও প্রিয়জনদের প্রেসক্রিপশন ও ওষুধের হিসাব রাখুন।' : (lang.languageCode == 'hi' ? 'एक ही ऐप से पूरे परिवार की दवाइयों का प्रबंधन करें।' : 'Track prescriptions for loved ones from a single profile seamlessly.'),
+                      ),
+                      // SCREEN 04: Onboarding 3
+                      _buildOnboardingPage(
+                        isDark: isDark,
+                        assetImage: 'assets/icons/3d/med_3d_capsule.png',
+                        title: lang.languageCode == 'bn' ? 'স্বাস্থ্য রিপোর্ট ও অ্যানালিটিক্স' : (lang.languageCode == 'hi' ? 'स्वास्थ्य रिपोर्ट और विश्लेषण' : 'Get Useful Health Insights'),
+                        subtitle: lang.languageCode == 'bn' ? 'ওষুধ খাওয়ার প্রবণতা, শতাংশ ও চিকিৎসকের জন্য পিডিএফ রিপোর্ট তৈরি করুন।' : (lang.languageCode == 'hi' ? 'दवा लेने का रिकॉर्ड देखें और डॉक्टर के लिए रिपोर्ट निर्यात करें।' : 'Visualize intake trends, adherence rates, and export doctor reports in 1 click.'),
                       ),
                     ],
-                  ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2, end: 0),
+                  ),
+                ),
 
-                  const SizedBox(height: 16),
-
-                  // 3D Floating Medicine Cluster
-                  SizedBox(
-                    height: 180,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // White Scored Tablet (Left)
-                        Positioned(
-                          left: 40,
-                          top: 25,
-                          child: Image.asset(
-                            'assets/icons/3d/med_3d_tablet.png',
-                            width: 85,
-                            height: 85,
-                          ).animate(onPlay: (c) => c.repeat(reverse: true))
-                           .moveY(begin: 0, end: -8, duration: 1800.ms),
-                        ),
-                        // Amber Glass Syrup Bottle (Right)
-                        Positioned(
-                          right: 35,
-                          top: 15,
-                          child: Image.asset(
-                            'assets/icons/3d/med_3d_syrup.png',
-                            width: 95,
-                            height: 95,
-                          ).animate(onPlay: (c) => c.repeat(reverse: true))
-                           .moveY(begin: 0, end: 10, duration: 2200.ms),
-                        ),
-                        // Royal Blue & Coral Capsule (Center Foreground)
-                        Positioned(
-                          top: 45,
-                          child: Image.asset(
-                            'assets/icons/3d/med_3d_capsule.png',
-                            width: 105,
-                            height: 105,
-                          ).animate(onPlay: (c) => c.repeat(reverse: true))
-                           .moveY(begin: 0, end: -12, duration: 1500.ms)
-                           .rotate(begin: -0.05, end: 0.05, duration: 2000.ms),
-                        ),
-                      ],
-                    ),
-                  ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.85, 0.85)),
-
-                  const SizedBox(height: 16),
-
-                  // Frosted Welcome Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.92),
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF334155) : Colors.white,
-                        width: 1.5,
+                // Bottom Page Indicators & Action Buttons
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+                  child: Column(
+                    children: [
+                      // Dot indicators
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(4, (i) {
+                          final isActive = _currentPage == i;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            height: 8,
+                            width: isActive ? 24 : 8,
+                            decoration: BoxDecoration(
+                              color: isActive ? AppColors.primary : (isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        }),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.08),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          s.welcomeTitle,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F2B2B),
-                            height: 1.25,
+                      const SizedBox(height: 24),
+
+                      // Primary CTA Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (_currentPage < 3) {
+                              _pageController.nextPage(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            } else {
+                              _completeWelcome(context);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 4,
+                            shadowColor: AppColors.primary.withValues(alpha: 0.35),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          s.welcomeSub,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                            height: 1.4,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _currentPage == 0
+                                    ? s.getStarted
+                                    : (_currentPage == 3
+                                        ? (lang.languageCode == 'bn' ? "চলুন শুরু করি →" : (lang.languageCode == 'hi' ? "शुरू करें →" : "Let's Start →"))
+                                        : (lang.languageCode == 'bn' ? "পরবর্তী →" : (lang.languageCode == 'hi' ? "अगला →" : "Next →"))),
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                              ),
+                            ],
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 22),
+                      ),
 
-                        // Feature Badges
-                        _buildFeatureRow(
-                          icon: Icons.alarm_on_rounded,
-                          color: const Color(0xFF10B981),
-                          text: s.exactAlarmsFeature,
-                          isDark: isDark,
-                        ),
+                      // Secondary Sign In link for Screen 01 / Splash
+                      if (_currentPage == 0) ...[
                         const SizedBox(height: 12),
-                        _buildFeatureRow(
-                          icon: Icons.group_rounded,
-                          color: const Color(0xFF0EA5E9),
-                          text: s.familyProfilesFeature,
-                          isDark: isDark,
+                        TextButton(
+                          onPressed: () => _goToSignIn(context),
+                          child: RichText(
+                            text: TextSpan(
+                              text: lang.languageCode == 'bn' ? 'ইতিমধ্যে একাউন্ট আছে? ' : (lang.languageCode == 'hi' ? 'पहले से खाता है? ' : 'Already have an account? '),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                              ),
+                              children: const [
+                                TextSpan(
+                                  text: 'Sign In',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
+                      ] else ...[
                         const SizedBox(height: 12),
-                        _buildFeatureRow(
-                          icon: Icons.cloud_done_rounded,
-                          color: const Color(0xFF8B5CF6),
-                          text: s.cloudSyncFeature,
-                          isDark: isDark,
-                        ),
+                        const SizedBox(height: 28), // balance spacing
                       ],
-                    ),
-                  ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideY(begin: 0.1, end: 0),
-
-                  const Spacer(flex: 1),
-
-                  // Language Quick-Selector Pill (English | বাংলা | हिंदी)
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildLangChip(context, 'en', 'English', lang.languageCode == 'en'),
-                        _buildLangChip(context, 'bn', 'বাংলা', lang.languageCode == 'bn'),
-                        _buildLangChip(context, 'hi', 'हिन्दी', lang.languageCode == 'hi'),
-                      ],
-                    ),
-                  ).animate().fadeIn(delay: 400.ms, duration: 500.ms),
-
-                  const SizedBox(height: 20),
-
-                  // "Get Started" Action Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () => _completeWelcome(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 4,
-                        shadowColor: AppColors.primary.withValues(alpha: 0.4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      ),
-                      child: Text(
-                        s.getStarted,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 500.ms, duration: 500.ms).scale(begin: const Offset(0.95, 0.95)),
-
-                  const SizedBox(height: 24),
-                ],
-              ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -326,55 +257,224 @@ class WelcomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureRow({
-    required IconData icon,
-    required Color color,
-    required String text,
-    required bool isDark,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1E293B),
+  // SCREEN 01: Splash Screen Page
+  Widget _buildSplashPage(bool isDark, dynamic s) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(flex: 1),
+
+          // 3D Medicine Bottle Illustration Cluster
+          SizedBox(
+            height: 220,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Glowing circular backdrop
+                Container(
+                  width: 170,
+                  height: 170,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.primary.withValues(alpha: 0.25),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Tablet floating left
+                Positioned(
+                  left: 30,
+                  top: 30,
+                  child: Image.asset(
+                    'assets/icons/3d/med_3d_tablet.png',
+                    width: 70,
+                    height: 70,
+                  ).animate(onPlay: (c) => c.repeat(reverse: true))
+                   .moveY(begin: 0, end: -10, duration: 1800.ms),
+                ),
+
+                // Main Medicine Bottle / Capsule in center
+                Image.asset(
+                  'assets/icons/3d/med_3d_syrup.png',
+                  width: 130,
+                  height: 130,
+                ).animate(onPlay: (c) => c.repeat(reverse: true))
+                 .moveY(begin: -5, end: 5, duration: 2200.ms),
+
+                // Dual capsule floating right
+                Positioned(
+                  right: 35,
+                  bottom: 30,
+                  child: Image.asset(
+                    'assets/icons/3d/med_3d_capsule.png',
+                    width: 75,
+                    height: 75,
+                  ).animate(onPlay: (c) => c.repeat(reverse: true))
+                   .moveY(begin: 0, end: 8, duration: 1600.ms),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+
+          const SizedBox(height: 28),
+
+          // App Name
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                ),
+                child: const Icon(Icons.favorite_rounded, color: AppColors.primary, size: 18),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                s.appName,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                  color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          // Tagline: "Small Reminders, Big Healthier Tomorrows"
+          Text(
+            s.appTagline,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.accentMint,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Subtitle
+          Text(
+            s.welcomeSub,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              height: 1.4,
+            ),
+          ),
+
+          const Spacer(flex: 2),
+        ],
+      ),
     );
   }
 
-  Widget _buildLangChip(BuildContext context, String code, String label, bool isSelected) {
-    return GestureDetector(
-      onTap: () => context.read<LanguageProvider>().setLanguage(code),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
+  // Generic Onboarding Page (Screens 02, 03, 04)
+  Widget _buildOnboardingPage({
+    required bool isDark,
+    required String assetImage,
+    required String title,
+    required String subtitle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(flex: 1),
+
+          // 3D Illustration
+          Container(
+            width: 180,
+            height: 180,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08),
+            ),
+            child: Center(
+              child: Image.asset(
+                assetImage,
+                width: 120,
+                height: 120,
+                fit: BoxFit.contain,
+              ).animate(onPlay: (c) => c.repeat(reverse: true))
+               .moveY(begin: -6, end: 6, duration: 2000.ms),
+            ),
           ),
+
+          const SizedBox(height: 36),
+
+          // Title
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+              color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Subtitle
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              height: 1.5,
+            ),
+          ),
+
+          const Spacer(flex: 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLangChip(BuildContext context, LanguageProvider lang) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1E293B)
+            : const Color(0xFFE2E8F0).withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: PopupMenuButton<String>(
+        onSelected: (code) => lang.setLanguage(code),
+        itemBuilder: (ctx) => [
+          const PopupMenuItem(value: 'en', child: Text('🇬🇧 English')),
+          const PopupMenuItem(value: 'bn', child: Text('🇧🇩 বাংলা')),
+          const PopupMenuItem(value: 'hi', child: Text('🇮🇳 हिन्दी')),
+        ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.language_rounded, size: 16, color: AppColors.primary),
+            const SizedBox(width: 4),
+            Text(
+              lang.languageCode == 'bn' ? 'বাংলা' : (lang.languageCode == 'hi' ? 'हिन्दी' : 'EN'),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+            const Icon(Icons.arrow_drop_down_rounded, size: 16),
+          ],
         ),
       ),
     );

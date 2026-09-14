@@ -10,19 +10,25 @@ import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 
-enum AuthStep { phone, enterPin, createPin, forgotPin }
+enum AuthMode { signIn, signUp }
 
 class PhoneLoginScreen extends StatefulWidget {
   final bool isModal;
-  const PhoneLoginScreen({super.key, this.isModal = false});
+  final AuthMode initialMode;
+  const PhoneLoginScreen({
+    super.key,
+    this.isModal = false,
+    this.initialMode = AuthMode.signIn,
+  });
 
   @override
   State<PhoneLoginScreen> createState() => _PhoneLoginScreenState();
 }
 
 class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
-  AuthStep _step = AuthStep.phone;
+  late AuthMode _mode;
   bool _isLoading = false;
+  bool _isForgotPinView = false;
 
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
@@ -57,6 +63,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   @override
   void initState() {
     super.initState();
+    _mode = widget.initialMode;
     _selectedSecurityQuestion = _securityQuestions.first;
   }
 
@@ -75,192 +82,165 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
   // ==================== FLOW HANDLERS ====================
 
-  Future<void> _handlePhoneSubmit() async {
+  Future<void> _handleSignIn() async {
     final phone = _phoneController.text.trim();
+    final pin = _pinController.text.trim();
+
     if (phone.length < 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('অনুগ্রহ করে বৈধ ১০ ডিজিটের মোবাইল নম্বর লিখুন'), backgroundColor: AppColors.error),
-      );
+      _showToast('অনুগ্রহ করে বৈধ ১০ ডিজিটের মোবাইল নম্বর লিখুন', isError: true);
+      return;
+    }
+    if (pin.length != 4) {
+      _showToast('অনুগ্রহ করে ৪-সংখ্যার গোপন পিন লিখুন', isError: true);
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final status = await SupabaseService.instance.checkUserStatus(_fullPhoneNumber);
+      final ok = await SupabaseService.instance.verifyPin(
+        phoneNumber: _fullPhoneNumber,
+        enteredPin: pin,
+      );
+
+      if (!ok) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        _showToast('❌ ভুল পিন দেওয়া হয়েছে! সঠিক পিন লিখুন অথবা Forgot PIN চাপুন।', isError: true);
+        return;
+      }
+
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-        _existingUserName = status.name;
-        _existingSecurityQuestion = status.securityQuestion;
+      // Restore user cloud data
+      final medProvider = context.read<MedicineProvider>();
+      final restoredCount = await medProvider.restoreUserFromCloud(_fullPhoneNumber);
 
-        if (status.exists && status.hasPin) {
-          _step = AuthStep.enterPin;
-        } else {
-          _step = AuthStep.createPin;
-          if (status.name != null && status.name!.isNotEmpty) {
-            _nameController.text = status.name!;
-          }
+      await CloudSyncService.instance.syncLocalToCloud(
+        profiles: medProvider.profiles,
+        medicines: medProvider.medicines,
+        remindersByMedicine: medProvider.remindersByMedicine,
+        records: medProvider.intakeRecords,
+      );
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+        context.read<AuthProvider>().resetFlow();
+
+        _showToast(restoredCount > 0
+            ? '🎉 স্বাগতম! আপনার $restoredCount টি ওষুধ ক্লাউড থেকে সফলভাবে রিস্টোর হয়েছে।'
+            : '🎉 সফলভাবে সাইন ইন হয়েছে! ক্লাউড সিঙ্ক সক্রিয়।');
+
+        if (widget.isModal || Navigator.canPop(context)) {
+          Navigator.pop(context, true);
         }
-      });
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-        );
+        _showToast('ত্রুটি: $e', isError: true);
       }
     }
   }
 
-  Future<void> _handleLoginWithPin() async {
-    final pin = _pinController.text.trim();
-    if (pin.length != 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('অনুগ্রহ করে ৪-সংখ্যার গোপন পিন লিখুন'), backgroundColor: AppColors.error),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    final ok = await SupabaseService.instance.verifyPin(
-      phoneNumber: _fullPhoneNumber,
-      enteredPin: pin,
-    );
-
-    if (!ok) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ ভুল পিন দেওয়া হয়েছে! সঠিক পিন লিখুন অথবা Forgot PIN চাপুন।'), backgroundColor: AppColors.error),
-        );
-      }
-      return;
-    }
-
-    if (!mounted) return;
-
-    // PIN is correct! Now restore cloud data and merge
-    final medProvider = context.read<MedicineProvider>();
-    final restoredCount = await medProvider.restoreUserFromCloud(_fullPhoneNumber);
-
-    await CloudSyncService.instance.syncLocalToCloud(
-      profiles: medProvider.profiles,
-      medicines: medProvider.medicines,
-      remindersByMedicine: medProvider.remindersByMedicine,
-      records: medProvider.intakeRecords,
-    );
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      context.read<AuthProvider>().resetFlow();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(restoredCount > 0
-              ? '🎉 স্বাগতম! আপনার $restoredCount টি ওষুধ ক্লাউড থেকে সফলভাবে রিস্টোর হয়েছে।'
-              : '🎉 সফলভাবে লগইন হয়েছে! ক্লাউড সিঙ্ক সক্রিয়।'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-
-      if (widget.isModal) {
-        Navigator.pop(context, true);
-      } else if (Navigator.canPop(context)) {
-        Navigator.pop(context, true);
-      }
-    }
-  }
-
-  Future<void> _handleRegisterWithPin() async {
+  Future<void> _handleSignUp() async {
     final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
     final pin = _pinController.text.trim();
     final confirmPin = _confirmPinController.text.trim();
     final answer = _securityAnswerController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('অনুগ্রহ করে আপনার নাম লিখুন'), backgroundColor: AppColors.error),
-      );
+      _showToast('অনুগ্রহ করে আপনার নাম লিখুন', isError: true);
+      return;
+    }
+    if (phone.length < 10) {
+      _showToast('অনুগ্রহ করে বৈধ ১০ ডিজিটের মোবাইল নম্বর লিখুন', isError: true);
       return;
     }
     if (pin.length != 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('৪-সংখ্যার একটি গোপন পিন নির্ধারণ করুন'), backgroundColor: AppColors.error),
-      );
+      _showToast('৪-সংখ্যার একটি গোপন পিন নির্ধারণ করুন', isError: true);
       return;
     }
     if (pin != confirmPin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('দুইবারের পিন মিলছে না! অনুগ্রহ করে একই পিন লিখুন।'), backgroundColor: AppColors.error),
-      );
+      _showToast('দুইবারের পিন মিলছে না! একই পিন লিখুন।', isError: true);
       return;
     }
     if (answer.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('পিন ভুলে গেলে রিকভারির জন্য সিকিউরিটি প্রশ্নের উত্তর দিন'), backgroundColor: AppColors.error),
-      );
+      _showToast('পিন রিকভারির জন্য সিকিউরিটি প্রশ্নের উত্তর দিন', isError: true);
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final ok = await SupabaseService.instance.registerUserWithPin(
-      phoneNumber: _fullPhoneNumber,
-      name: name,
-      pin: pin,
-      securityQuestion: _selectedSecurityQuestion,
-      securityAnswer: answer,
-    );
+    try {
+      final ok = await SupabaseService.instance.registerUserWithPin(
+        phoneNumber: _fullPhoneNumber,
+        name: name,
+        pin: pin,
+        securityQuestion: _selectedSecurityQuestion,
+        securityAnswer: answer,
+      );
 
-    if (!ok) {
+      if (!ok) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        _showToast('অ্যাকাউন্ট তৈরি ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।', isError: true);
+        return;
+      }
+
+      if (!mounted) return;
+
+      // Sync existing local medicines to cloud
+      final medProvider = context.read<MedicineProvider>();
+      await CloudSyncService.instance.syncLocalToCloud(
+        profiles: medProvider.profiles,
+        medicines: medProvider.medicines,
+        remindersByMedicine: medProvider.remindersByMedicine,
+        records: medProvider.intakeRecords,
+      );
+
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('পিন সংরক্ষণ ব্যর্থ হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।'), backgroundColor: AppColors.error),
-        );
+        context.read<AuthProvider>().resetFlow();
+
+        _showToast('🛡️ অ্যাকাউন্ট তৈরি সম্পন্ন হয়েছে ও ক্লাউড ব্যাকআপ সক্রিয় হয়েছে!');
+
+        if (widget.isModal || Navigator.canPop(context)) {
+          Navigator.pop(context, true);
+        }
       }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showToast('ত্রুটি: $e', isError: true);
+      }
+    }
+  }
+
+  Future<void> _handleForgotPasswordInit() async {
+    final phone = _phoneController.text.trim();
+    if (phone.length < 10) {
+      _showToast('আগে আপনার ১০ ডিজিটের মোবাইল নম্বর লিখুন', isError: true);
       return;
     }
 
+    setState(() => _isLoading = true);
+    final status = await SupabaseService.instance.checkUserStatus(_fullPhoneNumber);
     if (!mounted) return;
 
-    // Sync any existing local medicines to cloud
-    final medProvider = context.read<MedicineProvider>();
-    await CloudSyncService.instance.syncLocalToCloud(
-      profiles: medProvider.profiles,
-      medicines: medProvider.medicines,
-      remindersByMedicine: medProvider.remindersByMedicine,
-      records: medProvider.intakeRecords,
-    );
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      context.read<AuthProvider>().resetFlow();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🛡️ আপনার গোপন পিন সেট হয়েছে ও ক্লাউড ব্যাকআপ সক্রিয় হয়েছে!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-
-      if (widget.isModal) {
-        Navigator.pop(context, true);
-      } else if (Navigator.canPop(context)) {
-        Navigator.pop(context, true);
-      }
-    }
+    setState(() {
+      _isLoading = false;
+      _existingUserName = status.name;
+      _existingSecurityQuestion = status.securityQuestion;
+      _isForgotPinView = true;
+    });
   }
 
   Future<void> _handleAnswerSecurityQuestion() async {
     final answer = _securityAnswerController.text.trim();
     if (answer.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('অনুগ্রহ করে উত্তরটি লিখুন'), backgroundColor: AppColors.error),
-      );
+      _showToast('অনুগ্রহ করে উত্তরটি লিখুন', isError: true);
       return;
     }
 
@@ -274,9 +254,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     if (!ok) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ উত্তর সঠিক নয়! অ্যাডমিনের সাহায্য নিন।'), backgroundColor: AppColors.error),
-        );
+        _showToast('❌ উত্তর সঠিক নয়! অ্যাডমিনের সাহায্য নিন।', isError: true);
       }
       return;
     }
@@ -299,13 +277,13 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             children: [
               Icon(Icons.lock_reset_rounded, color: AppColors.primary),
               SizedBox(width: 8),
-              Text('নতুন পিন নির্ধারণ করুন', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('নতুন পিন দিন', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('আপনার উত্তর সঠিক হয়েছে! এবার নতুন একটি ৪-সংখ্যার সিকিউরিটি পিন দিন:', style: TextStyle(fontSize: 13)),
+              const Text('উত্তর সঠিক হয়েছে! নতুন ৪-সংখ্যার সিকিউরিটি পিন দিন:', style: TextStyle(fontSize: 13)),
               const SizedBox(height: 16),
               TextField(
                 controller: _newPinController,
@@ -331,9 +309,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               onPressed: () async {
                 final newPin = _newPinController.text.trim();
                 if (newPin.length != 4) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('৪ সংখ্যার পিন লিখুন'), backgroundColor: AppColors.error),
-                  );
+                  _showToast('৪ সংখ্যার পিন লিখুন', isError: true);
                   return;
                 }
                 Navigator.pop(ctx);
@@ -348,12 +324,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
                 if (mounted) {
                   setState(() => _isLoading = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('✅ পিন সফলভাবে পরিবর্তন ও লগইন সম্পন্ন হয়েছে!'), backgroundColor: AppColors.success),
-                  );
-                  if (widget.isModal) {
-                    Navigator.pop(context, true);
-                  } else if (Navigator.canPop(context)) {
+                  _showToast('✅ পিন সফলভাবে পরিবর্তন ও সাইন ইন সম্পন্ন হয়েছে!');
+                  if (widget.isModal || Navigator.canPop(context)) {
                     Navigator.pop(context, true);
                   }
                 }
@@ -399,7 +371,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 style: const TextStyle(fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 16),
-              const Text('তাৎক্ষণিক সাহায্যের জন্য সরাসরি যোগাযোগ করুন:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              const Text('তাৎক্ষণিক সাহায্যের জন্য যোগাযোগ করুন:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -440,338 +412,234 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     );
   }
 
+  void _showToast(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? AppColors.error : AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   // ==================== UI BUILDER ====================
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final s = context.watch<LanguageProvider>().strings;
+    final lang = context.watch<LanguageProvider>();
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(
-          _step == AuthStep.phone
-              ? s.phoneLoginTitle
-              : (_step == AuthStep.enterPin
-                  ? 'গোপন পিন যাচাইকরণ'
-                  : (_step == AuthStep.createPin ? 'সিকিউরিটি পিন সেট করুন' : 'পিন রিকভারি')),
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () {
+            if (_isForgotPinView) {
+              setState(() => _isForgotPinView = false);
+            } else if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
         ),
-        centerTitle: true,
-        leading: _step != AuthStep.phone
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back_rounded),
-                onPressed: () {
-                  setState(() {
-                    if (_step == AuthStep.forgotPin) {
-                      _step = AuthStep.enterPin;
-                    } else {
-                      _step = AuthStep.phone;
-                    }
-                  });
-                },
-              )
-            : (widget.isModal
-                ? IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(context),
-                  )
-                : (Navigator.canPop(context)
-                    ? IconButton(
-                        icon: const Icon(Icons.arrow_back_rounded),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    : null)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_step == AuthStep.phone) _buildPhoneStep(isDark),
-              if (_step == AuthStep.enterPin) _buildEnterPinStep(isDark),
-              if (_step == AuthStep.createPin) _buildCreatePinStep(isDark),
-              if (_step == AuthStep.forgotPin) _buildForgotPinStep(isDark),
-            ],
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: _isForgotPinView
+              ? _buildForgotPinView(isDark, lang)
+              : (_mode == AuthMode.signIn ? _buildSignInView(isDark, lang) : _buildSignUpView(isDark, lang)),
         ),
       ),
     );
   }
 
-  // ==================== STEP 1: PHONE INPUT ====================
-  Widget _buildPhoneStep(bool isDark) {
+  // ==================== SCREEN 06: SIGN IN (WELCOME BACK) ====================
+  Widget _buildSignInView(bool isDark, LanguageProvider lang) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 12),
-        Center(
-          child: Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.shield_outlined, size: 40, color: AppColors.primary),
+        // Mode Switcher Tabs [Sign In] | [Sign Up]
+        _buildModeTabBar(isDark, lang),
+        const SizedBox(height: 28),
+
+        // Header
+        Text(
+          lang.languageCode == 'bn' ? 'স্বাগতম ফিরে আসার জন্য' : (lang.languageCode == 'hi' ? 'वापसी पर स्वागत है' : 'Welcome Back'),
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
           ),
         ),
-        const SizedBox(height: 20),
-        const Text(
-          'আপনার মোবাইল নম্বর লিখুন',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'আপনার ব্যক্তিগত পিন দ্বারা প্রেসক্রিপশন ও ওষুধের তথ্য ১০০% সুরক্ষিত থাকবে।',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.4),
+        const SizedBox(height: 6),
+        Text(
+          lang.languageCode == 'bn'
+              ? 'আপনার ওষুধের রিমাইন্ডার ও স্বাস্থ্য ডেটা এক্সেস করতে সাইন ইন করুন'
+              : (lang.languageCode == 'hi'
+                  ? 'अपनी दवाइयों के रिमाइंडर और स्वास्थ्य डेटा के लिए साइन इन करें'
+                  : 'Sign in to access your reminders & health data'),
+          style: TextStyle(
+            fontSize: 13,
+            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            height: 1.4,
+          ),
         ),
         const SizedBox(height: 28),
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCountryCode,
-                  dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-                  items: _countryCodes.map((item) {
-                    return DropdownMenuItem<String>(
-                      value: item['code'],
-                      child: Text('${item['flag']} ${item['code']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => _selectedCountryCode = val);
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                maxLength: 10,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 1),
-                decoration: InputDecoration(
-                  counterText: '',
-                  hintText: '১০ ডিজিটের নম্বর',
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                  prefixIcon: const Icon(Icons.phone_iphone_rounded, color: AppColors.primary),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _handlePhoneSubmit,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
-          child: _isLoading
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Text('এগিয়ে যান', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ),
-      ],
-    ).animate().fadeIn(duration: 300.ms);
-  }
 
-  // ==================== STEP 2A: ENTER SECRET PIN ====================
-  Widget _buildEnterPinStep(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 12),
-        Center(
-          child: Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.lock_rounded, size: 36, color: AppColors.primary),
-          ),
-        ),
+        // Phone Input
+        _buildPhoneInputField(isDark),
         const SizedBox(height: 16),
-        Text(
-          _existingUserName != null ? 'স্বাগতম, $_existingUserName!' : 'স্বাগতম!',
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('ফোন: $_fullPhoneNumber', style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600)),
-            const SizedBox(width: 6),
-            InkWell(
-              onTap: () => setState(() => _step = AuthStep.phone),
-              child: const Text('বদলান', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'আপনার ৪-সংখ্যার গোপন সিকিউরিটি পিন দিন:',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+
+        // 4-Digit PIN Input
+        _buildPinInputField(
+          controller: _pinController,
+          hint: '৪-সংখ্যার গোপন সিকিউরিটি পিন',
+          isDark: isDark,
+          showVisibilityToggle: true,
         ),
         const SizedBox(height: 10),
-        TextField(
-          controller: _pinController,
-          keyboardType: TextInputType.number,
-          maxLength: 4,
-          obscureText: _obscurePin,
-          textAlign: TextAlign.center,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 16),
-          decoration: InputDecoration(
-            counterText: '',
-            hintText: '••••',
-            filled: true,
-            fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-            suffixIcon: IconButton(
-              icon: Icon(_obscurePin ? Icons.visibility_off_rounded : Icons.visibility_rounded),
-              onPressed: () => setState(() => _obscurePin = !_obscurePin),
+
+        // Forgot PIN Link
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: _handleForgotPasswordInit,
+            style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
+            child: Text(
+              lang.languageCode == 'bn' ? 'পিন ভুলে গেছেন? (Forgot PIN?)' : (lang.languageCode == 'hi' ? 'पिन भूल गए?' : 'Forgot PIN?'),
+              style: const TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: () {
-              setState(() {
-                _securityAnswerController.clear();
-                _step = AuthStep.forgotPin;
-              });
-            },
-            icon: const Icon(Icons.help_outline_rounded, size: 16),
-            label: const Text('পিন ভুলে গেছেন? (Forgot PIN?)', style: TextStyle(fontSize: 13)),
-          ),
+        const SizedBox(height: 20),
+
+        // Primary Sign In Button
+        _buildPrimaryButton(
+          title: lang.languageCode == 'bn' ? 'সাইন ইন করুন' : (lang.languageCode == 'hi' ? 'साइन इन करें' : 'Sign In'),
+          onPressed: _isLoading ? null : _handleSignIn,
         ),
-        const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _handleLoginWithPin,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        const SizedBox(height: 24),
+
+        // Social Buttons
+        _buildSocialLoginSection(isDark, lang),
+        const SizedBox(height: 24),
+
+        // Bottom Switch Link
+        Center(
+          child: TextButton(
+            onPressed: () => setState(() => _mode = AuthMode.signUp),
+            child: RichText(
+              text: TextSpan(
+                text: lang.languageCode == 'bn' ? 'কোনো অ্যাকাউন্ট নেই? ' : (lang.languageCode == 'hi' ? 'कोई खाता नहीं है? ' : "Don't have an account? "),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                ),
+                children: [
+                  TextSpan(
+                    text: lang.languageCode == 'bn' ? 'অ্যাকাউন্ট তৈরি করুন' : (lang.languageCode == 'hi' ? 'खाता बनाएं' : 'Sign Up'),
+                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
           ),
-          child: _isLoading
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Text('লগইন ও ডেটা রিস্টোর করুন', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
       ],
-    ).animate().fadeIn(duration: 300.ms);
+    ).animate().fadeIn(duration: 250.ms);
   }
 
-  // ==================== STEP 2B: CREATE SECRET PIN ====================
-  Widget _buildCreatePinStep(bool isDark) {
+  // ==================== SCREEN 05: CREATE ACCOUNT (SIGN UP) ====================
+  Widget _buildSignUpView(bool isDark, LanguageProvider lang) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'নতুন সিকিউরিটি পিন সেট করুন',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        // Mode Switcher Tabs [Sign In] | [Sign Up]
+        _buildModeTabBar(isDark, lang),
+        const SizedBox(height: 28),
+
+        // Header
+        Text(
+          lang.languageCode == 'bn' ? 'নতুন অ্যাকাউন্ট তৈরি করুন' : (lang.languageCode == 'hi' ? 'नया खाता बनाएं' : 'Create Account'),
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
+          ),
         ),
         const SizedBox(height: 6),
         Text(
-          'নম্বর: $_fullPhoneNumber (ভবিষ্যতে ডেটা রিস্টোর করতে এই পিনটি প্রয়োজন হবে)',
-          style: const TextStyle(color: Colors.grey, fontSize: 13),
-        ),
-        const SizedBox(height: 20),
-        const Text('আপনার নাম *', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: _nameController,
-          decoration: InputDecoration(
-            hintText: 'যেমন: কাদির লস্কর',
-            filled: true,
-            fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            prefixIcon: const Icon(Icons.person_outline_rounded),
+          lang.languageCode == 'bn'
+              ? 'প্রেসক্রিপশন ও ওষুধের রিমাইন্ডার ট্র্যাক করতে সাইন আপ করুন'
+              : (lang.languageCode == 'hi'
+                  ? 'अपनी दवाओं को ट्रैक करना शुरू करने के लिए साइन अप करें'
+                  : 'Sign up to start tracking your medicines'),
+          style: TextStyle(
+            fontSize: 13,
+            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            height: 1.4,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
+
+        // Full Name Input
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          ),
+          child: TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              hintText: 'আপনার পুরো নাম (যেমন: কাদির লস্কর)',
+              border: InputBorder.none,
+              prefixIcon: Icon(Icons.person_rounded, color: AppColors.primary),
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Phone Input
+        _buildPhoneInputField(isDark),
+        const SizedBox(height: 14),
+
+        // 4-Digit PIN Input & Confirm PIN
         Row(
           children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('৪-সংখ্যার পিন *', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: _pinController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
-                    obscureText: true,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      counterText: '',
-                      hintText: 'PIN',
-                      filled: true,
-                      fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    ),
-                  ),
-                ],
+              child: _buildPinInputField(
+                controller: _pinController,
+                hint: '৪-সংখ্যার পিন',
+                isDark: isDark,
+                showVisibilityToggle: false,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('পিন নিশ্চিত করুন *', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: _confirmPinController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
-                    obscureText: true,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      counterText: '',
-                      hintText: 'Confirm',
-                      filled: true,
-                      fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      prefixIcon: const Icon(Icons.lock_reset_rounded),
-                    ),
-                  ),
-                ],
+              child: _buildPinInputField(
+                controller: _confirmPinController,
+                hint: 'পিন নিশ্চিত করুন',
+                isDark: isDark,
+                showVisibilityToggle: false,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
+
+        // Security Question & Answer Card
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(14),
+            color: AppColors.primary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
           ),
           child: Column(
@@ -779,12 +647,12 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.security_rounded, size: 18, color: AppColors.primary),
+                  Icon(Icons.security_rounded, size: 16, color: AppColors.primary),
                   SizedBox(width: 6),
-                  Text('পিন রিকভারি সিকিউরিটি প্রশ্ন', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                  Text('পিন রিকভারি সিকিউরিটি প্রশ্ন', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: _selectedSecurityQuestion,
                 isExpanded: true,
@@ -792,49 +660,298 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   filled: true,
                   fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 ),
-                items: _securityQuestions.map((q) => DropdownMenuItem(value: q, child: Text(q, style: const TextStyle(fontSize: 12)))).toList(),
+                items: _securityQuestions.map((q) => DropdownMenuItem(value: q, child: Text(q, style: const TextStyle(fontSize: 11)))).toList(),
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedSecurityQuestion = val);
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               TextField(
                 controller: _securityAnswerController,
                 decoration: InputDecoration(
-                  hintText: 'প্রশ্নের উত্তরটি লিখুন (যেমন: ঢাকা, কলকাতা)',
+                  hintText: 'উত্তর (যেমন: কলকাতা, ঢাকা)',
+                  hintStyle: const TextStyle(fontSize: 12),
                   filled: true,
                   fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _handleRegisterWithPin,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        const SizedBox(height: 20),
+
+        // Primary Create Account Button
+        _buildPrimaryButton(
+          title: lang.languageCode == 'bn' ? 'অ্যাকাউন্ট তৈরি করুন' : (lang.languageCode == 'hi' ? 'खाता बनाएं' : 'Create Account'),
+          onPressed: _isLoading ? null : _handleSignUp,
+        ),
+        const SizedBox(height: 20),
+
+        // Social Buttons
+        _buildSocialLoginSection(isDark, lang),
+        const SizedBox(height: 20),
+
+        // Bottom Switch Link
+        Center(
+          child: TextButton(
+            onPressed: () => setState(() => _mode = AuthMode.signIn),
+            child: RichText(
+              text: TextSpan(
+                text: lang.languageCode == 'bn' ? 'ইতিমধ্যে অ্যাকাউন্ট আছে? ' : (lang.languageCode == 'hi' ? 'पहले से खाता है? ' : 'Already have an account? '),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                ),
+                children: [
+                  TextSpan(
+                    text: lang.languageCode == 'bn' ? 'সাইন ইন করুন' : (lang.languageCode == 'hi' ? 'साइन इन करें' : 'Sign In'),
+                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
           ),
-          child: _isLoading
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Text('পিন সংরক্ষণ ও অ্যাকাউন্ট সুরক্ষিত করুন', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         ),
       ],
-    ).animate().fadeIn(duration: 300.ms);
+    ).animate().fadeIn(duration: 250.ms);
   }
 
-  // ==================== STEP 3: FORGOT PIN & SUPPORT ====================
-  Widget _buildForgotPinStep(bool isDark) {
+  // ==================== COMMON WIDGETS ====================
+
+  Widget _buildModeTabBar(bool isDark, LanguageProvider lang) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _mode = AuthMode.signIn),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _mode == AuthMode.signIn ? (isDark ? const Color(0xFF0B132B) : Colors.white) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: _mode == AuthMode.signIn
+                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2))]
+                      : null,
+                ),
+                child: Text(
+                  lang.languageCode == 'bn' ? 'সাইন ইন' : (lang.languageCode == 'hi' ? 'साइन इन' : 'Sign In'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: _mode == AuthMode.signIn ? FontWeight.w800 : FontWeight.w600,
+                    color: _mode == AuthMode.signIn ? AppColors.primary : (isDark ? Colors.white60 : Colors.black54),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _mode = AuthMode.signUp),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _mode == AuthMode.signUp ? (isDark ? const Color(0xFF0B132B) : Colors.white) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: _mode == AuthMode.signUp
+                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2))]
+                      : null,
+                ),
+                child: Text(
+                  lang.languageCode == 'bn' ? 'অ্যাকাউন্ট খুলুন' : (lang.languageCode == 'hi' ? 'साइन अप' : 'Sign Up'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: _mode == AuthMode.signUp ? FontWeight.w800 : FontWeight.w600,
+                    color: _mode == AuthMode.signUp ? AppColors.primary : (isDark ? Colors.white60 : Colors.black54),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhoneInputField(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedCountryCode,
+                dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                items: _countryCodes.map((item) {
+                  return DropdownMenuItem<String>(
+                    value: item['code'],
+                    child: Text('${item['flag']} ${item['code']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedCountryCode = val);
+                },
+              ),
+            ),
+          ),
+          const SizedBox(
+            height: 24,
+            child: VerticalDivider(color: Color(0xFFCBD5E1), thickness: 1),
+          ),
+          Expanded(
+            child: TextField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              maxLength: 10,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 1),
+              decoration: const InputDecoration(
+                counterText: '',
+                hintText: '১০ ডিজিটের নম্বর',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPinInputField({
+    required TextEditingController controller,
+    required String hint,
+    required bool isDark,
+    required bool showVisibilityToggle,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        maxLength: 4,
+        obscureText: showVisibilityToggle ? _obscurePin : true,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 4),
+        decoration: InputDecoration(
+          counterText: '',
+          hintText: hint,
+          hintStyle: const TextStyle(fontSize: 13, letterSpacing: 0, fontWeight: FontWeight.normal),
+          border: InputBorder.none,
+          prefixIcon: const Icon(Icons.lock_rounded, color: AppColors.primary),
+          suffixIcon: showVisibilityToggle
+              ? IconButton(
+                  icon: Icon(_obscurePin ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 20),
+                  onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                )
+              : null,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryButton({required String title, required VoidCallback? onPressed}) {
+    return SizedBox(
+      height: 52,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shadowColor: AppColors.primary.withValues(alpha: 0.35),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: _isLoading
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      ),
+    );
+  }
+
+  Widget _buildSocialLoginSection(bool isDark, LanguageProvider lang) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Expanded(child: Divider()),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                lang.languageCode == 'bn' ? 'অথবা মাধ্যম ব্যবহার করুন' : (lang.languageCode == 'hi' ? 'या जारी रखें' : 'Or continue with'),
+                style: TextStyle(fontSize: 12, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
+              ),
+            ),
+            const Expanded(child: Divider()),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  _showToast('Google Sign-In শীঘ্রই আসছে (Next update)');
+                },
+                icon: const Icon(Icons.g_mobiledata_rounded, size: 24, color: Color(0xFFEA4335)),
+                label: const Text('Google', style: TextStyle(fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  _showToast('Apple ID Sign-In শীঘ্রই আসছে (Next update)');
+                },
+                icon: Icon(Icons.apple_rounded, size: 22, color: isDark ? Colors.white : Colors.black87),
+                label: const Text('Apple', style: TextStyle(fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ==================== FORGOT PIN RECOVERY VIEW ====================
+  Widget _buildForgotPinView(bool isDark, LanguageProvider lang) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 8),
         Center(
           child: Container(
             width: 64,
@@ -849,7 +966,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           'নম্বর: $_fullPhoneNumber',
           textAlign: TextAlign.center,
@@ -857,7 +974,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         ),
         const SizedBox(height: 20),
 
-        // Choice 1: Security Question
+        // Way 1: Security Question
         Card(
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -908,7 +1025,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
         const SizedBox(height: 16),
 
-        // Choice 2: Admin Support
+        // Way 2: Admin Support
         Card(
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -948,6 +1065,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           ),
         ),
       ],
-    ).animate().fadeIn(duration: 300.ms);
+    ).animate().fadeIn(duration: 250.ms);
   }
 }

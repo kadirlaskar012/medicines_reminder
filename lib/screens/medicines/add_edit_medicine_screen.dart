@@ -430,6 +430,54 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               const SizedBox(height: 20),
             ],
 
+            // Edit Mode Hero Preview (Screen 12)
+            if (isEditing) ...[
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Image.asset(
+                        _selectedType.assetPath,
+                        width: 64,
+                        height: 64,
+                        fit: BoxFit.contain,
+                        errorBuilder: (ctx, err, stack) => AppSvgIcons.render(
+                          _selectedType.svgString,
+                          width: 54,
+                          height: 54,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _nameController.text.isNotEmpty ? _nameController.text : s.medicineDetails,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                      ),
+                      if (_dosageController.text.isNotEmpty)
+                        Text(
+                          _dosageController.text,
+                          style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w700),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
             // 1. Basic Medicine Info
             _buildSectionHeader(s.medicineDetails),
             const SizedBox(height: 10),
@@ -1008,9 +1056,74 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 ),
               ),
             ),
+
+            // 14. Delete Medicine Button (Screen 12)
+            if (isEditing) ...[
+              const SizedBox(height: 14),
+              SizedBox(
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: () => _confirmDeleteMedicine(context),
+                  icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                  label: Text(
+                    s.deleteMedicine,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.error,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppColors.error.withValues(alpha: 0.5), width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmDeleteMedicine(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever_rounded, color: AppColors.error),
+            SizedBox(width: 8),
+            Text('ওষুধ মুছুন', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text('আপনি কি নিশ্চিত যে "${widget.medicineToEdit?.name}" মুছে ফেলতে চান?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('বাতিল'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              if (widget.medicineToEdit != null) {
+                await context.read<MedicineProvider>().deleteMedicine(widget.medicineToEdit!.id);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              }
+            },
+            child: const Text('মুছে ফেলুন'),
+          ),
+        ],
       ),
     );
   }

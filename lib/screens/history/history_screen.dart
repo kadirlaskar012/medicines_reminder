@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/services/report_and_alert_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/intake_record.dart';
+import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
@@ -20,6 +20,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   List<IntakeRecord> _recentLogs = [];
   bool _isLoadingLogs = true;
+  String _selectedFilter = 'all'; // 'all', 'taken', 'missed'
 
   @override
   void initState() {
@@ -28,7 +29,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _loadLogs() async {
-    final logs = await DBHelper.instance.getAllRecords(limit: 50);
+    final logs = await DBHelper.instance.getAllRecords(limit: 60);
     if (mounted) {
       setState(() {
         _recentLogs = logs;
@@ -64,11 +65,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final totalSkipped = _recentLogs.where((l) => l.status == IntakeStatus.skipped).length;
     final adherenceScore = _recentLogs.isEmpty ? 100 : ((totalTaken / _recentLogs.length) * 100).toInt();
 
+    final filteredLogs = _recentLogs.where((l) {
+      if (_selectedFilter == 'taken') return l.status == IntakeStatus.taken;
+      if (_selectedFilter == 'missed') return l.status == IntakeStatus.skipped;
+      return true;
+    }).toList();
+
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(s.doseHistory),
+        elevation: 0,
       ),
-
       body: RefreshIndicator(
         onRefresh: () async => _loadLogs(),
         child: ListView(
@@ -87,20 +95,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     isDark: isDark,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildMetricCard(
                     title: s.currentStreak,
                     value: '5 ${s.daysUnit}',
                     subtitle: s.keepItUp,
                     icon: Icons.local_fire_department_rounded,
-                    color: AppColors.warning,
+                    color: AppColors.accentMint,
                     isDark: isDark,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -109,11 +117,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     value: '$totalTaken',
                     subtitle: s.dosesConfirmed,
                     icon: Icons.check_circle_rounded,
-                    color: AppColors.success,
+                    color: AppColors.accentMint,
                     isDark: isDark,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildMetricCard(
                     title: s.skipped,
@@ -127,119 +135,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ],
             ),
 
-            const SizedBox(height: 24),
-
-            // Weekly Adherence Bar Chart
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkCard : Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    s.weeklyAdherenceBreakdown,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    s.weeklyAdherenceSub,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    height: 180,
-                    child: BarChart(
-                      BarChartData(
-                        alignment: BarChartAlignment.spaceAround,
-                        maxY: 100,
-                        barTouchData: BarTouchData(enabled: true),
-                        titlesData: FlTitlesData(
-                          show: true,
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 32,
-                              interval: 25,
-                              getTitlesWidget: (val, meta) => Text(
-                                '${val.toInt()}%',
-                                style: const TextStyle(fontSize: 10, color: AppColors.lightTextMuted),
-                              ),
-                            ),
-                          ),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (val, meta) {
-                                final idx = val.toInt();
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Text(
-                                    idx >= 0 && idx < 7 ? s.weekdayInitial(idx) : '',
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        gridData: FlGridData(
-                          show: true,
-                          drawVerticalLine: false,
-                          horizontalInterval: 25,
-                          getDrawingHorizontalLine: (val) => FlLine(
-                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                            strokeWidth: 1,
-                          ),
-                        ),
-                        barGroups: [
-                          _buildBarGroup(0, 100),
-                          _buildBarGroup(1, 80),
-                          _buildBarGroup(2, 100),
-                          _buildBarGroup(3, 90),
-                          _buildBarGroup(4, 75),
-                          _buildBarGroup(5, 100),
-                          _buildBarGroup(6, (provider.todayAdherenceRate * 100)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
 
             // Doctor Consultation PDF Banner
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFECFDF5), Color(0xFFD1FAE5)],
-                ),
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.5)),
+                border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF059669), size: 24),
+                    child: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.primary, size: 24),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -248,12 +169,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       children: [
                         Text(
                           s.doctorConsultationSummary,
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF065F46)),
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           s.exportDoctorPdfSub,
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF047857), fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -275,18 +199,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
             const SizedBox(height: 24),
 
-            // Recent Intake Log List
+            // Screen 13 Filter Chips [All] [Taken] [Missed]
+            Row(
+              children: [
+                _buildFilterChip('all', 'All', filteredLogs.length, isDark),
+                const SizedBox(width: 8),
+                _buildFilterChip('taken', 'Taken', totalTaken, isDark),
+                const SizedBox(width: 8),
+                _buildFilterChip('missed', 'Missed', totalSkipped, isDark),
+              ],
+            ),
+            const SizedBox(height: 16),
 
+            // Month Section Header (Screen 13)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  s.recentActivity,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  DateFormat('MMMM yyyy').format(DateTime.now()),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 Text(
-                  '${_recentLogs.length} ${s.records}',
-                  style: const TextStyle(fontSize: 13, color: AppColors.lightTextMuted, fontWeight: FontWeight.w600),
+                  '${filteredLogs.length} ${s.records}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                  ),
                 ),
               ],
             ),
@@ -294,84 +238,120 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
             if (_isLoadingLogs)
               const Center(child: CircularProgressIndicator())
-            else if (_recentLogs.isEmpty)
+            else if (filteredLogs.isEmpty)
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkCard : Colors.white,
-                  borderRadius: BorderRadius.circular(18),
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                 ),
                 child: Center(
-                  child: Text(
-                    '${s.noIntakeLogsTitle}\n${s.noIntakeLogsSub}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 13, color: AppColors.lightTextMuted),
+                  child: Column(
+                    children: [
+                      Icon(Icons.history_rounded, size: 40, color: isDark ? Colors.white30 : Colors.black26),
+                      const SizedBox(height: 10),
+                      Text(
+                        '${s.noIntakeLogsTitle}\n${s.noIntakeLogsSub}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
+                      ),
+                    ],
                   ),
                 ),
               )
             else
-              ..._recentLogs.map((log) {
+              ...filteredLogs.map((log) {
                 final isTaken = log.status == IntakeStatus.taken;
-                final dateFormatted = DateFormat('MMM d, hh:mm a').format(log.recordedAt);
-                final statusText = isTaken ? s.taken : s.skipped;
+                final dateFormatted = DateFormat('hh:mm a • MMM d').format(log.recordedAt);
+                final med = provider.medicines.cast<Medicine?>().firstWhere(
+                      (m) => m?.id == log.medicineId,
+                      orElse: () => null,
+                    );
+                final medName = med?.name ?? 'Medicine';
+                final dosage = med?.dosage ?? '';
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                    borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
+                      // Circular Icon Avatar
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        width: 42,
+                        height: 42,
                         decoration: BoxDecoration(
-                          color: (isTaken ? AppColors.success : AppColors.lightTextMuted).withValues(alpha: 0.15),
+                          color: (isTaken ? AppColors.accentMint : AppColors.error).withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          log.status.icon,
-                          size: 18,
-                          color: isTaken ? AppColors.success : AppColors.lightTextMuted,
+                          isTaken ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                          color: isTaken ? AppColors.accentMint : AppColors.error,
+                          size: 22,
                         ),
                       ),
                       const SizedBox(width: 14),
+
+                      // Medicine Name & Timestamp
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${s.doseLabel}: $statusText',
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                              dosage.isNotEmpty ? '$medName $dosage' : medName,
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               dateFormatted,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                               ),
                             ),
                           ],
                         ),
                       ),
+
+                      // Status Badge (Green "Taken" or Red "Missed")
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: (isTaken ? AppColors.successLight : const Color(0xFFF1F5F9)),
-                          borderRadius: BorderRadius.circular(8),
+                          color: (isTaken ? AppColors.accentMint : AppColors.error).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          statusText,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: isTaken ? AppColors.success : AppColors.lightTextMuted,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isTaken ? Icons.check_rounded : Icons.close_rounded,
+                              size: 14,
+                              color: isTaken ? AppColors.accentMint : AppColors.error,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isTaken ? 'Taken' : 'Missed',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: isTaken ? AppColors.accentMint : AppColors.error,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -384,22 +364,57 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  BarChartGroupData _buildBarGroup(int x, double y) {
-    return BarChartGroupData(
-      x: x,
-      barRods: [
-        BarChartRodData(
-          toY: y,
-          color: y >= 80 ? AppColors.primary : (y >= 50 ? AppColors.warning : AppColors.error),
-          width: 16,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-          backDrawRodData: BackgroundBarChartRodData(
-            show: true,
-            toY: 100,
-            color: Colors.black.withValues(alpha: 0.05),
+  Widget _buildFilterChip(String key, String label, int count, bool isDark) {
+    final isSelected = _selectedFilter == key;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedFilter = key),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary
+              : (isDark ? const Color(0xFF1E293B) : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
           ),
+          boxShadow: isSelected
+              ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))]
+              : null,
         ),
-      ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white.withValues(alpha: 0.25) : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -414,11 +429,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,27 +451,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                 ),
               ),
-              Icon(icon, size: 20, color: color),
+              Icon(icon, size: 18, color: color),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
               fontSize: 22,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
               color: color,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: const TextStyle(fontSize: 11, color: AppColors.lightTextMuted),
+            style: TextStyle(fontSize: 11, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
           ),
         ],
       ),

@@ -26,6 +26,16 @@ class AppStrings {
   String get tabCabinet => code == 'bn' ? 'ক্যাবিনেট' : (code == 'hi' ? 'दवाइयां' : 'Cabinet');
   String get tabHistory => code == 'bn' ? 'ইতিহাস' : (code == 'hi' ? 'इतिहास' : 'History');
   String get tabSettings => code == 'bn' ? 'সেটিংস' : (code == 'hi' ? 'सेटिंग्स' : 'Settings');
+  String get todayTab => tabToday;
+  String get medicinesTab => tabCabinet;
+  String get settingsTab => tabSettings;
+  String get searchMedicineHint => code == 'bn' ? 'ওষুধ বা ডোজ অনুসন্ধান করুন...' : (code == 'hi' ? 'दवा या खुराक खोजें...' : 'Search medicines...');
+  String get refillStockTitle => code == 'bn' ? 'স্টক রিফিল করুন' : (code == 'hi' ? 'स्टॉक रीफिल करें' : 'Refill Stock');
+  String get addedPillsCount => code == 'bn' ? 'নতুন যোগ করা ওষুধের সংখ্যা' : (code == 'hi' ? 'जोड़ी गई गोलियों की संख्या' : 'Pills to add');
+  String get addStockBtn => code == 'bn' ? 'স্টক যুক্ত করুন' : (code == 'hi' ? 'स्टॉक जोड़ें' : 'Add Stock');
+  String get deleteConfirmTitle => code == 'bn' ? 'ওষুধ মুছে ফেলুন' : (code == 'hi' ? 'दवा हटाएं' : 'Delete Medicine');
+  String get deleteConfirmMessage => code == 'bn' ? 'আপনি কি নিশ্চিত যে মুছে ফেলতে চান?' : (code == 'hi' ? 'क्या आप वाकई इसे हटाना चाहते हैं?' : 'Are you sure you want to delete?');
+  String get delete => code == 'bn' ? 'মুছে ফেলুন' : (code == 'hi' ? 'हटाएं' : 'Delete');
 
   // Today / Daily Schedule
   String get dailySchedule => code == 'bn' ? 'আজকের শিডিউল' : (code == 'hi' ? 'दैनिक अनुसूची' : 'Daily Schedule');
