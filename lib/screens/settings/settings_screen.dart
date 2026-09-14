@@ -927,12 +927,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(ok
-                                  ? '☁️ ${s.cloudSyncActive}'
-                                  : (s.code == 'bn'
-                                      ? '⚠️ ক্লাউড সিঙ্ক ব্যর্থ হয়েছে। API কী বা ইন্টারনেট চেক করুন।'
+                                  ? (s.code == 'bn'
+                                      ? '☁️ ক্লাউড ব্যাকআপ সফল হয়েছে!'
                                       : (s.code == 'hi'
-                                          ? '⚠️ क्लाउड सिंक विफल हुआ। इंटरनेट कनेक्शन जांचें।'
-                                          : '⚠️ Cloud sync failed. Please check your internet connection.'))),
+                                          ? '☁️ क्लाउड बैकअप सफल रहा!'
+                                          : '☁️ Cloud backup completed successfully!'))
+                                  : (s.code == 'bn'
+                                      ? '⚠️ ক্লাউড সিঙ্ক সম্পন্ন করা যায়নি। পুনরায় চেষ্টা করুন।'
+                                      : (s.code == 'hi'
+                                          ? '⚠️ क्लाउड बैकअप विफल रहा। कृपया पुनः प्रयास करें।'
+                                          : '⚠️ Cloud sync failed. Please try again.'))),
                               backgroundColor: ok ? AppColors.success : AppColors.error,
                             ),
                           );

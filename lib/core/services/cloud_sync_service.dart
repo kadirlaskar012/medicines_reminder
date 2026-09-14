@@ -95,42 +95,52 @@ class CloudSyncService {
 
         // Also upsert each reminder into user_reminders table for normalized queries
         for (final r in reminders) {
-          await client.from('user_reminders').upsert(
-            {
-              'id': r.id,
-              'medicine_id': med.id,
-              if (email != null && email.isNotEmpty) 'email': email.trim().toLowerCase(),
-              if (phone != null && phone.isNotEmpty) 'phone_number': phone,
-              'time': '${r.hour.toString().padLeft(2, '0')}:${r.minute.toString().padLeft(2, '0')}',
-              'hour': r.hour,
-              'minute': r.minute,
-              'days_of_week': r.daysOfWeek.join(','),
-              'is_alarm': r.isAlarm,
-              'notification_id': r.notificationId,
-              'updated_at': DateTime.now().toIso8601String(),
-            },
-            onConflict: 'id',
-          );
+          final timeFormatted = '${r.hour.toString().padLeft(2, '0')}:${r.minute.toString().padLeft(2, '0')}';
+          try {
+            await client.from('user_reminders').upsert(
+              {
+                'id': r.id,
+                'medicine_id': med.id,
+                if (email != null && email.isNotEmpty) 'email': email.trim().toLowerCase(),
+                if (phone != null && phone.isNotEmpty) 'phone_number': phone,
+                'time_slot': timeFormatted,
+                'time': timeFormatted,
+                'hour': r.hour,
+                'minute': r.minute,
+                'days_of_week': r.daysOfWeek.join(','),
+                'is_alarm': r.isAlarm,
+                'notification_id': r.notificationId,
+                'updated_at': DateTime.now().toIso8601String(),
+              },
+              onConflict: 'id',
+            );
+          } catch (remErr) {
+            debugPrint('user_reminders upsert note: $remErr');
+          }
         }
       }
 
       // 3. Sync Recent Intake Logs
       final recentRecords = records.length > 50 ? records.sublist(records.length - 50) : records;
       for (final rec in recentRecords) {
-        final schedTimeStr = '${rec.scheduledDate}T${rec.scheduledHour.toString().padLeft(2, '0')}:${rec.scheduledMinute.toString().padLeft(2, '0')}:00Z';
-        await client.from('user_dose_logs').upsert(
-          {
-            'id': rec.id,
-            if (email != null && email.isNotEmpty) 'email': email.trim().toLowerCase(),
-            if (phone != null && phone.isNotEmpty) 'phone_number': phone,
-            'medicine_id': rec.medicineId,
-            'scheduled_time': schedTimeStr,
-            'status': rec.status.name,
-            'taken_at': rec.recordedAt.toIso8601String(),
-            'synced_at': DateTime.now().toIso8601String(),
-          },
-          onConflict: 'id',
-        );
+        try {
+          final schedTimeStr = '${rec.scheduledDate}T${rec.scheduledHour.toString().padLeft(2, '0')}:${rec.scheduledMinute.toString().padLeft(2, '0')}:00Z';
+          await client.from('user_dose_logs').upsert(
+            {
+              'id': rec.id,
+              if (email != null && email.isNotEmpty) 'email': email.trim().toLowerCase(),
+              if (phone != null && phone.isNotEmpty) 'phone_number': phone,
+              'medicine_id': rec.medicineId,
+              'scheduled_time': schedTimeStr,
+              'status': rec.status.name,
+              'taken_at': rec.recordedAt.toIso8601String(),
+              'synced_at': DateTime.now().toIso8601String(),
+            },
+            onConflict: 'id',
+          );
+        } catch (logErr) {
+          debugPrint('user_dose_logs upsert note: $logErr');
+        }
       }
 
       debugPrint('CloudSyncService: Local data synced successfully with Supabase for $userKey');
