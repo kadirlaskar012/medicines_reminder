@@ -32,6 +32,7 @@ dependencies:
   shared_preferences: ^2.3.5
   supabase_flutter: ^2.8.3
   image_picker: ^1.2.3
+  flutter_displaymode: ^0.7.0
 
 dev_dependencies:
   flutter_test:

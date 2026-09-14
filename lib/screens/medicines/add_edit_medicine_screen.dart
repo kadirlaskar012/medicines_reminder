@@ -1132,17 +1132,6 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ),
             const SizedBox(height: 32),
 
-            // 13. Primary Save Button
-            SizedBox(
-              height: 54,
-              child: ElevatedButton(
-                onPressed: () => _saveMedicine(s),
-                child: Text(
-                  isEditing ? s.updateMedicineBtn : s.saveAndSetReminders,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
 
             // 14. Delete Medicine Button (Screen 12)
             if (isEditing) ...[
