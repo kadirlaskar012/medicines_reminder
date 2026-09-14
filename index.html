@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verified Successfully - MediRemind</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0A0E1A 0%, #111827 50%, #0F172A 100%);
+            color: #F8FAFC;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 40px 32px;
+            max-width: 440px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(16, 185, 129, 0.15);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .icon-wrap {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.35) 100%);
+            border: 2px solid rgba(16, 185, 129, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.4);
+            animation: pulseGlow 2s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+            100% { transform: scale(1.06); box-shadow: 0 0 35px rgba(16, 185, 129, 0.6); }
+        }
+        .icon-wrap svg {
+            width: 48px;
+            height: 48px;
+            color: #10B981;
+        }
+        .badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+            line-height: 1.25;
+        }
+        .bengali-title {
+            font-size: 19px;
+            color: #A7F3D0;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        p {
+            font-size: 14px;
+            color: #94A3B8;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        .bengali-desc {
+            font-size: 14px;
+            color: #CBD5E1;
+            margin-bottom: 28px;
+        }
+        .action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: #FFFFFF;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 16px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.5);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.6);
+        }
+        .action-btn:active {
+            transform: translateY(0);
+        }
+        .app-name {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #64748B;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon-wrap">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"></path>
+            </svg>
+        </div>
+        
+        <div class="badge">Verified</div>
+        
+        <h1>Email Confirmed!</h1>
+        <div class="bengali-title">ইমেল ভেরিফিকেশন সফল হয়েছে 🎉</div>
+        
+        <p>Your MediRemind account is now verified and active. You can safely return to the app and sign in.</p>
+        <div class="bengali-desc">আপনার অ্যাকাউন্ট সক্রিয় করা হয়েছে। আপনি এখন MediRemind অ্যাপে ফিরে গিয়ে সাইন ইন করতে পারেন।</div>
+
+        <a href="mediremind://auth-callback" id="openAppBtn" class="action-btn">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"></path>
+            </svg>
+            Open MediRemind App
+        </a>
+
+        <div class="app-name">MediRemind • Medicine Reminder & Tracker</div>
+    </div>
+
+    <script>
+        // Automatically attempt to launch the app on mobile devices after 1.2s
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                try {
+                    window.location.href = "mediremind://auth-callback";
+                } catch(e) {}
+            }, 1200);
+        });
+    </script>
+</body>
+</html>
