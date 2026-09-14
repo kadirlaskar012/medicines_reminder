@@ -212,6 +212,40 @@ class AuthProvider extends ChangeNotifier {
     return await _supabase.resendEmailConfirmation(email);
   }
 
+  /// Verify signup using 6-digit OTP code sent in email
+  Future<SupabaseAuthResult> verifySignupOtp({
+    required String email,
+    required String token,
+    MedicineProvider? medicineProvider,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final result = await _supabase.verifySignupOtp(email: email, token: token);
+    _isLoading = false;
+
+    if (result.success) {
+      _isEmailConfirmationPending = false;
+      _pendingVerificationEmail = null;
+      if (medicineProvider != null) {
+        try {
+          await CloudSyncService.instance.syncLocalToCloud(
+            profiles: medicineProvider.profiles,
+            medicines: medicineProvider.medicines,
+            remindersByMedicine: medicineProvider.remindersByMedicine,
+            records: medicineProvider.intakeRecords,
+          );
+        } catch (_) {}
+      }
+    } else {
+      _errorMessage = result.errorMessage;
+    }
+
+    notifyListeners();
+    return result;
+  }
+
   /// Send password reset link to user's email from Supabase
   Future<SupabaseAuthResult> sendPasswordResetEmail(String email) async {
     return await _supabase.sendPasswordResetEmail(email);

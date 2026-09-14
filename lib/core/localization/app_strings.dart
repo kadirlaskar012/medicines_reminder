@@ -506,6 +506,9 @@ class AppStrings {
   String get authResendVerification => code == 'bn' ? 'ভেরিফিকেশন ইমেল পুনরায় পাঠান' : (code == 'hi' ? 'सत्यापन लिंक पुनः भेजें' : 'Resend Verification Email');
   String get authVerificationResent => code == 'bn' ? 'ভেরিফিকেশন লিঙ্ক সফলভাবে পাঠানো হয়েছে!' : (code == 'hi' ? 'सत्यापन लिंक पुनः भेजा गया!' : 'Verification link resent! Please check your inbox.');
   String get authAlreadyVerifiedBtn => code == 'bn' ? 'ভেরিফাই করেছি, সাইন ইন করুন' : (code == 'hi' ? 'सत्यापित कर लिया, साइन इन करें' : "I've Verified, Sign In");
+  String get authOrEnterCode => code == 'bn' ? 'অথবা ইমেলের ৬ সংখ্যার কোড লিখুন' : (code == 'hi' ? 'या ईमेल का 6-अंकीय कोड दर्ज करें' : 'Or enter 6-digit verification code');
+  String get authVerifyCodeBtn => code == 'bn' ? 'কোড ভেরিফাই করুন' : (code == 'hi' ? 'कोड सत्यापित करें' : 'Verify Code');
+  String get authCheckingVerification => code == 'bn' ? 'ভেরিফিকেশন যাচাই করা হচ্ছে...' : (code == 'hi' ? 'सत्यापन जांचा जा रहा है...' : 'Checking verification...');
   String get authResetPasswordEmailDesc => code == 'bn'
       ? 'আপনার রেজিস্টার্ড ইমেল ঠিকানা দিন। আমরা আপনাকে পাসওয়ার্ড পরিবর্তনের অফিশিয়াল লিঙ্ক পাঠাব।'
       : (code == 'hi'

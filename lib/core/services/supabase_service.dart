@@ -87,6 +87,9 @@ class SupabaseService {
   // Master Admin Passcode for app-level owner access
   static const String masterAdminPasscode = '2026';
 
+  // Hosted Web & Deep Link redirect for email verification and password reset
+  static const String authRedirectUrl = 'https://kadirlaskar012.github.io/medicines_reminder/';
+
   SupabaseUserSession? _currentUser;
 
   /// Current session directly mapped from Supabase Inbuilt Auth User
@@ -180,6 +183,7 @@ class SupabaseService {
       final authRes = await c.auth.signUp(
         email: cleanEmail,
         password: cleanPwd,
+        emailRedirectTo: authRedirectUrl,
         data: {
           'name': cleanName,
         },
@@ -331,8 +335,60 @@ class SupabaseService {
       await c.auth.resend(
         type: OtpType.signup,
         email: cleanEmail,
+        emailRedirectTo: authRedirectUrl,
       );
       return SupabaseAuthResult(success: true);
+    } on AuthException catch (e) {
+      return SupabaseAuthResult(success: false, errorMessage: e.message);
+    } catch (e) {
+      return SupabaseAuthResult(success: false, errorMessage: e.toString());
+    }
+  }
+
+  /// Verify Supabase email signup via 6-digit OTP token
+  Future<SupabaseAuthResult> verifySignupOtp({
+    required String email,
+    required String token,
+  }) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanToken = token.trim();
+    final c = client;
+    if (c == null) {
+      return SupabaseAuthResult(success: false, errorMessage: 'Supabase client is not available.');
+    }
+
+    try {
+      final res = await c.auth.verifyOTP(
+        email: cleanEmail,
+        token: cleanToken,
+        type: OtpType.signup,
+      );
+
+      final user = res.user;
+      if (user != null) {
+        final name = (user.userMetadata?['name'] as String?) ?? cleanEmail.split('@').first;
+        await _saveLocalSession(user.id, cleanEmail, name, false);
+        _currentUser = SupabaseUserSession(
+          id: user.id,
+          email: cleanEmail,
+          name: name,
+          isVerified: true,
+          isAdmin: false,
+        );
+
+        try {
+          await c.from('app_users').upsert({
+            'id': user.id,
+            'email': cleanEmail,
+            'name': name,
+            'is_verified': true,
+            'last_login': DateTime.now().toIso8601String(),
+          }, onConflict: 'email');
+        } catch (_) {}
+
+        return SupabaseAuthResult(success: true, user: user);
+      }
+      return SupabaseAuthResult(success: false, errorMessage: 'Verification failed.');
     } on AuthException catch (e) {
       return SupabaseAuthResult(success: false, errorMessage: e.message);
     } catch (e) {
@@ -349,7 +405,10 @@ class SupabaseService {
     }
 
     try {
-      await c.auth.resetPasswordForEmail(cleanEmail);
+      await c.auth.resetPasswordForEmail(
+        cleanEmail,
+        redirectTo: authRedirectUrl,
+      );
       return SupabaseAuthResult(success: true);
     } on AuthException catch (e) {
       return SupabaseAuthResult(success: false, errorMessage: e.message);

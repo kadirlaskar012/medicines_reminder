@@ -26,7 +26,7 @@ class PhoneLoginScreen extends StatefulWidget {
   State<PhoneLoginScreen> createState() => _PhoneLoginScreenState();
 }
 
-class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
+class _PhoneLoginScreenState extends State<PhoneLoginScreen> with WidgetsBindingObserver {
   late AuthMode _mode;
   bool _isLoading = false;
   bool _isForgotPasswordView = false;
@@ -38,6 +38,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _resetEmailController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -45,17 +46,50 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _mode = widget.initialMode;
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _nameController.dispose();
     _resetEmailController.dispose();
+    _otpController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _isEmailVerificationView) {
+      final email = _pendingVerificationEmail ?? _emailController.text.trim();
+      final pwd = _passwordController.text.trim();
+      if (email.isNotEmpty && pwd.isNotEmpty) {
+        _autoCheckVerification(email, pwd);
+      }
+    }
+  }
+
+  Future<void> _autoCheckVerification(String email, String password) async {
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final medProvider = context.read<MedicineProvider>();
+      final res = await authProvider.signInWithEmail(
+        email: email,
+        password: password,
+        medicineProvider: medProvider,
+      );
+      if (res.success && mounted) {
+        final s = context.read<LanguageProvider>().strings;
+        _showToast(s.code == 'bn' ? 'ইমেল ভেরিফিকেশন সফল! স্বাগতম।' : 'Email verified successfully! Welcome.');
+        if (widget.isModal || Navigator.canPop(context)) {
+          Navigator.pop(context, true);
+        }
+      }
+    } catch (_) {}
   }
 
   bool _isValidEmail(String email) {
@@ -231,6 +265,90 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         _showToast(s.authVerificationResent);
       } else {
         _showToast(res.errorMessage ?? 'Could not resend email. Please try again.', isError: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showToast('Error: $e', isError: true);
+      }
+    }
+  }
+
+  Future<void> _handleCheckVerificationAndSignIn(AppStrings s, String email) async {
+    final password = _passwordController.text.trim();
+    if (password.isEmpty) {
+      setState(() {
+        _isEmailVerificationView = false;
+        _mode = AuthMode.signIn;
+        _emailController.text = email;
+      });
+      _showToast(s.code == 'bn' ? 'পাসওয়ার্ড দিয়ে সাইন ইন করুন' : 'Enter your password to sign in');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final medProvider = context.read<MedicineProvider>();
+      final result = await authProvider.signInWithEmail(
+        email: email,
+        password: password,
+        medicineProvider: medProvider,
+      );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (result.success) {
+        _showToast(s.code == 'bn' ? 'ইমেল ভেরিফিকেশন সফল! স্বাগতম।' : s.msgSignInSuccess);
+        if (widget.isModal || Navigator.canPop(context)) {
+          Navigator.pop(context, true);
+        }
+      } else if (result.isEmailConfirmationRequired) {
+        _showToast(
+          s.code == 'bn'
+              ? 'ইমেল এখনও ভেরিফাই হয়নি। আপনার ইনবক্সের লিঙ্কে ক্লিক করুন।'
+              : 'Email not verified yet. Please click the link in your email.',
+          isError: true,
+        );
+      } else {
+        _showToast(result.errorMessage ?? 'Sign in failed.', isError: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showToast('Error: $e', isError: true);
+      }
+    }
+  }
+
+  Future<void> _handleVerifyOtp(AppStrings s, String email) async {
+    final otp = _otpController.text.trim();
+    if (otp.length < 6) {
+      _showToast(s.code == 'bn' ? 'দয়া করে ৬-সংখ্যার কোডটি লিখুন' : 'Please enter 6-digit code', isError: true);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final medProvider = context.read<MedicineProvider>();
+      final result = await authProvider.verifySignupOtp(
+        email: email,
+        token: otp,
+        medicineProvider: medProvider,
+      );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (result.success) {
+        _showToast(s.code == 'bn' ? 'ইমেল সফলভাবে ভেরিফাই হয়েছে!' : 'Email verified successfully!');
+        if (widget.isModal || Navigator.canPop(context)) {
+          Navigator.pop(context, true);
+        }
+      } else {
+        _showToast(result.errorMessage ?? 'Invalid verification code.', isError: true);
       }
     } catch (e) {
       if (mounted) {
@@ -600,23 +718,78 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
 
         // Primary: "I've Verified, Sign In"
         _buildPrimaryButton(
           title: s.authAlreadyVerifiedBtn,
-          onPressed: () {
-            setState(() {
-              _isEmailVerificationView = false;
-              _mode = AuthMode.signIn;
-              _emailController.text = email;
-            });
-            _showToast(s.code == 'bn'
-                ? 'পাসওয়ার্ড দিয়ে সাইন ইন করুন'
-                : (s.code == 'hi' ? 'पासवर्ड दर्ज करके साइन इन करें' : 'Enter your password to sign in'));
-          },
+          onPressed: _isLoading ? null : () => _handleCheckVerificationAndSignIn(s, email),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
+
+        // Alternative: Enter 6-digit OTP code if received in email
+        Row(
+          children: [
+            Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                s.authOrEnterCode,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                ),
+              ),
+            ),
+            Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+                ),
+                child: TextField(
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 4),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    border: InputBorder.none,
+                    hintText: '• • • • • •',
+                    hintStyle: TextStyle(
+                      letterSpacing: 3,
+                      color: isDark ? Colors.white30 : Colors.black26,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            ElevatedButton(
+              onPressed: _isLoading ? null : () => _handleVerifyOtp(s, email),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: Text(s.authVerifyCodeBtn, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
 
         // Secondary: "Resend Verification Email"
         OutlinedButton.icon(
