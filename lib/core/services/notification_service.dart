@@ -457,6 +457,10 @@ class NotificationService {
     }
   }
 
+  Future<void> cancelAll() async {
+    await _notificationsPlugin.cancelAll();
+  }
+
   Future<void> snoozeReminder(
     String medicineName,
     String dosage,

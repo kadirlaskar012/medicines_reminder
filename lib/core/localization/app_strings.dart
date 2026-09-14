@@ -50,6 +50,12 @@ class AppStrings {
   String get tapToAddFirst => code == 'bn' ? 'নতুন ওষুধ যুক্ত করতে নিচের + বোতাম চাপুন' : (code == 'hi' ? 'नई दवा जोड़ने के लिए नीचे + बटन दबाएं' : 'Tap + below to add your medicines');
   String get adherenceScore => code == 'bn' ? 'আজকের গ্রহণের হার' : (code == 'hi' ? 'आज की सफलता दर' : 'Today\'s Adherence');
 
+  // Time-based Greetings
+  String get goodMorning => code == 'bn' ? 'শুভ সকাল,' : (code == 'hi' ? 'सुप्रभात,' : 'Good morning,');
+  String get goodAfternoon => code == 'bn' ? 'শুভ দুপুর,' : (code == 'hi' ? 'शुभ दोपहर,' : 'Good afternoon,');
+  String get goodEvening => code == 'bn' ? 'শুভ সন্ধ্যা,' : (code == 'hi' ? 'शुभ संध्या,' : 'Good evening,');
+  String get goodNight => code == 'bn' ? 'শুভ রাত্রি,' : (code == 'hi' ? 'शुभ रात्रि,' : 'Good night,');
+
   // Days of week short
   String weekdayShort(int weekday) {
     if (code == 'bn') {

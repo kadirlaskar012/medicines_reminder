@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/medicine.dart';
+import '../../models/reminder_time.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../widgets/dual_tone_capsule.dart';
@@ -29,22 +30,24 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
     final allMeds = provider.filteredMedicines;
 
     // Apply filtering & search
+    final activeCount = allMeds.where((m) => m.isActive && !m.isExpired).length;
+    final pausedCount = allMeds.where((m) => !m.isActive && !m.isExpired).length;
+    final completedCount = allMeds.where((m) => m.isExpired).length;
+
     final filtered = allMeds.where((m) {
       final matchesSearch = m.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           m.dosage.toLowerCase().contains(_searchQuery.toLowerCase());
       if (!matchesSearch) return false;
 
-      if (_selectedStatusTab == 'Active') return !m.isExpired;
+      if (_selectedStatusTab == 'Active') return m.isActive && !m.isExpired;
+      if (_selectedStatusTab == 'Paused') return !m.isActive && !m.isExpired;
       if (_selectedStatusTab == 'Completed') return m.isExpired;
 
       return true;
     }).toList();
 
-    final activeCount = allMeds.where((m) => !m.isExpired).length;
-    final completedCount = allMeds.where((m) => m.isExpired).length;
-
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
         title: Text(s.medicinesTab),
         elevation: 0,
@@ -65,19 +68,19 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
         children: [
           // 1. Search Bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
             child: Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -103,26 +106,27 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
             ),
           ),
 
-          // 2. Status Segmented Tabs [All (N)] | [Active (N)] | [Completed (N)]
+          // 2. Status Segmented Tabs [All (N)] | [Active (N)] | [Paused (N)] | [Completed (N)]
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(16),
+                color: isDark ? AppColors.darkSurface : const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
                 children: [
-                  _buildTabItem('All', 'All', allMeds.length, isDark),
-                  _buildTabItem('Active', 'Active', activeCount, isDark),
-                  _buildTabItem('Completed', 'Completed', completedCount, isDark),
+                  _buildTabItem('All', s.all, allMeds.length, isDark),
+                  _buildTabItem('Active', s.activeStatus, activeCount, isDark),
+                  _buildTabItem('Paused', s.code == 'bn' ? 'স্থগিত' : (s.code == 'hi' ? 'रोकी गई' : 'Paused'), pausedCount, isDark),
+                  _buildTabItem('Completed', s.courseCompleted, completedCount, isDark),
                 ],
               ),
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // 3. Medicine List or Empty View
           Expanded(
@@ -134,21 +138,21 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                     itemBuilder: (context, idx) {
                       final med = filtered[idx];
                       final reminders = provider.getRemindersForMedicine(med.id);
-                      final timeStr = reminders.isNotEmpty ? reminders.first.formattedTime : '08:00 AM';
+                      final timeStr = reminders.isNotEmpty ? '${reminders.first.formattedTime} · ${s.everyday}' : '08:00 AM · ${s.everyday}';
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          color: isDark ? AppColors.darkCard : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                           ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
@@ -161,7 +165,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                               ),
                             );
                           },
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             child: Column(
@@ -171,54 +175,79 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                   children: [
                                     DualToneCapsule.fromIndex(
                                       med.colorValue,
-                                      size: 46,
+                                      size: 44,
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            med.name,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w800,
-                                              color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                          Row(
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  med.name,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (!med.isActive) ...[
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  child: Text(
+                                                    'Paused',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
                                           const SizedBox(height: 3),
                                           Text(
-                                            '${med.dosage.isNotEmpty ? med.dosage : "500 mg"} (${s.medicineTypeName(med.type.name)})',
+                                            '${med.dosage.isNotEmpty ? med.dosage : "500 mg"} · ${s.medicineTypeName(med.type.name)}',
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w500,
-                                              color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
                                             ),
                                           ),
                                           const SizedBox(height: 3),
                                           Text(
                                             timeStr,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
-                                              color: AppColors.primary,
+                                              color: isDark ? AppColors.darkPrimary : AppColors.primary,
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
                                     Switch.adaptive(
-                                      value: !med.isExpired,
-                                      activeTrackColor: AppColors.accentMint,
-                                      onChanged: (val) {
-                                        // toggle active state
+                                      value: med.isActive,
+                                      activeTrackColor: AppColors.success,
+                                      inactiveTrackColor: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                                      onChanged: (val) async {
+                                        await provider.toggleMedicineActive(med);
                                       },
                                     ),
                                     PopupMenuButton<String>(
                                       icon: const Icon(Icons.more_horiz_rounded),
-                                      onSelected: (val) {
+                                      onSelected: (val) async {
                                         if (val == 'details') {
                                           Navigator.push(
                                             context,
@@ -232,6 +261,31 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                             MaterialPageRoute(
                                               builder: (_) => AddEditMedicineScreen(medicineToEdit: med),
                                             ),
+                                          );
+                                        } else if (val == 'toggle_pause') {
+                                          await provider.toggleMedicineActive(med);
+                                        } else if (val == 'refill') {
+                                          _showRefillDialog(context, med, s);
+                                        } else if (val == 'duplicate') {
+                                          final dupRems = reminders.map((r) => ReminderTime(
+                                            id: '',
+                                            medicineId: '',
+                                            hour: r.hour,
+                                            minute: r.minute,
+                                            daysOfWeek: r.daysOfWeek,
+                                            isAlarm: r.isAlarm,
+                                            notificationId: DateTime.now().millisecondsSinceEpoch % 100000,
+                                          )).toList();
+                                          await provider.addMedicine(
+                                            name: '${med.name} (Copy)',
+                                            dosage: med.dosage,
+                                            type: med.type,
+                                            colorValue: med.colorValue,
+                                            instruction: med.instruction,
+                                            currentStock: med.currentStock,
+                                            refillThreshold: med.refillThreshold,
+                                            notes: med.notes,
+                                            reminderTimes: dupRems,
                                           );
                                         } else if (val == 'delete') {
                                           _confirmDelete(context, med, s);
@@ -259,6 +313,37 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                           ),
                                         ),
                                         PopupMenuItem(
+                                          value: 'toggle_pause',
+                                          child: Row(
+                                            children: [
+                                              Icon(med.isActive ? Icons.pause_circle_outline_rounded : Icons.play_circle_outline_rounded, size: 18),
+                                              const SizedBox(width: 8),
+                                              Text(med.isActive ? 'Pause Reminders' : 'Resume Reminders'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'refill',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.add_shopping_cart_rounded, size: 18),
+                                              SizedBox(width: 8),
+                                              Text('Refill / Update Stock'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'duplicate',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.copy_rounded, size: 18),
+                                              SizedBox(width: 8),
+                                              Text('Duplicate'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuDivider(),
+                                        PopupMenuItem(
                                           value: 'delete',
                                           child: Row(
                                             children: [
@@ -276,7 +361,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                 const Divider(height: 1, thickness: 0.8),
                                 const SizedBox(height: 12),
 
-                                // Reminders row & Stock status
+                                // Reminders row & Dynamic Stock status
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
@@ -305,11 +390,26 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                       ),
                                     ),
 
-                                    // Stock Info & Dynamic Refill Forecast
+                                    // Dynamic Stock Info & Calculation
                                     Builder(
                                       builder: (context) {
                                         final dailyDoses = provider.getDailyDoseCount(med.id);
                                         final daysRemaining = med.estimatedDaysRemaining(dailyDoses);
+                                        final isCritical = med.currentStock <= 2;
+                                        final isLow = med.currentStock <= med.refillThreshold || (daysRemaining > 0 && daysRemaining <= 7);
+
+                                        String stockStatusText;
+                                        Color stockColor;
+                                        if (isCritical) {
+                                          stockStatusText = 'Refill soon';
+                                          stockColor = AppColors.error;
+                                        } else if (isLow) {
+                                          stockStatusText = daysRemaining > 0 ? 'Runs out in $daysRemaining days' : 'Low stock';
+                                          stockColor = AppColors.warning;
+                                        } else {
+                                          stockStatusText = daysRemaining > 0 ? '~$daysRemaining days remaining' : 'Stock healthy';
+                                          stockColor = isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary;
+                                        }
 
                                         return Row(
                                           children: [
@@ -321,31 +421,21 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                                   style: TextStyle(
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w700,
-                                                    color: med.isLowStock
-                                                        ? AppColors.warning
-                                                        : isDark
-                                                            ? AppColors.darkTextPrimary
-                                                            : AppColors.lightTextPrimary,
+                                                    color: isCritical
+                                                        ? AppColors.error
+                                                        : isLow
+                                                            ? AppColors.warning
+                                                            : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
                                                   ),
                                                 ),
-                                                if (daysRemaining > 0 && dailyDoses > 0)
-                                                  Text(
-                                                    '${s.runsOutIn} $daysRemaining ${s.days}',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.w700,
-                                                      color: daysRemaining <= 3 ? AppColors.error : const Color(0xFF059669),
-                                                    ),
-                                                  )
-                                                else if (med.isLowStock)
-                                                  Text(
-                                                    s.lowStock,
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.w700,
-                                                      color: AppColors.warning,
-                                                    ),
+                                                Text(
+                                                  stockStatusText,
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: stockColor,
                                                   ),
+                                                ),
                                               ],
                                             ),
                                             const SizedBox(width: 8),
@@ -466,9 +556,18 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(s.deleteConfirmTitle),
-        content: Text('${s.deleteConfirmMessage} "${med.name}"?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          s.code == 'bn' ? '"${med.name}" মুছে ফেলবেন?' : 'Delete "${med.name}"?',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          s.code == 'bn'
+              ? 'এটি এর ভবিষ্যৎ সকল রিমাইন্ডার এবং ওষুধের ইতিহাস মুছে ফেলবে।'
+              : (s.code == 'hi'
+                  ? 'यह इसके भविष्य के अलार्म और दवा का इतिहास हटा देगा।'
+                  : 'This will remove its future reminders and medication history.'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -478,6 +577,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
               Navigator.pop(ctx);

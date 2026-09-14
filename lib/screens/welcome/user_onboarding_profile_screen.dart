@@ -129,7 +129,7 @@ class _UserOnboardingProfileScreenState extends State<UserOnboardingProfileScree
       messenger.showSnackBar(
         SnackBar(
           content: Text(s.profileUpdated),
-          backgroundColor: AppColors.secondary,
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -147,7 +147,7 @@ class _UserOnboardingProfileScreenState extends State<UserOnboardingProfileScree
         transitionsBuilder: (context, anim, secAnim, child) {
           return FadeTransition(opacity: anim, child: child);
         },
-        transitionDuration: const Duration(milliseconds: 400),
+        transitionDuration: const Duration(milliseconds: 350),
       ),
       (route) => false,
     );
@@ -159,340 +159,335 @@ class _UserOnboardingProfileScreenState extends State<UserOnboardingProfileScree
     final s = context.watch<LanguageProvider>().strings;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F7F6),
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       appBar: widget.isEditMode
           ? AppBar(
-              title: Text(s.editMyProfile),
-              backgroundColor: Colors.transparent,
+              title: Text(
+                s.editMyProfile,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              centerTitle: true,
               elevation: 0,
+              backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
             )
           : null,
       body: SafeArea(
         child: Stack(
           children: [
-            // Ambient glowing background orbs
+            // Subtle ambient background orbs (reduced by 50% per Spec 33)
             Positioned(
-              top: -40,
-              right: -50,
+              top: -20,
+              right: -30,
               child: Container(
-                width: 220,
-                height: 220,
+                width: 120,
+                height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.12),
+                  color: AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.07),
                 ),
               ),
             ),
             Positioned(
-              bottom: 40,
-              left: -50,
+              bottom: 20,
+              left: -30,
               child: Container(
-                width: 240,
-                height: 240,
+                width: 130,
+                height: 130,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.secondary.withValues(alpha: isDark ? 0.2 : 0.1),
+                  color: AppColors.secondary.withValues(alpha: isDark ? 0.12 : 0.06),
                 ),
               ),
             ),
 
             // Scrollable Content
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                physics: const BouncingScrollPhysics(),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Header Step Icon & Title
-                      if (!widget.isEditMode) ...[
-                        Container(
-                          width: 68,
-                          height: 68,
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+              physics: const BouncingScrollPhysics(),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header Step Icon & Title (Onboarding only)
+                    if (!widget.isEditMode) ...[
+                      Center(
+                        child: Container(
+                          width: 58,
+                          height: 58,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [AppColors.primary, AppColors.primaryLight],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                            color: AppColors.primary.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.35),
-                                blurRadius: 18,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1.5),
                           ),
                           child: Center(
                             child: Text(
                               _selectedEmoji,
-                              style: const TextStyle(fontSize: 34),
+                              style: const TextStyle(fontSize: 28),
                             ),
                           ),
-                        ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
-                        const SizedBox(height: 18),
-                        Text(
-                          s.setupProfileTitle,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
-                            color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
-                          ),
-                          textAlign: TextAlign.center,
-                        ).animate().fadeIn(duration: 400.ms),
-                        const SizedBox(height: 8),
-                        Text(
-                          s.setupProfileSub,
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 1.45,
-                            color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
-                          ),
-                          textAlign: TextAlign.center,
-                        ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
-                        const SizedBox(height: 28),
-                      ],
-
-                      // Main Setup Card
-                      Container(
-                        padding: const EdgeInsets.all(22),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                            width: 1.2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 1. Choose Avatar
-                            Text(
-                              s.chooseAvatar,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.2,
-                                color: isDark ? AppColors.darkTextMuted : const Color(0xFF475569),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 52,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                itemCount: _avatarOptions.length,
-                                separatorBuilder: (_, _) => const SizedBox(width: 10),
-                                itemBuilder: (context, index) {
-                                  final opt = _avatarOptions[index];
-                                  final emoji = opt['emoji'] as String;
-                                  final isSelected = _selectedEmoji == emoji;
-
-                                  return GestureDetector(
-                                    onTap: () {
-                                      HapticFeedback.selectionClick();
-                                      setState(() {
-                                        _selectedEmoji = emoji;
-                                        _selectedColor = opt['color'] as int;
-                                      });
-                                    },
-                                    child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 200),
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? AppColors.primary.withValues(alpha: 0.16)
-                                            : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isSelected ? AppColors.primary : Colors.transparent,
-                                          width: 2.2,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          emoji,
-                                          style: TextStyle(
-                                            fontSize: isSelected ? 24 : 20,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 18),
-                              child: Divider(height: 1),
-                            ),
-
-                            // 2. Name Input Field
-                            Text(
-                              s.yourName,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1E293B),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _nameController,
-                              textCapitalization: TextCapitalization.words,
-                              decoration: InputDecoration(
-                                hintText: s.enterNameHint,
-                                prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary),
-                                filled: true,
-                                fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 18),
-
-                            // 3. Age Input Field
-                            Text(
-                              s.yourAge,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1E293B),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _ageController,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                LengthLimitingTextInputFormatter(3),
-                              ],
-                              decoration: InputDecoration(
-                                hintText: s.enterAgeHint,
-                                prefixIcon: const Icon(Icons.cake_outlined, color: AppColors.secondary),
-                                suffixIcon: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                                  child: Text(
-                                    s.ageYears,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
-                                    ),
-                                  ),
-                                ),
-                                filled: true,
-                                fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(color: AppColors.secondary, width: 2),
-                                ),
-                              ),
-                            ),
-                          ],
+                      ).animate().scale(duration: 350.ms, curve: Curves.easeOutBack),
+                      const SizedBox(height: 12),
+                      Text(
+                        s.setupProfileTitle,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
-                      ).animate().fadeIn(delay: 150.ms, duration: 400.ms).slideY(begin: 0.1, end: 0),
-
-                      const SizedBox(height: 28),
-
-                      // Primary Button: Complete Setup / Save Changes
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _isSaving ? null : () => _saveAndProceed(isSkip: false),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 4,
-                            shadowColor: AppColors.primary.withValues(alpha: 0.4),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                          child: _isSaving
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                                )
-                              : Text(
-                                  widget.isEditMode ? s.saveChanges : s.completeSetupBtn,
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.4,
-                                  ),
-                                ),
+                        textAlign: TextAlign.center,
+                      ).animate().fadeIn(duration: 300.ms),
+                      const SizedBox(height: 4),
+                      Text(
+                        s.setupProfileSub,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                         ),
-                      ).animate().fadeIn(delay: 250.ms, duration: 400.ms).scale(begin: const Offset(0.96, 0.96)),
-
-                      // Secondary Button: Skip for now (Only in onboarding)
-                      if (!widget.isEditMode) ...[
-                        const SizedBox(height: 12),
-                        TextButton(
-                          onPressed: () => _saveAndProceed(isSkip: true),
-                          style: TextButton.styleFrom(
-                            foregroundColor: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                          ),
-                          child: Text(
-                            s.skipForNow,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ).animate().fadeIn(delay: 350.ms, duration: 400.ms),
-                      ],
+                        textAlign: TextAlign.center,
+                      ).animate().fadeIn(delay: 80.ms, duration: 300.ms),
+                      const SizedBox(height: 20),
                     ],
-                  ),
+
+                    // Main Setup Card (Moved higher, standard 16dp radius & 1dp border)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCard : AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 1. Choose Avatar
+                          Text(
+                            s.chooseAvatar,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 52,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: _avatarOptions.length,
+                              separatorBuilder: (_, _) => const SizedBox(width: 10),
+                              itemBuilder: (context, index) {
+                                final opt = _avatarOptions[index];
+                                final emoji = opt['emoji'] as String;
+                                final isSelected = _selectedEmoji == emoji;
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() {
+                                      _selectedEmoji = emoji;
+                                      _selectedColor = opt['color'] as int;
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 180),
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? AppColors.primary.withValues(alpha: 0.14)
+                                          : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isSelected ? AppColors.primary : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                                        width: isSelected ? 2.5 : 1.0,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        emoji,
+                                        style: TextStyle(fontSize: isSelected ? 24 : 20),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Divider(height: 1),
+                          ),
+
+                          // 2. Name Input Field
+                          Text(
+                            s.yourName,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _nameController,
+                            textCapitalization: TextCapitalization.words,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: s.enterNameHint,
+                              prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // 3. Age Input Field (Numeric, calendar/person icon per Spec 34)
+                          Text(
+                            s.yourAge,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _ageController,
+                            keyboardType: TextInputType.number,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(3),
+                            ],
+                            decoration: InputDecoration(
+                              hintText: s.enterAgeHint,
+                              prefixIcon: const Icon(Icons.calendar_today_outlined, color: AppColors.primary, size: 20),
+                              suffixIcon: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                                child: Text(
+                                  s.ageYears,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
+
+                    const SizedBox(height: 24),
+
+                    // Primary Button: Save Changes / Complete Setup
+                    SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _isSaving ? null : () => _saveAndProceed(isSkip: false),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2),
+                              )
+                            : Text(
+                                widget.isEditMode ? s.saveChanges : s.completeSetupBtn,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ),
+
+                    // Secondary Button: Skip for now (Only in onboarding)
+                    if (!widget.isEditMode) ...[
+                      const SizedBox(height: 10),
+                      TextButton(
+                        onPressed: () => _saveAndProceed(isSkip: true),
+                        style: TextButton.styleFrom(
+                          foregroundColor: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
+                        child: Text(
+                          s.skipForNow,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),

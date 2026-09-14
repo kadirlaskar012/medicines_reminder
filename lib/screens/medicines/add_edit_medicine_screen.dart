@@ -132,6 +132,25 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     }
   }
 
+  // --- Start Date Picker ---
+  void _pickStartDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate ?? now,
+      firstDate: now.subtract(const Duration(days: 30)),
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() {
+        _startDate = picked;
+        if (_durationDays > 0) {
+          _endDate = picked.add(Duration(days: _durationDays));
+        }
+      });
+    }
+  }
+
   // --- Custom End Date Picker for Course ---
   void _pickCustomEndDate() async {
     final now = _startDate ?? DateTime.now();
@@ -624,19 +643,19 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   return GestureDetector(
                     onTap: () => setState(() => _selectedColorValue = color.toARGB32()),
                     child: Container(
-                      margin: const EdgeInsets.only(right: 10),
-                      width: 34,
-                      height: 34,
+                      margin: const EdgeInsets.only(right: 12),
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         color: color,
                         shape: BoxShape.circle,
                         border: isSelected
-                            ? Border.all(color: isDark ? Colors.white : Colors.black87, width: 3)
+                            ? Border.all(color: isDark ? Colors.white : AppColors.primary, width: 2.5)
                             : null,
                         boxShadow: [
                           BoxShadow(
                             color: color.withValues(alpha: 0.35),
-                            blurRadius: 5,
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -699,6 +718,38 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 ),
               ),
             ],
+            const SizedBox(height: 20),
+
+            // Start Date Picker (Step 6)
+            _buildSectionHeader(s.code == 'bn' ? 'শুরুর তারিখ (Start Date)' : 'Start Date'),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: _pickStartDate,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCard : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _startDate != null
+                            ? DateFormat('EEEE, d MMMM yyyy').format(_startDate!)
+                            : 'Today',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down_rounded, color: AppColors.lightTextSecondary),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
 
             // 5. Food Instruction
@@ -1120,6 +1171,32 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ],
             const SizedBox(height: 20),
           ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          border: Border(top: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            height: 50,
+            child: ElevatedButton(
+              onPressed: () => _saveMedicine(s),
+              child: Text(
+                isEditing ? s.updateMedicineBtn : s.saveAndSetReminders,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -14,27 +14,46 @@ class ReportsAnalyticsScreen extends StatefulWidget {
 class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
   String _selectedPeriod = 'Weekly'; // Weekly, Monthly, Yearly
   DateTime _anchorDate = DateTime.now();
+  int? _selectedBarIndex;
 
   void _previousPeriod() {
     setState(() {
+      _selectedBarIndex = null;
       if (_selectedPeriod == 'Weekly') {
         _anchorDate = _anchorDate.subtract(const Duration(days: 7));
       } else if (_selectedPeriod == 'Monthly') {
-        _anchorDate = DateTime(_anchorDate.year, _anchorDate.month - 1, _anchorDate.day);
+        _anchorDate = DateTime(_anchorDate.year, _anchorDate.month - 1, 1);
       } else {
-        _anchorDate = DateTime(_anchorDate.year - 1, _anchorDate.month, _anchorDate.day);
+        _anchorDate = DateTime(_anchorDate.year - 1, 1, 1);
       }
     });
   }
 
+  bool _canGoNext() {
+    final now = DateTime.now();
+    if (_selectedPeriod == 'Weekly') {
+      final startOfWeek = DateTime(_anchorDate.year, _anchorDate.month, _anchorDate.day - (_anchorDate.weekday - 1));
+      final startOfThisWeek = DateTime(now.year, now.month, now.day - (now.weekday - 1));
+      return startOfWeek.isBefore(startOfThisWeek);
+    } else if (_selectedPeriod == 'Monthly') {
+      final anchorMonth = DateTime(_anchorDate.year, _anchorDate.month, 1);
+      final thisMonth = DateTime(now.year, now.month, 1);
+      return anchorMonth.isBefore(thisMonth);
+    } else {
+      return _anchorDate.year < now.year;
+    }
+  }
+
   void _nextPeriod() {
+    if (!_canGoNext()) return;
     setState(() {
+      _selectedBarIndex = null;
       if (_selectedPeriod == 'Weekly') {
         _anchorDate = _anchorDate.add(const Duration(days: 7));
       } else if (_selectedPeriod == 'Monthly') {
-        _anchorDate = DateTime(_anchorDate.year, _anchorDate.month + 1, _anchorDate.day);
+        _anchorDate = DateTime(_anchorDate.year, _anchorDate.month + 1, 1);
       } else {
-        _anchorDate = DateTime(_anchorDate.year + 1, _anchorDate.month, _anchorDate.day);
+        _anchorDate = DateTime(_anchorDate.year + 1, 1, 1);
       }
     });
   }
@@ -44,9 +63,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
       final startOfWeek = DateTime(_anchorDate.year, _anchorDate.month, _anchorDate.day - (_anchorDate.weekday - 1));
       final endOfWeek = startOfWeek.add(const Duration(days: 6));
       if (startOfWeek.year == endOfWeek.year) {
-        return '${DateFormat('d MMM').format(startOfWeek)} - ${DateFormat('d MMM yyyy').format(endOfWeek)}';
+        return '${DateFormat('d MMM').format(startOfWeek)} – ${DateFormat('d MMM yyyy').format(endOfWeek)}';
       } else {
-        return '${DateFormat('d MMM yyyy').format(startOfWeek)} - ${DateFormat('d MMM yyyy').format(endOfWeek)}';
+        return '${DateFormat('d MMM yyyy').format(startOfWeek)} – ${DateFormat('d MMM yyyy').format(endOfWeek)}';
       }
     } else if (_selectedPeriod == 'Monthly') {
       return DateFormat('MMMM yyyy').format(_anchorDate);
@@ -63,7 +82,6 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
       final daysInMonth = DateTime(_anchorDate.year, _anchorDate.month + 1, 0).day;
       return List.generate(daysInMonth, (i) => DateTime(_anchorDate.year, _anchorDate.month, i + 1));
     } else {
-      // Yearly: sample the 12 mid-month points
       return List.generate(12, (i) => DateTime(_anchorDate.year, i + 1, 15));
     }
   }
@@ -86,14 +104,21 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     final missedCount = (totalCount - takenCount).clamp(0, 99999);
     final adherenceRate = totalCount > 0 ? ((takenCount / totalCount) * 100).round() : 0;
     final hasMeds = provider.medicines.isNotEmpty;
+    final canNext = _canGoNext();
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       appBar: AppBar(
-        title: const Text('Reports', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Medication Adherence',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
         centerTitle: true,
+        elevation: 0,
+        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 80),
         children: [
           // Period Selector ([Weekly] [Monthly] [Yearly])
           Container(
@@ -101,13 +126,24 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkCard : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                width: 1,
+              ),
             ),
             child: Row(
               children: ['Weekly', 'Monthly', 'Yearly'].map((period) {
                 final isSelected = _selectedPeriod == period;
                 return Expanded(
                   child: GestureDetector(
-                    onTap: () => setState(() => _selectedPeriod = period),
+                    onTap: () {
+                      if (_selectedPeriod != period) {
+                        setState(() {
+                          _selectedPeriod = period;
+                          _selectedBarIndex = null;
+                        });
+                      }
+                    },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
@@ -129,7 +165,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: isSelected ? Colors.white : (isDark ? AppColors.darkTextMuted : const Color(0xFF64748B)),
+                          color: isSelected
+                              ? Colors.white
+                              : (isDark ? AppColors.darkTextMuted : AppColors.textSecondary),
                         ),
                       ),
                     ),
@@ -139,70 +177,120 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Dynamic Date Navigator (< Dynamic Date >)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left_rounded, size: 22),
-                tooltip: 'Previous period',
-                onPressed: _previousPeriod,
+          // Period Range Navigator (< 14 Sep – 20 Sep 2026 >)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkCard : AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                width: 1,
               ),
-              Text(
-                _getDateRangeText(),
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right_rounded, size: 22),
-                tooltip: 'Next period',
-                onPressed: _nextPeriod,
-              ),
-            ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left_rounded, size: 24),
+                  tooltip: 'Previous period',
+                  onPressed: _previousPeriod,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ),
+                Text(
+                  _getDateRangeText(),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 24,
+                    color: canNext
+                        ? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary)
+                        : (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
+                  ),
+                  tooltip: canNext ? 'Next period' : 'Current period',
+                  onPressed: canNext ? _nextPeriod : null,
+                ),
+              ],
+            ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
-          // Circular Donut Adherence Gauge (Real Adherence %, 0% when no intake)
+          // Main Adherence Ring
           Center(
             child: SizedBox(
-              width: 170,
-              height: 170,
+              width: 176,
+              height: 176,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    width: 170,
-                    height: 170,
+                    width: 176,
+                    height: 176,
                     child: CircularProgressIndicator(
                       value: totalCount > 0 ? (adherenceRate / 100) : 0.0,
                       strokeWidth: 14,
                       backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-                      color: adherenceRate > 0 ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                      color: totalCount == 0
+                          ? (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1))
+                          : (adherenceRate >= 80
+                              ? AppColors.success
+                              : (adherenceRate >= 50 ? AppColors.warning : AppColors.error)),
                       strokeCap: StrokeCap.round,
                     ),
                   ),
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        '$adherenceRate%',
-                        style: TextStyle(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w900,
-                          color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
-                          letterSpacing: -1,
+                      if (totalCount > 0) ...[
+                        Text(
+                          '$adherenceRate%',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            letterSpacing: -1,
+                          ),
                         ),
-                      ),
-                      Text(
-                        totalCount > 0 ? 'Medicine Taken' : 'No Doses Logged',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
+                        Text(
+                          'Adherence',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.darkTextMuted : AppColors.textSecondary,
+                          ),
                         ),
-                      ),
+                      ] else ...[
+                        Icon(
+                          Icons.event_busy_rounded,
+                          size: 32,
+                          color: isDark ? AppColors.darkTextMuted : AppColors.textMuted,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'No Doses',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'For period',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? AppColors.darkTextMuted : AppColors.textMuted,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -210,7 +298,23 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             ),
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 14),
+
+          // Context Line: "1 of 7 scheduled doses taken" or "No medication data for this period"
+          Center(
+            child: Text(
+              totalCount > 0
+                  ? '$takenCount of $totalCount scheduled doses taken'
+                  : 'No medication data for this period.',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
 
           // 3 Real Summary Stat Cards (Taken, Missed, Total)
           Row(
@@ -219,8 +323,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                 child: _buildSummaryCard(
                   label: 'Taken',
                   value: '$takenCount',
-                  color: const Color(0xFF10B981),
-                  bgColor: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  color: AppColors.success,
+                  bgColor: isDark ? AppColors.success.withValues(alpha: 0.14) : const Color(0xFFECFDF5),
+                  borderColor: isDark ? AppColors.success.withValues(alpha: 0.3) : const Color(0xFFA7F3D0),
                   isDark: isDark,
                 ),
               ),
@@ -229,8 +334,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                 child: _buildSummaryCard(
                   label: 'Missed',
                   value: '$missedCount',
-                  color: const Color(0xFFEF4444),
-                  bgColor: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  color: AppColors.error,
+                  bgColor: isDark ? AppColors.error.withValues(alpha: 0.14) : const Color(0xFFFEF2F2),
+                  borderColor: isDark ? AppColors.error.withValues(alpha: 0.3) : const Color(0xFFFECACA),
                   isDark: isDark,
                 ),
               ),
@@ -240,22 +346,26 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                   label: 'Total',
                   value: '$totalCount',
                   color: AppColors.primary,
-                  bgColor: AppColors.primary.withValues(alpha: 0.1),
+                  bgColor: isDark ? AppColors.primary.withValues(alpha: 0.14) : const Color(0xFFEFF6FF),
+                  borderColor: isDark ? AppColors.primary.withValues(alpha: 0.3) : const Color(0xFFBFDBFE),
                   isDark: isDark,
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
-          // Daily Adherence Bar Chart
+          // Daily Adherence Bar Chart Card
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkCard : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+              color: isDark ? AppColors.darkCard : AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                width: 1,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,76 +374,130 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _selectedPeriod == 'Weekly' ? 'Daily Adherence' : (_selectedPeriod == 'Monthly' ? 'Monthly Trend' : 'Yearly Trend'),
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                    ),
-                    if (provider.currentStreakDays > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🔥 ', style: TextStyle(fontSize: 11)),
-                            Text(
-                              '${provider.currentStreakDays}d streak',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFD97706)),
-                            ),
-                          ],
-                        ),
+                      _selectedPeriod == 'Weekly'
+                          ? 'Daily Adherence'
+                          : (_selectedPeriod == 'Monthly' ? 'Monthly Trend' : 'Yearly Trend'),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
+                    ),
+                    Text(
+                      'Tap bar for details',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? AppColors.darkTextMuted : AppColors.textMuted,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
                 _buildDynamicChart(provider, isDark),
               ],
             ),
           ),
 
-          // Clean Empty State if user has not added any medications yet
+          const SizedBox(height: 20),
+
+          // Streak Section (Spec 20 & 63: Supportive, not overly gamified)
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkCard : AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: isDark ? 0.2 : 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text('🔥', style: TextStyle(fontSize: 22)),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Medication Consistency',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Current streak: ${provider.currentStreakDays} ${provider.currentStreakDays == 1 ? "day" : "days"}  ·  Best: ${provider.bestStreakDays} ${provider.bestStreakDays == 1 ? "day" : "days"}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Friendly empty state if user has no medicines
           if (!hasMeds) ...[
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkCard.withValues(alpha: 0.5) : const Color(0xFFF8FAFC),
+                color: isDark ? AppColors.darkCard : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
-                  strokeAlign: BorderSide.strokeAlignInside,
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  width: 1,
                 ),
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 24),
+                    child: const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 22),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'No active medicines',
+                          'No medicines in cabinet',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'Add medicines from Cabinet to track real-time intake analytics and adherence streaks.',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.3),
+                        Text(
+                          'Add medicines to begin recording daily intake and tracking adherence trends.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            height: 1.3,
+                          ),
                         ),
                       ],
                     ),
@@ -352,71 +516,155 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
       final startOfWeek = DateTime(_anchorDate.year, _anchorDate.month, _anchorDate.day - (_anchorDate.weekday - 1));
       final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-      return SizedBox(
-        height: 120,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List.generate(7, (i) {
-            final day = startOfWeek.add(Duration(days: i));
-            final doses = provider.getDosesForDate(day);
-            final double rate = doses.isEmpty ? 0.0 : (doses.where((d) => d.isTaken).length / doses.length);
-            final bool hasDoses = doses.isNotEmpty;
-            return _buildBar(dayNames[i], rate, isDark, hasDoses);
-          }),
-        ),
-      );
+      // Gather data for all 7 days
+      final data = List.generate(7, (i) {
+        final day = startOfWeek.add(Duration(days: i));
+        final doses = provider.getDosesForDate(day);
+        final taken = doses.where((d) => d.isTaken).length;
+        final total = doses.length;
+        final rate = total == 0 ? 0.0 : (taken / total);
+        return {
+          'name': dayNames[i],
+          'fullDate': DateFormat('EEEE, d MMM').format(day),
+          'rate': rate,
+          'taken': taken,
+          'total': total,
+        };
+      });
+
+      return _renderBarsWithTooltip(data, isDark, width: 26);
     } else if (_selectedPeriod == 'Monthly') {
-      // 4-5 weekly chunks in month
       final daysInMonth = DateTime(_anchorDate.year, _anchorDate.month + 1, 0).day;
       final int weeksCount = (daysInMonth / 7).ceil();
 
-      return SizedBox(
-        height: 120,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List.generate(weeksCount, (w) {
-            final startDay = w * 7 + 1;
-            final endDay = ((w + 1) * 7).clamp(1, daysInMonth);
-            int total = 0;
-            int taken = 0;
-            for (int d = startDay; d <= endDay; d++) {
-              final date = DateTime(_anchorDate.year, _anchorDate.month, d);
-              final doses = provider.getDosesForDate(date);
-              total += doses.length;
-              taken += doses.where((item) => item.isTaken).length;
-            }
-            final double rate = total == 0 ? 0.0 : (taken / total);
-            return _buildBar('W${w + 1}', rate, isDark, total > 0);
-          }),
-        ),
-      );
+      final data = List.generate(weeksCount, (w) {
+        final startDay = w * 7 + 1;
+        final endDay = ((w + 1) * 7).clamp(1, daysInMonth);
+        int total = 0;
+        int taken = 0;
+        for (int d = startDay; d <= endDay; d++) {
+          final date = DateTime(_anchorDate.year, _anchorDate.month, d);
+          final doses = provider.getDosesForDate(date);
+          total += doses.length;
+          taken += doses.where((item) => item.isTaken).length;
+        }
+        final rate = total == 0 ? 0.0 : (taken / total);
+        return {
+          'name': 'W${w + 1}',
+          'fullDate': 'Week ${w + 1} ($startDay-$endDay ${DateFormat("MMM").format(_anchorDate)})',
+          'rate': rate,
+          'taken': taken,
+          'total': total,
+        };
+      });
+
+      return _renderBarsWithTooltip(data, isDark, width: 34);
     } else {
       // Yearly: 12 months (Jan - Dec)
       final monthNames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-      return SizedBox(
-        height: 120,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List.generate(12, (m) {
-            final monthNum = m + 1;
-            final daysInM = DateTime(_anchorDate.year, monthNum + 1, 0).day;
-            int total = 0;
-            int taken = 0;
-            for (int d = 1; d <= daysInM; d++) {
-              final date = DateTime(_anchorDate.year, monthNum, d);
-              final doses = provider.getDosesForDate(date);
-              total += doses.length;
-              taken += doses.where((item) => item.isTaken).length;
-            }
-            final double rate = total == 0 ? 0.0 : (taken / total);
-            return _buildBar(monthNames[m], rate, isDark, total > 0, width: 14);
-          }),
-        ),
-      );
+      final fullMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      final data = List.generate(12, (m) {
+        final monthNum = m + 1;
+        final daysInM = DateTime(_anchorDate.year, monthNum + 1, 0).day;
+        int total = 0;
+        int taken = 0;
+        for (int d = 1; d <= daysInM; d++) {
+          final date = DateTime(_anchorDate.year, monthNum, d);
+          final doses = provider.getDosesForDate(date);
+          total += doses.length;
+          taken += doses.where((item) => item.isTaken).length;
+        }
+        final rate = total == 0 ? 0.0 : (taken / total);
+        return {
+          'name': monthNames[m],
+          'fullDate': '${fullMonths[m]} ${_anchorDate.year}',
+          'rate': rate,
+          'taken': taken,
+          'total': total,
+        };
+      });
+
+      return _renderBarsWithTooltip(data, isDark, width: 16);
     }
+  }
+
+  Widget _renderBarsWithTooltip(List<Map<String, dynamic>> items, bool isDark, {double width = 24}) {
+    final selected = (_selectedBarIndex != null && _selectedBarIndex! < items.length)
+        ? items[_selectedBarIndex!]
+        : null;
+
+    return Column(
+      children: [
+        // Interactive Tooltip / Detail callout
+        if (selected != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: isDark ? 0.18 : 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.25),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  selected['fullDate'] as String,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  (selected['total'] as int) > 0
+                      ? '${selected['taken']} / ${selected['total']} taken (${((selected['rate'] as double) * 100).round()}%)'
+                      : 'No scheduled doses',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Bars
+        SizedBox(
+          height: 130,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(items.length, (i) {
+              final item = items[i];
+              final isSelected = _selectedBarIndex == i;
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  setState(() {
+                    _selectedBarIndex = (_selectedBarIndex == i) ? null : i;
+                  });
+                },
+                child: _buildBar(
+                  item['name'] as String,
+                  item['rate'] as double,
+                  isDark,
+                  (item['total'] as int) > 0,
+                  isSelected: isSelected,
+                  width: width,
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildSummaryCard({
@@ -424,13 +672,15 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     required String value,
     required Color color,
     required Color bgColor,
+    required Color borderColor,
     required bool isDark,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Column(
         children: [
@@ -442,7 +692,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
               color: color,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             value,
             style: TextStyle(
@@ -456,35 +706,83 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     );
   }
 
-  Widget _buildBar(String day, double heightFactor, bool isDark, bool hasDoses, {double width = 22}) {
-    final bool isZero = !hasDoses || heightFactor == 0.0;
-    final barHeight = isZero ? 4.0 : (80.0 * heightFactor).clamp(6.0, 80.0);
+  Widget _buildBar(
+    String label,
+    double rate,
+    bool isDark,
+    bool hasDoses, {
+    required bool isSelected,
+    double width = 24,
+  }) {
+    final bool isZero = !hasDoses || rate == 0.0;
+    final barHeight = isZero ? 6.0 : (80.0 * rate).clamp(10.0, 80.0);
+
+    // Color logic per Section 19:
+    // Green: High adherence (>= 80%)
+    // Amber: Medium (40-79%)
+    // Red: Low (< 40%) - only when scheduled doses were missed
+    Color barColor;
+    if (!hasDoses) {
+      barColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    } else if (rate >= 0.8) {
+      barColor = AppColors.success;
+    } else if (rate >= 0.4) {
+      barColor = AppColors.warning;
+    } else {
+      barColor = AppColors.error;
+    }
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
+        // Percentage indicator on bar
+        if (hasDoses && rate > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 3),
+            child: Text(
+              '${(rate * 100).round()}%',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: isDark ? AppColors.darkTextMuted : AppColors.textSecondary,
+              ),
+            ),
+          )
+        else
+          const SizedBox(height: 12),
+
         Container(
           width: width,
           height: barHeight,
           decoration: BoxDecoration(
-            color: isZero ? (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)) : null,
-            gradient: isZero
-                ? null
-                : const LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [Color(0xFF10B981), Color(0xFF34D399)],
-                  ),
-            borderRadius: BorderRadius.circular(isZero ? 2 : 8),
+            color: barColor,
+            borderRadius: BorderRadius.circular(6),
+            border: isSelected
+                ? Border.all(
+                    color: isDark ? Colors.white : AppColors.primary,
+                    width: 2,
+                  )
+                : null,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: barColor.withValues(alpha: 0.35),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
-          day,
+          label,
           style: TextStyle(
             fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? AppColors.darkTextMuted : AppColors.textSecondary),
           ),
         ),
       ],

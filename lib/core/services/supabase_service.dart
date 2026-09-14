@@ -878,6 +878,11 @@ class SupabaseService {
 
   /// Sign out
   Future<void> signOut() async {
+    try {
+      await client?.auth.signOut();
+    } catch (e) {
+      debugPrint('Supabase client signOut error: $e');
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefIsLoggedIn);
     await prefs.remove(_prefUserEmail);

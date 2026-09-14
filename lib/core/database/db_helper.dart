@@ -264,6 +264,21 @@ class DBHelper {
     });
   }
 
+  Future<void> clearAllHistory() async {
+    final db = await database;
+    await db.delete('intake_records');
+  }
+
+  Future<void> deleteAllData() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('intake_records');
+      await txn.delete('reminder_times');
+      await txn.delete('medicines');
+      await txn.delete('profiles', where: 'id != ?', whereArgs: ['default_me']);
+    });
+  }
+
   Future<void> close() async {
     final db = await database;
     db.close();

@@ -163,6 +163,27 @@ class MedicineProvider extends ChangeNotifier {
     return streak;
   }
 
+  /// Best consecutive adherence streak (in days) based on real intake records
+  int get bestStreakDays {
+    if (_medicines.isEmpty) return 0;
+    int best = 0;
+    int current = 0;
+    final now = DateTime.now();
+
+    for (int i = 365; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+      final doses = getDosesForDate(date);
+      if (doses.isEmpty) continue;
+      if (doses.every((d) => d.isTaken)) {
+        current++;
+        if (current > best) best = current;
+      } else {
+        current = 0;
+      }
+    }
+    return best > currentStreakDays ? best : currentStreakDays;
+  }
+
   // ==================== INITIALIZATION ====================
   Future<void> loadInitialData() async {
     _isLoading = true;
@@ -357,6 +378,18 @@ class MedicineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> toggleMedicineActive(Medicine medicine) async {
+    final updated = medicine.copyWith(isActive: !medicine.isActive);
+    final reminders = _remindersByMedicine[medicine.id] ?? [];
+    await updateMedicine(medicine: updated, reminders: reminders);
+  }
+
+  Future<void> updateMedicineStock(Medicine medicine, int newStock) async {
+    final updated = medicine.copyWith(currentStock: newStock);
+    final reminders = _remindersByMedicine[medicine.id] ?? [];
+    await updateMedicine(medicine: updated, reminders: reminders);
+  }
+
   Future<void> deleteMedicine(String id) async {
     final oldReminders = _remindersByMedicine[id] ?? [];
     for (final oldRem in oldReminders) {
@@ -371,6 +404,21 @@ class MedicineProvider extends ChangeNotifier {
       unawaited(CloudSyncService.instance.deleteMedicine(id));
     }
 
+    await _refreshMedicinesAndReminders();
+    await _refreshRecords();
+    notifyListeners();
+  }
+
+  Future<void> clearIntakeHistory() async {
+    await _db.clearAllHistory();
+    await _refreshRecords();
+    notifyListeners();
+  }
+
+  Future<void> deleteAllAppData() async {
+    // Cancel all alarms
+    await _notifications.cancelAll();
+    await _db.deleteAllData();
     await _refreshMedicinesAndReminders();
     await _refreshRecords();
     notifyListeners();

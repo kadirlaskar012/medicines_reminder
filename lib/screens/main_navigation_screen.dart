@@ -245,49 +245,148 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         index: _currentIndex,
         children: _screens,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+              width: 1,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 74,
+            child: Row(
+              children: [
+                _buildNavItem(
+                  index: 0,
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home_rounded,
+                  label: s.todayTab,
+                  isDark: isDark,
+                ),
+                _buildNavItem(
+                  index: 1,
+                  icon: Icons.medication_outlined,
+                  activeIcon: Icons.medication_rounded,
+                  label: s.medicinesTab,
+                  isDark: isDark,
+                ),
+                _buildCenterFab(isDark),
+                _buildNavItem(
+                  index: 2,
+                  icon: Icons.bar_chart_outlined,
+                  activeIcon: Icons.bar_chart_rounded,
+                  label: s.code == 'bn' ? 'রিপোর্ট' : (s.code == 'hi' ? 'रिपोर्ट' : 'Reports'),
+                  isDark: isDark,
+                ),
+                _buildNavItem(
+                  index: 3,
+                  icon: Icons.settings_outlined,
+                  activeIcon: Icons.settings_rounded,
+                  label: s.settingsTab,
+                  isDark: isDark,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required bool isDark,
+  }) {
+    final isSelected = _currentIndex == index;
+    final activeColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final inactiveColor = isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _currentIndex = index),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? activeColor.withValues(alpha: isDark ? 0.2 : 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                size: 24,
+                color: isSelected ? activeColor : inactiveColor,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? activeColor : inactiveColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCenterFab(bool isDark) {
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: InkWell(
+        onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AddEditMedicineScreen()),
           );
         },
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        child: const Icon(Icons.add_rounded, size: 28),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        height: 68,
-        elevation: 10,
-        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.15),
-        onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home_rounded, color: AppColors.primary),
-            label: s.todayTab,
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            color: primaryColor,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withValues(alpha: 0.35),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.medication_outlined),
-            selectedIcon: const Icon(Icons.medication_rounded, color: AppColors.primary),
-            label: s.medicinesTab,
+          child: const Center(
+            child: Icon(Icons.add_rounded, color: Colors.white, size: 28),
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart_rounded, color: AppColors.primary),
-            label: 'Reports',
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.more_horiz_rounded),
-            selectedIcon: const Icon(Icons.more_horiz_rounded, color: AppColors.primary),
-            label: s.settingsTab,
-          ),
-        ],
+        ),
       ),
     );
   }
