@@ -1,7 +1,16 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -23,6 +32,28 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            val keyAliasVal = keystoreProperties.getProperty("keyAlias") ?: "mediremind-release-key"
+            val keyPasswordVal = keystoreProperties.getProperty("keyPassword") ?: "MediRemind@Prod2026!SecureKey"
+            val storePasswordVal = keystoreProperties.getProperty("storePassword") ?: "MediRemind@Prod2026!SecureKey"
+            val storeFileProp = keystoreProperties.getProperty("storeFile")
+
+            keyAlias = keyAliasVal
+            keyPassword = keyPasswordVal
+            storePassword = storePasswordVal
+
+            val resolvedFile = when {
+                storeFileProp != null && rootProject.file(storeFileProp).exists() -> rootProject.file(storeFileProp)
+                storeFileProp != null && file(storeFileProp).exists() -> file(storeFileProp)
+                rootProject.file("../release-keystore/mediremind-release.jks").exists() -> rootProject.file("../release-keystore/mediremind-release.jks")
+                file("../../release-keystore/mediremind-release.jks").exists() -> file("../../release-keystore/mediremind-release.jks")
+                else -> rootProject.file("../release-keystore/mediremind-release.jks")
+            }
+            storeFile = resolvedFile
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -31,7 +62,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
