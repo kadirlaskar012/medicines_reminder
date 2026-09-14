@@ -42,6 +42,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   String? _photoPath;
 
   final List<ReminderTime> _reminders = [];
+  String? _selectedFrequencyPreset;
 
   bool get isEditing => widget.medicineToEdit != null;
 
@@ -69,6 +70,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
       final existingRems = context.read<MedicineProvider>().getRemindersForMedicine(med.id);
       _reminders.addAll(existingRems);
+      _selectedFrequencyPreset = _detectFrequencyPreset();
     } else {
       // Default: Morning 8:00 AM alarm
       _reminders.add(ReminderTime(
@@ -80,6 +82,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         isAlarm: true,
         notificationId: 10001,
       ));
+      _selectedFrequencyPreset = '1-0-0';
     }
   }
 
@@ -147,9 +150,36 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     }
   }
 
-  // --- Quick Dose Frequency Presets (1+0+0, 1+0+1, 1+1+1, SOS) ---
+  // --- Detect Frequency Preset from Current Reminders ---
+  String? _detectFrequencyPreset() {
+    if (_reminders.length == 1 && _reminders.any((r) => r.hour == 8 && r.minute == 0)) {
+      return '1-0-0';
+    }
+    if (_reminders.length == 2 &&
+        _reminders.any((r) => r.hour == 8 && r.minute == 0) &&
+        _reminders.any((r) => r.hour == 20 && r.minute == 30)) {
+      return '1-0-1';
+    }
+    if (_reminders.length == 3 &&
+        _reminders.any((r) => r.hour == 8 && r.minute == 0) &&
+        _reminders.any((r) => r.hour == 13 && r.minute == 30) &&
+        _reminders.any((r) => r.hour == 20 && r.minute == 30)) {
+      return '1-1-1';
+    }
+    if (_reminders.length == 4 &&
+        _reminders.any((r) => r.hour == 8 && r.minute == 0) &&
+        _reminders.any((r) => r.hour == 13 && r.minute == 30) &&
+        _reminders.any((r) => r.hour == 17 && r.minute == 30) &&
+        _reminders.any((r) => r.hour == 20 && r.minute == 30)) {
+      return '1-1-1-1';
+    }
+    return null;
+  }
+
+  // --- Quick Dose Frequency Presets (1+0+0, 1+0+1, 1+1+1, 1+1+1+1) ---
   void _applyQuickFrequency(String preset) {
     setState(() {
+      _selectedFrequencyPreset = preset;
       _reminders.clear();
       final now = DateTime.now();
       if (preset == '1-0-0') {
@@ -223,7 +253,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           id: const Uuid().v4(),
           medicineId: widget.medicineToEdit?.id ?? '',
           hour: 13,
-          minute: 0,
+          minute: 30,
           daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
           isAlarm: true,
           notificationId: (now.millisecondsSinceEpoch + 1) % 100000,
@@ -231,8 +261,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         _reminders.add(ReminderTime(
           id: const Uuid().v4(),
           medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 18,
-          minute: 0,
+          hour: 17,
+          minute: 30,
           daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
           isAlarm: true,
           notificationId: (now.millisecondsSinceEpoch + 2) % 100000,
@@ -240,8 +270,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         _reminders.add(ReminderTime(
           id: const Uuid().v4(),
           medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 22,
-          minute: 0,
+          hour: 20,
+          minute: 30,
           daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
           isAlarm: true,
           notificationId: (now.millisecondsSinceEpoch + 3) % 100000,
@@ -250,12 +280,13 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     });
   }
 
-  // --- Add Reminder from Meal Preset ---
-  void _addMealPreset(int hour, int minute) {
-    // Check if time already exists
-    final exists = _reminders.any((r) => r.hour == hour && r.minute == minute);
-    if (!exists) {
-      setState(() {
+  // --- Toggle Meal Preset (Add or Remove Time) ---
+  void _toggleMealPreset(int hour, int minute) {
+    setState(() {
+      final existingIndex = _reminders.indexWhere((r) => r.hour == hour && r.minute == minute);
+      if (existingIndex >= 0) {
+        _reminders.removeAt(existingIndex);
+      } else {
         _reminders.add(ReminderTime(
           id: const Uuid().v4(),
           medicineId: widget.medicineToEdit?.id ?? '',
@@ -265,8 +296,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           isAlarm: true,
           notificationId: DateTime.now().millisecondsSinceEpoch % 100000,
         ));
-      });
-    }
+      }
+      _selectedFrequencyPreset = _detectFrequencyPreset();
+    });
   }
 
   // --- Add Custom Reminder via TimePicker ---
@@ -287,6 +319,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           isAlarm: true,
           notificationId: DateTime.now().millisecondsSinceEpoch % 100000,
         ));
+        _selectedFrequencyPreset = _detectFrequencyPreset();
       });
     }
   }
@@ -813,7 +846,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           IconButton(
                             icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
                             onPressed: () {
-                              setState(() => _reminders.removeAt(idx));
+                              setState(() {
+                                _reminders.removeAt(idx);
+                                _selectedFrequencyPreset = _detectFrequencyPreset();
+                              });
                             },
                           ),
                       ],
@@ -1175,19 +1211,50 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   }
 
   Widget _buildFrequencyPresetBtn(String presetKey, String label, IconData icon) {
-    return ActionChip(
-      avatar: Icon(icon, size: 16, color: AppColors.primary),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSelected = (_selectedFrequencyPreset == presetKey) ||
+        (_selectedFrequencyPreset == null && _detectFrequencyPreset() == presetKey);
+
+    return ChoiceChip(
+      avatar: Icon(
+        icon,
+        size: 16,
+        color: isSelected ? Colors.white : AppColors.secondary,
+      ),
       label: Text(label),
-      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-      onPressed: () => _applyQuickFrequency(presetKey),
+      selected: isSelected,
+      selectedColor: AppColors.secondary,
+      checkmarkColor: Colors.white,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+      onSelected: (val) {
+        if (val) {
+          _applyQuickFrequency(presetKey);
+        } else {
+          setState(() => _selectedFrequencyPreset = null);
+        }
+      },
     );
   }
 
   Widget _buildMealPresetBtn(String label, int hour, int minute) {
-    return ActionChip(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSelected = _reminders.any((r) => r.hour == hour && r.minute == minute);
+
+    return FilterChip(
       label: Text(label),
-      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-      onPressed: () => _addMealPreset(hour, minute),
+      selected: isSelected,
+      selectedColor: AppColors.secondary,
+      checkmarkColor: Colors.white,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+      onSelected: (_) => _toggleMealPreset(hour, minute),
     );
   }
 }
