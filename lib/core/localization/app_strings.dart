@@ -491,6 +491,33 @@ class AppStrings {
   String get msgAnswerIncorrect => code == 'bn' ? '❌ উত্তর সঠিক নয়! পুনরায় চেষ্টা করুন অথবা অ্যাডমিনের সাহায্য নিন।' : (code == 'hi' ? '❌ उत्तर गलत है! पुनः प्रयास करें या एडमिन से मदद लें।' : '❌ Incorrect answer! Please retry or request admin assistance.');
   String get msgPasswordResetSuccess => code == 'bn' ? '✅ পাসওয়ার্ড সফলভাবে পরিবর্তন ও সাইন ইন সম্পন্ন হয়েছে!' : (code == 'hi' ? '✅ पासवर्ड सफलतापूर्वक अपडेट किया गया!' : '✅ Password updated and signed in successfully!');
 
+  // Supabase Inbuilt Auth & Email Verification
+  String get authVerificationSentTitle => code == 'bn' ? 'ইমেল ভেরিফাই করুন' : (code == 'hi' ? 'ईमेल सत्यापित करें' : 'Verify Your Email');
+  String authVerificationSentDesc(String email) => code == 'bn'
+      ? '$email ঠিকানায় একটি ভেরিফিকেশন লিঙ্ক পাঠানো হয়েছে। দয়া করে আপনার ইনবক্স (বা স্প্যাম ফোল্ডার) চেক করুন এবং লিঙ্কটিতে ক্লিক করে অ্যাকাউন্টটি সক্রিয় করুন।'
+      : (code == 'hi'
+          ? '$email पर एक सत्यापन लिंक भेजा गया है। कृपया इनबॉक्स जांचें और लिंक पर क्लिक करके खाता सक्रिय करें।'
+          : "We've sent a verification link to $email. Please check your inbox (and spam folder) and click the confirmation link to activate your account.");
+  String get authEmailNotConfirmed => code == 'bn'
+      ? 'ইমেল এখনো ভেরিফাই করা হয়নি! অনুগ্রহ করে আপনার ইনবক্স চেক করে লিঙ্কটিতে ক্লিক করুন।'
+      : (code == 'hi'
+          ? 'ईमेल अभी तक सत्यापित नहीं हुआ है! कृपया इनबॉक्स जांचें और लिंक पर क्लिक करें।'
+          : 'Email not confirmed yet! Please check your inbox and verify your email before signing in.');
+  String get authResendVerification => code == 'bn' ? 'ভেরিফিকেশন ইমেল পুনরায় পাঠান' : (code == 'hi' ? 'सत्यापन लिंक पुनः भेजें' : 'Resend Verification Email');
+  String get authVerificationResent => code == 'bn' ? 'ভেরিফিকেশন লিঙ্ক সফলভাবে পাঠানো হয়েছে!' : (code == 'hi' ? 'सत्यापन लिंक पुनः भेजा गया!' : 'Verification link resent! Please check your inbox.');
+  String get authAlreadyVerifiedBtn => code == 'bn' ? 'ভেরিফাই করেছি, সাইন ইন করুন' : (code == 'hi' ? 'सत्यापित कर लिया, साइन इन करें' : "I've Verified, Sign In");
+  String get authResetPasswordEmailDesc => code == 'bn'
+      ? 'আপনার রেজিস্টার্ড ইমেল ঠিকানা দিন। আমরা আপনাকে পাসওয়ার্ড পরিবর্তনের অফিশিয়াল লিঙ্ক পাঠাব।'
+      : (code == 'hi'
+          ? 'अपना पंजीकृत ईमेल दर्ज करें। हम आपको पासवर्ड रीसेट लिंक भेजेंगे।'
+          : 'Enter your registered email address. We will send you an official password reset link.');
+  String get authSendResetLink => code == 'bn' ? 'রিসেট লিঙ্ক পাঠান' : (code == 'hi' ? 'रीसेट लिंक भेजें' : 'Send Reset Link');
+  String get authPasswordResetSent => code == 'bn'
+      ? 'পাসওয়ার্ড রিসেট লিঙ্ক আপনার ইমেলে পাঠানো হয়েছে! দয়া করে ইনবক্স চেক করুন।'
+      : (code == 'hi'
+          ? 'पासवर्ड रीसेट लिंक ईमेल पर भेजा गया है! कृपया इनबॉक्स जांचें।'
+          : 'Password reset link sent to your email! Please check your inbox.');
+
   // ==================== NOTIFICATIONS & ACTIVITY HUB ====================
   String get notifHubTitle => code == 'bn' ? 'বিজ্ঞপ্তি ও অ্যাক্টিভিটি' : (code == 'hi' ? 'सूचनाएं व हब' : 'Notifications & Hub');
   String get notifTestTooltip => code == 'bn' ? 'টেস্ট নোটিফিকেশন পাঠান' : (code == 'hi' ? 'टेस्ट नोटिफिकेशन भेजें' : 'Test Live Notification');

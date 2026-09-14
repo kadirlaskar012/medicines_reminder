@@ -34,14 +34,33 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void resetFlow() {
-    _errorMessage = null;
-    _isLoading = false;
+  bool _isEmailConfirmationPending = false;
+  bool get isEmailConfirmationPending => _isEmailConfirmationPending;
+  String? _pendingVerificationEmail;
+  String? get pendingVerificationEmail => _pendingVerificationEmail;
+
+  void setEmailConfirmationPending(String email) {
+    _isEmailConfirmationPending = true;
+    _pendingVerificationEmail = email;
     notifyListeners();
   }
 
-  /// Sign in with Email and Password
-  Future<bool> signInWithEmail({
+  void clearEmailConfirmationPending() {
+    _isEmailConfirmationPending = false;
+    _pendingVerificationEmail = null;
+    notifyListeners();
+  }
+
+  void resetFlow() {
+    _errorMessage = null;
+    _isLoading = false;
+    _isEmailConfirmationPending = false;
+    _pendingVerificationEmail = null;
+    notifyListeners();
+  }
+
+  /// Sign in with Email and Password via Supabase Inbuilt Auth
+  Future<SupabaseAuthResult> signInWithEmail({
     required String email,
     required String password,
     required MedicineProvider medicineProvider,
@@ -52,13 +71,13 @@ class AuthProvider extends ChangeNotifier {
     if (cleanEmail.isEmpty || !cleanEmail.contains('@') || !cleanEmail.contains('.')) {
       _errorMessage = 'Please enter a valid email address';
       notifyListeners();
-      return false;
+      return SupabaseAuthResult(success: false, errorMessage: _errorMessage);
     }
 
     if (cleanPwd.isEmpty) {
       _errorMessage = 'Please enter your password';
       notifyListeners();
-      return false;
+      return SupabaseAuthResult(success: false, errorMessage: _errorMessage);
     }
 
     _isLoading = true;
@@ -66,17 +85,24 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final success = await _supabase.loginWithEmail(
+      final result = await _supabase.loginWithEmail(
         email: cleanEmail,
         password: cleanPwd,
       );
 
-      if (!success) {
+      if (!result.success) {
         _isLoading = false;
-        _errorMessage = 'Invalid email or password!';
+        _errorMessage = result.errorMessage ?? 'Invalid email or password!';
+        _isEmailConfirmationPending = result.isEmailConfirmationRequired;
+        if (result.isEmailConfirmationRequired) {
+          _pendingVerificationEmail = cleanEmail;
+        }
         notifyListeners();
-        return false;
+        return result;
       }
+
+      _isEmailConfirmationPending = false;
+      _pendingVerificationEmail = null;
 
       // 1. Restore previous medicines from cloud for this email
       await medicineProvider.restoreUserFromCloud(cleanEmail);
@@ -91,51 +117,44 @@ class AuthProvider extends ChangeNotifier {
 
       _isLoading = false;
       notifyListeners();
-      return true;
+      return result;
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Sign in error: $e';
       notifyListeners();
-      return false;
+      return SupabaseAuthResult(success: false, errorMessage: _errorMessage);
     }
   }
 
-  /// Sign up / Create Account with Email and Password
-  Future<bool> signUpWithEmail({
+  /// Sign up / Create Account with Email and Password via Supabase Inbuilt Auth
+  Future<SupabaseAuthResult> signUpWithEmail({
     required String email,
     required String name,
     required String password,
-    required String securityQuestion,
-    required String securityAnswer,
+    String? securityQuestion,
+    String? securityAnswer,
     required MedicineProvider medicineProvider,
   }) async {
     final cleanEmail = email.trim().toLowerCase();
     final cleanName = name.trim();
     final cleanPwd = password.trim();
-    final cleanAnswer = securityAnswer.trim();
 
     if (cleanName.isEmpty) {
       _errorMessage = 'Please enter your full name';
       notifyListeners();
-      return false;
+      return SupabaseAuthResult(success: false, errorMessage: _errorMessage);
     }
 
     if (cleanEmail.isEmpty || !cleanEmail.contains('@') || !cleanEmail.contains('.')) {
       _errorMessage = 'Please enter a valid email address';
       notifyListeners();
-      return false;
+      return SupabaseAuthResult(success: false, errorMessage: _errorMessage);
     }
 
     if (cleanPwd.length < 6) {
       _errorMessage = 'Password must be at least 6 characters';
       notifyListeners();
-      return false;
-    }
-
-    if (cleanAnswer.isEmpty) {
-      _errorMessage = 'Please answer the security question';
-      notifyListeners();
-      return false;
+      return SupabaseAuthResult(success: false, errorMessage: _errorMessage);
     }
 
     _isLoading = true;
@@ -143,20 +162,31 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final success = await _supabase.registerUserWithEmail(
+      final result = await _supabase.registerUserWithEmail(
         email: cleanEmail,
         name: cleanName,
         password: cleanPwd,
         securityQuestion: securityQuestion,
-        securityAnswer: cleanAnswer,
+        securityAnswer: securityAnswer,
       );
 
-      if (!success) {
+      if (!result.success) {
         _isLoading = false;
-        _errorMessage = 'Account creation failed. An account may already exist with this email.';
+        _errorMessage = result.errorMessage ?? 'Account creation failed.';
         notifyListeners();
-        return false;
+        return result;
       }
+
+      if (result.isEmailConfirmationRequired) {
+        _isLoading = false;
+        _isEmailConfirmationPending = true;
+        _pendingVerificationEmail = cleanEmail;
+        notifyListeners();
+        return result;
+      }
+
+      _isEmailConfirmationPending = false;
+      _pendingVerificationEmail = null;
 
       // Sync existing local medicines to cloud for new account
       await CloudSyncService.instance.syncLocalToCloud(
@@ -168,13 +198,23 @@ class AuthProvider extends ChangeNotifier {
 
       _isLoading = false;
       notifyListeners();
-      return true;
+      return result;
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Sign up error: $e';
       notifyListeners();
-      return false;
+      return SupabaseAuthResult(success: false, errorMessage: _errorMessage);
     }
+  }
+
+  /// Resend Supabase confirmation email
+  Future<SupabaseAuthResult> resendVerificationEmail(String email) async {
+    return await _supabase.resendEmailConfirmation(email);
+  }
+
+  /// Send password reset link to user's email from Supabase
+  Future<SupabaseAuthResult> sendPasswordResetEmail(String email) async {
+    return await _supabase.sendPasswordResetEmail(email);
   }
 
   /// Sign out

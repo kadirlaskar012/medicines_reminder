@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/localization/app_strings.dart';
-import '../../core/services/supabase_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
@@ -17,6 +15,7 @@ typedef EmailAuthScreen = PhoneLoginScreen;
 class PhoneLoginScreen extends StatefulWidget {
   final bool isModal;
   final AuthMode initialMode;
+
   const PhoneLoginScreen({
     super.key,
     this.isModal = false,
@@ -31,22 +30,17 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   late AuthMode _mode;
   bool _isLoading = false;
   bool _isForgotPasswordView = false;
+  bool _isEmailVerificationView = false;
+  String? _pendingVerificationEmail;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _securityAnswerController = TextEditingController();
-  final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmNewPasswordController = TextEditingController();
+  final TextEditingController _resetEmailController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _obscureNewPassword = true;
-
-  int _selectedSecurityQuestionIndex = 0;
-  String? _existingSecurityQuestion;
-  String? _existingUserName;
 
   @override
   void initState() {
@@ -60,9 +54,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _nameController.dispose();
-    _securityAnswerController.dispose();
-    _newPasswordController.dispose();
-    _confirmNewPasswordController.dispose();
+    _resetEmailController.dispose();
     super.dispose();
   }
 
@@ -70,7 +62,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim());
   }
 
-  // ==================== FLOW HANDLERS ====================
+  // ==================== SUPABASE NATIVE AUTH HANDLERS ====================
 
   Future<void> _handleSignIn(AppStrings s) async {
     final email = _emailController.text.trim().toLowerCase();
@@ -91,22 +83,29 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       final authProvider = context.read<AuthProvider>();
       final medProvider = context.read<MedicineProvider>();
 
-      final ok = await authProvider.signInWithEmail(
+      final result = await authProvider.signInWithEmail(
         email: email,
         password: password,
         medicineProvider: medProvider,
       );
 
-      if (!ok) {
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-        _showToast(s.msgInvalidCredentials, isError: true);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (!result.success) {
+        if (result.isEmailConfirmationRequired) {
+          setState(() {
+            _pendingVerificationEmail = email;
+            _isEmailVerificationView = true;
+          });
+          _showToast(s.authEmailNotConfirmed, isError: true);
+          return;
+        }
+
+        _showToast(result.errorMessage ?? s.msgInvalidCredentials, isError: true);
         return;
       }
 
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
       _showToast(s.msgSignInSuccess);
 
       if (widget.isModal || Navigator.canPop(context)) {
@@ -125,7 +124,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
-    final answer = _securityAnswerController.text.trim();
 
     if (name.isEmpty) {
       _showToast(s.errEnterFullName, isError: true);
@@ -143,10 +141,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       _showToast(s.errPasswordsDoNotMatch, isError: true);
       return;
     }
-    if (answer.isEmpty) {
-      _showToast(s.errEnterSecurityAnswer, isError: true);
-      return;
-    }
 
     setState(() => _isLoading = true);
 
@@ -154,34 +148,31 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       final authProvider = context.read<AuthProvider>();
       final medProvider = context.read<MedicineProvider>();
 
-      final questions = s.authSecurityQuestions;
-      final selectedQuestion = (_selectedSecurityQuestionIndex >= 0 && _selectedSecurityQuestionIndex < questions.length)
-          ? questions[_selectedSecurityQuestionIndex]
-          : questions.first;
-
-      final ok = await authProvider.signUpWithEmail(
+      final result = await authProvider.signUpWithEmail(
         email: email,
         name: name,
         password: password,
-        securityQuestion: selectedQuestion,
-        securityAnswer: answer,
         medicineProvider: medProvider,
       );
 
-      if (!ok) {
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-        _showToast(s.code == 'bn'
-            ? 'অ্যাকাউন্ট তৈরি ব্যর্থ হয়েছে। এই ইমেলে ইতিমধ্যে অ্যাকাউন্ট থাকতে পারে।'
-            : (s.code == 'hi' ? 'खाता निर्माण विफल रहा। शायद यह ईमेल पहले से मौजूद है।' : 'Account creation failed. An account may already exist with this email.'), isError: true);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (!result.success) {
+        _showToast(result.errorMessage ?? 'Account creation failed.', isError: true);
         return;
       }
 
-      if (!mounted) return;
+      if (result.isEmailConfirmationRequired) {
+        setState(() {
+          _pendingVerificationEmail = email;
+          _isEmailVerificationView = true;
+        });
+        return;
+      }
 
-      setState(() => _isLoading = false);
+      // Email confirmation not required or instant session
       _showToast(s.msgSignUpSuccess);
-
       if (widget.isModal || Navigator.canPop(context)) {
         Navigator.pop(context, true);
       }
@@ -193,257 +184,60 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     }
   }
 
-  Future<void> _handleForgotPasswordInit(AppStrings s) async {
-    final email = _emailController.text.trim().toLowerCase();
+  Future<void> _handleSendPasswordReset(AppStrings s) async {
+    final email = _resetEmailController.text.trim().toLowerCase();
     if (!_isValidEmail(email)) {
       _showToast(s.errEnterValidEmail, isError: true);
       return;
     }
 
     setState(() => _isLoading = true);
-    final status = await SupabaseService.instance.checkUserEmailStatus(email);
-    if (!mounted) return;
 
-    if (!status.exists) {
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final res = await authProvider.sendPasswordResetEmail(email);
+
+      if (!mounted) return;
       setState(() => _isLoading = false);
-      _showToast(s.msgEmailNotFound, isError: true);
-      return;
-    }
 
-    setState(() {
-      _isLoading = false;
-      _existingUserName = status.name;
-      _existingSecurityQuestion = status.securityQuestion;
-      _isForgotPasswordView = true;
-    });
-  }
-
-  Future<void> _handleAnswerSecurityQuestion(AppStrings s) async {
-    final email = _emailController.text.trim().toLowerCase();
-    final answer = _securityAnswerController.text.trim();
-    if (answer.isEmpty) {
-      _showToast(s.errEnterSecurityAnswer, isError: true);
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    final ok = await SupabaseService.instance.verifySecurityAnswerByEmail(
-      email: email,
-      enteredAnswer: answer,
-    );
-
-    if (!ok) {
+      if (res.success) {
+        _showToast(s.authPasswordResetSent);
+        setState(() {
+          _isForgotPasswordView = false;
+          _mode = AuthMode.signIn;
+          _emailController.text = email;
+        });
+      } else {
+        _showToast(res.errorMessage ?? 'Could not send reset link.', isError: true);
+      }
+    } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showToast(s.msgAnswerIncorrect, isError: true);
+        _showToast('Error: $e', isError: true);
       }
-      return;
-    }
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      _showEnterNewPasswordDialog(email, s);
     }
   }
 
-  void _showEnterNewPasswordDialog(String email, AppStrings s) {
-    _newPasswordController.clear();
-    _confirmNewPasswordController.clear();
-    final authProvider = context.read<AuthProvider>();
-    final medProvider = context.read<MedicineProvider>();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDlgState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: Row(
-                children: [
-                  const Icon(Icons.lock_reset_rounded, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    s.code == 'bn' ? 'নতুন পাসওয়ার্ড দিন' : (s.code == 'hi' ? 'नया पासवर्ड दर्ज करें' : 'Set New Password'),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    s.code == 'bn'
-                        ? 'উত্তর সঠিক হয়েছে! নতুন পাসওয়ার্ড দিন (কমপক্ষে ৬ অক্ষর):'
-                        : (s.code == 'hi'
-                            ? 'उत्तर सही है! नया पासवर्ड दर्ज करें (कम से कम ६ अक्षर):'
-                            : 'Security answer verified! Enter your new password (at least 6 characters):'),
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _newPasswordController,
-                    obscureText: _obscureNewPassword,
-                    decoration: InputDecoration(
-                      hintText: s.authPasswordHint,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(Icons.lock_outline_rounded),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscureNewPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded),
-                        onPressed: () => setDlgState(() => _obscureNewPassword = !_obscureNewPassword),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _confirmNewPasswordController,
-                    obscureText: _obscureNewPassword,
-                    decoration: InputDecoration(
-                      hintText: s.authConfirmPasswordHint,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(Icons.check_circle_outline_rounded),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(s.cancel),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () async {
-                    final newPwd = _newPasswordController.text.trim();
-                    final confirmNewPwd = _confirmNewPasswordController.text.trim();
-                    if (newPwd.length < 6) {
-                      _showToast(s.errPasswordLength, isError: true);
-                      return;
-                    }
-                    if (newPwd != confirmNewPwd) {
-                      _showToast(s.errPasswordsDoNotMatch, isError: true);
-                      return;
-                    }
-                    Navigator.pop(ctx);
-
-                    setState(() => _isLoading = true);
-                    await SupabaseService.instance.resetPasswordByEmail(email: email, newPassword: newPwd);
-
-                    await authProvider.signInWithEmail(
-                      email: email,
-                      password: newPwd,
-                      medicineProvider: medProvider,
-                    );
-
-                    if (mounted) {
-                      setState(() => _isLoading = false);
-                      _showToast(s.msgPasswordResetSuccess);
-                      if (widget.isModal || Navigator.canPop(context)) {
-                        Navigator.pop(context, true);
-                      }
-                    }
-                  },
-                  child: Text(s.code == 'bn' ? 'সংরক্ষণ ও লগইন' : (s.code == 'hi' ? 'सहेजें व लॉगिन' : 'Save & Sign In')),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _handleRequestAdminHelp(AppStrings s) async {
-    final email = _emailController.text.trim().toLowerCase();
+  Future<void> _handleResendVerification(AppStrings s, String email) async {
     setState(() => _isLoading = true);
-    final ok = await SupabaseService.instance.submitPasswordResetRequest(
-      email: email,
-      userName: _existingUserName ?? 'User',
-      message: 'User requested password reset from login screen for email $email',
-    );
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final res = await authProvider.resendVerificationEmail(email);
 
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              const Icon(Icons.headset_mic_rounded, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Text(s.code == 'bn' ? 'অ্যাডমিন সাপোর্ট' : (s.code == 'hi' ? 'एडमिन सहायता' : 'Admin Support'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                ok
-                    ? (s.code == 'bn'
-                        ? '✅ আপনার অনুরোধ অ্যাডমিনের কাছে পাঠানো হয়েছে! অ্যাডমিন প্যানেল থেকে আপনার অ্যাকাউন্ট যাচাই করে সহায়তা করা হবে।'
-                        : (s.code == 'hi'
-                            ? '✅ आपका अनुरोध एडमिन को भेज दिया गया है। एडमिन सत्यापन के बाद आपकी सहायता करेगा।'
-                            : '✅ Your request has been sent to the admin. The administrator will verify and assist you.'))
-                    : (s.code == 'bn' ? 'অনুরোধ পাঠানো হয়েছে।' : (s.code == 'hi' ? 'अनुरोध भेजा गया।' : 'Request submitted.')),
-                style: const TextStyle(fontSize: 13, height: 1.4),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                s.code == 'bn'
-                    ? 'তাৎক্ষণিক সহায়তার জন্য যোগাযোগ করুন:'
-                    : (s.code == 'hi' ? 'तत्काल सहायता के लिए संपर्क करें:' : 'Contact for immediate assistance:'),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final uri = Uri.parse('tel:+919876543210');
-                        if (await canLaunchUrl(uri)) launchUrl(uri);
-                      },
-                      icon: const Icon(Icons.call_rounded, size: 16),
-                      label: Text(s.code == 'bn' ? 'সরাসরি কল' : (s.code == 'hi' ? 'कॉल करें' : 'Call Support')),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
-                      onPressed: () async {
-                        final uri = Uri.parse(
-                            'https://wa.me/?text=${Uri.encodeComponent("Hello MediRemind Support, I need help resetting my password for account $email.")}');
-                        if (await canLaunchUrl(uri)) launchUrl(uri, mode: LaunchMode.externalApplication);
-                      },
-                      icon: const Icon(Icons.chat_rounded, size: 16),
-                      label: const Text('WhatsApp'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(s.ok),
-            ),
-          ],
-        );
-      },
-    );
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (res.success) {
+        _showToast(s.authVerificationResent);
+      } else {
+        _showToast(res.errorMessage ?? 'Could not resend email. Please try again.', isError: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showToast('Error: $e', isError: true);
+      }
+    }
   }
 
   void _showToast(String msg, {bool isError = false}) {
@@ -472,20 +266,52 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: isDark ? Colors.white : AppColors.lightTextPrimary),
           onPressed: () {
-            if (_isForgotPasswordView) {
+            if (_isEmailVerificationView) {
+              setState(() => _isEmailVerificationView = false);
+            } else if (_isForgotPasswordView) {
               setState(() => _isForgotPasswordView = false);
             } else if (Navigator.canPop(context)) {
               Navigator.pop(context);
             }
           },
         ),
+        actions: [
+          // Flag-free Language Dropdown
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: lang.languageCode,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppColors.primary),
+                dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                items: const [
+                  DropdownMenuItem(value: 'en', child: Text('EN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
+                  DropdownMenuItem(value: 'bn', child: Text('বাংলা', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
+                  DropdownMenuItem(value: 'hi', child: Text('हिन्दी', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
+                ],
+                onChanged: (val) {
+                  if (val != null) lang.setLanguage(val);
+                },
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          child: _isForgotPasswordView
-              ? _buildForgotPasswordView(isDark, s)
-              : (_mode == AuthMode.signIn ? _buildSignInView(isDark, s) : _buildSignUpView(isDark, s)),
+          child: _isEmailVerificationView
+              ? _buildEmailVerificationView(isDark, s)
+              : (_isForgotPasswordView
+                  ? _buildForgotPasswordView(isDark, s)
+                  : (_mode == AuthMode.signIn ? _buildSignInView(isDark, s) : _buildSignUpView(isDark, s))),
         ),
       ),
     );
@@ -519,9 +345,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             height: 1.4,
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
 
-        // Email Input Field
+        // Email Address Input
         _buildInputField(
           controller: _emailController,
           hint: s.authEmailHint,
@@ -529,17 +355,21 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           keyboardType: TextInputType.emailAddress,
           isDark: isDark,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
-        // Password Input Field
+        // Password Input
         _buildInputField(
           controller: _passwordController,
-          hint: s.authPasswordSecretHint,
+          hint: s.authPasswordHint,
           icon: Icons.lock_outline_rounded,
           isDark: isDark,
           obscureText: _obscurePassword,
           suffixIcon: IconButton(
-            icon: Icon(_obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 20),
+            icon: Icon(
+              _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+              color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+              size: 20,
+            ),
             onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
           ),
         ),
@@ -549,7 +379,12 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () => _handleForgotPasswordInit(s),
+            onPressed: () {
+              setState(() {
+                _resetEmailController.text = _emailController.text.trim();
+                _isForgotPasswordView = true;
+              });
+            },
             style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
             child: Text(
               s.authForgotPasswordLink,
@@ -591,13 +426,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     ).animate().fadeIn(duration: 250.ms);
   }
 
-  // ==================== SIGN UP VIEW ====================
+  // ==================== SIGN UP VIEW (NATIVE SUPABASE AUTH) ====================
   Widget _buildSignUpView(bool isDark, AppStrings s) {
-    final questions = s.authSecurityQuestions;
-    if (_selectedSecurityQuestionIndex >= questions.length) {
-      _selectedSecurityQuestionIndex = 0;
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -645,7 +475,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         ),
         const SizedBox(height: 14),
 
-        // Password & Confirm Password
+        // Password Input
         _buildInputField(
           controller: _passwordController,
           hint: s.authPasswordHint,
@@ -659,6 +489,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         ),
         const SizedBox(height: 14),
 
+        // Confirm Password Input
         _buildInputField(
           controller: _confirmPasswordController,
           hint: s.authConfirmPasswordHint,
@@ -668,63 +499,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           suffixIcon: IconButton(
             icon: Icon(_obscureConfirmPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 20),
             onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Security Question & Answer Card (Mandatory for safe password recovery without mobile OTP)
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.security_rounded, size: 16, color: AppColors.primary),
-                  const SizedBox(width: 6),
-                  Text(s.authSecurityQuestionLabel,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                initialValue: _selectedSecurityQuestionIndex,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-                items: List.generate(
-                  questions.length,
-                  (idx) => DropdownMenuItem(
-                    value: idx,
-                    child: Text(questions[idx], style: const TextStyle(fontSize: 12)),
-                  ),
-                ),
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedSecurityQuestionIndex = val);
-                },
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _securityAnswerController,
-                decoration: InputDecoration(
-                  hintText: s.authSecurityAnswerHint,
-                  hintStyle: const TextStyle(fontSize: 12),
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                ),
-              ),
-            ],
           ),
         ),
         const SizedBox(height: 24),
@@ -754,6 +528,192 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ],
+    ).animate().fadeIn(duration: 250.ms);
+  }
+
+  // ==================== EMAIL VERIFICATION VIEW ====================
+  Widget _buildEmailVerificationView(bool isDark, AppStrings s) {
+    final email = _pendingVerificationEmail ?? _emailController.text.trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 20),
+        Center(
+          child: Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2),
+            ),
+            child: const Icon(Icons.mark_email_read_rounded, color: AppColors.primary, size: 44),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          s.authVerificationSentTitle,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: [
+              Text(
+                s.authVerificationSentDesc(email),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? AppColors.darkTextMuted : const Color(0xFF475569),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  email,
+                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        // Primary: "I've Verified, Sign In"
+        _buildPrimaryButton(
+          title: s.authAlreadyVerifiedBtn,
+          onPressed: () {
+            setState(() {
+              _isEmailVerificationView = false;
+              _mode = AuthMode.signIn;
+              _emailController.text = email;
+            });
+            _showToast(s.code == 'bn'
+                ? 'পাসওয়ার্ড দিয়ে সাইন ইন করুন'
+                : (s.code == 'hi' ? 'पासवर्ड दर्ज करके साइन इन करें' : 'Enter your password to sign in'));
+          },
+        ),
+        const SizedBox(height: 12),
+
+        // Secondary: "Resend Verification Email"
+        OutlinedButton.icon(
+          onPressed: _isLoading ? null : () => _handleResendVerification(s, email),
+          icon: const Icon(Icons.refresh_rounded, size: 18),
+          label: Text(s.authResendVerification),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Back / Change Email
+        Center(
+          child: TextButton(
+            onPressed: () {
+              setState(() {
+                _isEmailVerificationView = false;
+                _mode = AuthMode.signUp;
+              });
+            },
+            child: Text(
+              s.code == 'bn'
+                  ? 'ইমেল পরিবর্তন করুন বা পিছনে যান'
+                  : (s.code == 'hi' ? 'ईमेल बदलें या वापस जाएं' : 'Change Email or Go Back'),
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ).animate().fadeIn(duration: 250.ms);
+  }
+
+  // ==================== FORGOT PASSWORD (NATIVE SUPABASE RESET) ====================
+  Widget _buildForgotPasswordView(bool isDark, AppStrings s) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 20),
+        Center(
+          child: Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.lock_reset_rounded, color: AppColors.primary, size: 38),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          s.authForgotPasswordLink,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            color: isDark ? AppColors.darkTextPrimary : const Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          s.authResetPasswordEmailDesc,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 24),
+        _buildInputField(
+          controller: _resetEmailController,
+          hint: s.authEmailHint,
+          icon: Icons.alternate_email_rounded,
+          keyboardType: TextInputType.emailAddress,
+          isDark: isDark,
+        ),
+        const SizedBox(height: 24),
+        _buildPrimaryButton(
+          title: s.authSendResetLink,
+          onPressed: _isLoading ? null : () => _handleSendPasswordReset(s),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: TextButton(
+            onPressed: () => setState(() => _isForgotPasswordView = false),
+            child: Text(
+              s.code == 'bn' ? 'সাইন ইন-এ ফিরে যান' : (s.code == 'hi' ? 'लॉगिन पर वापस जाएं' : 'Back to Sign In'),
+              style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
             ),
           ),
         ),
@@ -932,148 +892,5 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               ),
       ),
     );
-  }
-
-  // ==================== FORGOT PASSWORD RECOVERY VIEW ====================
-  Widget _buildForgotPasswordView(bool isDark, AppStrings s) {
-    final email = _emailController.text.trim().toLowerCase();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Center(
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.15), shape: BoxShape.circle),
-            child: const Icon(Icons.lock_reset_rounded, size: 32, color: AppColors.warning),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Text(
-          s.code == 'bn'
-              ? 'পাসওয়ার্ড রিকভারি ও অ্যাডমিন সাপোর্ট'
-              : (s.code == 'hi' ? 'पासवर्ड रिकवरी व एडमिन सहायता' : 'Password Recovery & Support'),
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Email: $email',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 20),
-
-        // Way 1: Security Question
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.quiz_rounded, color: AppColors.primary, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      s.code == 'bn'
-                          ? 'উপায় ১: সিকিউরিটি প্রশ্ন'
-                          : (s.code == 'hi' ? 'तरीका १: सुरक्षा प्रश्न' : 'Method 1: Security Question'),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  _existingSecurityQuestion ?? s.authSecurityQuestions.first,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _securityAnswerController,
-                  decoration: InputDecoration(
-                    hintText: s.authSecurityAnswerHint,
-                    filled: true,
-                    fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : () => _handleAnswerSecurityQuestion(s),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text(s.code == 'bn'
-                        ? 'উত্তর যাচাই করে নতুন পাসওয়ার্ড দিন'
-                        : (s.code == 'hi' ? 'सत्यापित करें और नया पासवर्ड सेट करें' : 'Verify & Set New Password')),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Way 2: Admin Support
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.support_agent_rounded, color: Colors.blue, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      s.code == 'bn'
-                          ? 'উপায় ২: অ্যাডমিনের সাহায্য নিন'
-                          : (s.code == 'hi' ? 'तरीका २: एडमिन सहायता लें' : 'Method 2: Contact Admin Support'),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  s.code == 'bn'
-                      ? 'আপনি যদি প্রশ্ন ও উত্তর ভুলে যান, তবে সরাসরি অ্যাডমিনকে অনুরোধ পাঠান। অ্যাডমিন আপনার অ্যাকাউন্ট যাচাই করে পাসওয়ার্ড রিসেট করে দেবে।'
-                      : (s.code == 'hi'
-                          ? 'यदि आप प्रश्न और उत्तर भूल गए हैं, तो सीधे एडमिन को अनुरोध भेजें। एडमिन आपके खाते का सत्यापन करेगा।'
-                          : 'If you forgot your security question and answer, request assistance from the administrator.'),
-                  style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.4),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : () => _handleRequestAdminHelp(s),
-                    icon: const Icon(Icons.send_rounded, size: 16),
-                    label: Text(s.code == 'bn'
-                        ? 'অ্যাডমিনকে রিকোয়েস্ট পাঠান'
-                        : (s.code == 'hi' ? 'एडमिन को अनुरोध भेजें' : 'Send Request to Admin')),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade700,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    ).animate().fadeIn(duration: 250.ms);
   }
 }

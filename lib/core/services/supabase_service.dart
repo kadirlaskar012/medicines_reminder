@@ -30,6 +30,20 @@ class SupabaseUserSession {
   };
 }
 
+class SupabaseAuthResult {
+  final bool success;
+  final bool isEmailConfirmationRequired;
+  final String? errorMessage;
+  final User? user;
+
+  SupabaseAuthResult({
+    required this.success,
+    this.isEmailConfirmationRequired = false,
+    this.errorMessage,
+    this.user,
+  });
+}
+
 class UserAuthStatus {
   final bool exists;
   final bool hasPassword;
@@ -74,12 +88,45 @@ class SupabaseService {
   static const String masterAdminPasscode = '2026';
 
   SupabaseUserSession? _currentUser;
-  SupabaseUserSession? get currentUser => _currentUser;
-  bool get isSignedIn => _currentUser != null;
+
+  /// Current session directly mapped from Supabase Inbuilt Auth User
+  SupabaseUserSession? get currentUser {
+    final authUser = client?.auth.currentUser;
+    if (authUser != null) {
+      final name = (authUser.userMetadata?['name'] as String?) ?? authUser.email?.split('@').first ?? 'User';
+      return SupabaseUserSession(
+        id: authUser.id,
+        email: authUser.email ?? '',
+        phoneNumber: authUser.phone,
+        name: name,
+        isVerified: authUser.emailConfirmedAt != null,
+        isAdmin: false,
+      );
+    }
+    return _currentUser;
+  }
+
+  bool get isSignedIn => (client?.auth.currentUser != null) || (_currentUser != null);
   bool get isAdmin => _currentUser?.isAdmin ?? false;
 
-  /// Initialize session from local persistent storage
+  /// Initialize session from Supabase Inbuilt Auth session or local storage
   Future<void> initSession() async {
+    // 1. Check if Supabase client already has an active session from local storage
+    final authUser = client?.auth.currentUser;
+    if (authUser != null) {
+      final name = (authUser.userMetadata?['name'] as String?) ?? authUser.email?.split('@').first ?? 'User';
+      _currentUser = SupabaseUserSession(
+        id: authUser.id,
+        email: authUser.email ?? '',
+        phoneNumber: authUser.phone,
+        name: name,
+        isVerified: authUser.emailConfirmedAt != null,
+        isAdmin: false,
+      );
+      return;
+    }
+
+    // 2. Fallback to shared_preferences
     final prefs = await SharedPreferences.getInstance();
     final isLoggedIn = prefs.getBool(_prefIsLoggedIn) ?? false;
     if (isLoggedIn) {
@@ -101,7 +148,215 @@ class SupabaseService {
     }
   }
 
-  // ==================== EMAIL & PASSWORD AUTHENTICATION ====================
+  Future<void> _saveLocalSession(String id, String email, String name, bool isAdmin) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefIsLoggedIn, true);
+    await prefs.setString(_prefUserEmail, email);
+    await prefs.setString(_prefUserName, name);
+    await prefs.setString(_prefUserId, id);
+    await prefs.setBool(_prefIsAdmin, isAdmin);
+  }
+
+  // ==================== SUPABASE INBUILT EMAIL & PASSWORD AUTH ====================
+
+  /// Register a new user directly in Supabase native auth (auth.users)
+  Future<SupabaseAuthResult> registerUserWithEmail({
+    required String email,
+    required String name,
+    required String password,
+    String? securityQuestion,
+    String? securityAnswer,
+  }) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPwd = password.trim();
+    final cleanName = name.trim().isNotEmpty ? name.trim() : 'Patient';
+    final c = client;
+    if (c == null || cleanEmail.isEmpty || cleanPwd.isEmpty) {
+      return SupabaseAuthResult(success: false, errorMessage: 'Supabase client is not available.');
+    }
+
+    try {
+      // 1. Direct call to Supabase Inbuilt Authentication (registers in auth.users)
+      final authRes = await c.auth.signUp(
+        email: cleanEmail,
+        password: cleanPwd,
+        data: {
+          'name': cleanName,
+        },
+      );
+
+      final user = authRes.user;
+      if (user == null) {
+        return SupabaseAuthResult(
+          success: false,
+          errorMessage: 'User registration failed on Supabase.',
+        );
+      }
+
+      // Check if email verification is required:
+      // When email confirmation is enabled in Supabase, session is null and emailConfirmedAt is null
+      final isEmailConfirmed = user.emailConfirmedAt != null;
+      final isConfirmationRequired = !isEmailConfirmed && authRes.session == null;
+
+      // Sync public app_users table with native auth UUID so foreign keys and sync work seamlessly
+      try {
+        await c.from('app_users').upsert({
+          'id': user.id,
+          'email': cleanEmail,
+          'name': cleanName,
+          'is_verified': isEmailConfirmed,
+          'last_login': DateTime.now().toIso8601String(),
+        }, onConflict: 'email');
+      } catch (dbErr) {
+        debugPrint('app_users upsert note: $dbErr');
+      }
+
+      if (!isConfirmationRequired) {
+        // Immediate session granted
+        await _saveLocalSession(user.id, cleanEmail, cleanName, false);
+        _currentUser = SupabaseUserSession(
+          id: user.id,
+          email: cleanEmail,
+          name: cleanName,
+          isVerified: true,
+          isAdmin: false,
+        );
+      }
+
+      return SupabaseAuthResult(
+        success: true,
+        isEmailConfirmationRequired: isConfirmationRequired,
+        user: user,
+      );
+    } on AuthException catch (e) {
+      debugPrint('Supabase signUp AuthException: ${e.message}');
+      return SupabaseAuthResult(
+        success: false,
+        errorMessage: e.message,
+      );
+    } catch (e) {
+      debugPrint('Supabase signUp error: $e');
+      return SupabaseAuthResult(
+        success: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  /// Sign in with Email and Password using Supabase Inbuilt Auth (auth.users)
+  Future<SupabaseAuthResult> loginWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPwd = password.trim();
+    final c = client;
+    if (c == null || cleanEmail.isEmpty || cleanPwd.isEmpty) {
+      return SupabaseAuthResult(success: false, errorMessage: 'Supabase client is not available.');
+    }
+
+    try {
+      // 1. Direct call to Supabase Inbuilt Authentication (authenticates against auth.users)
+      final authRes = await c.auth.signInWithPassword(
+        email: cleanEmail,
+        password: cleanPwd,
+      );
+
+      final user = authRes.user;
+      if (user == null) {
+        return SupabaseAuthResult(
+          success: false,
+          errorMessage: 'Sign in failed.',
+        );
+      }
+
+      final name = (user.userMetadata?['name'] as String?) ?? cleanEmail.split('@').first;
+
+      // Sync public app_users table with native auth UUID
+      try {
+        await c.from('app_users').upsert({
+          'id': user.id,
+          'email': cleanEmail,
+          'name': name,
+          'is_verified': true,
+          'last_login': DateTime.now().toIso8601String(),
+        }, onConflict: 'email');
+      } catch (_) {}
+
+      await _saveLocalSession(user.id, cleanEmail, name, false);
+      _currentUser = SupabaseUserSession(
+        id: user.id,
+        email: cleanEmail,
+        name: name,
+        isVerified: true,
+        isAdmin: false,
+      );
+
+      return SupabaseAuthResult(
+        success: true,
+        user: user,
+      );
+    } on AuthException catch (e) {
+      debugPrint('Supabase signIn AuthException: ${e.message}');
+      final msg = e.message.toLowerCase();
+      if (msg.contains('email not confirmed')) {
+        return SupabaseAuthResult(
+          success: false,
+          isEmailConfirmationRequired: true,
+          errorMessage: 'Email not confirmed. Please check your inbox and verify your email.',
+        );
+      }
+      return SupabaseAuthResult(
+        success: false,
+        errorMessage: e.message,
+      );
+    } catch (e) {
+      debugPrint('Supabase signIn error: $e');
+      return SupabaseAuthResult(
+        success: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  /// Resend Supabase email verification link to user's email
+  Future<SupabaseAuthResult> resendEmailConfirmation(String email) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final c = client;
+    if (c == null) {
+      return SupabaseAuthResult(success: false, errorMessage: 'Supabase client is not available.');
+    }
+
+    try {
+      await c.auth.resend(
+        type: OtpType.signup,
+        email: cleanEmail,
+      );
+      return SupabaseAuthResult(success: true);
+    } on AuthException catch (e) {
+      return SupabaseAuthResult(success: false, errorMessage: e.message);
+    } catch (e) {
+      return SupabaseAuthResult(success: false, errorMessage: e.toString());
+    }
+  }
+
+  /// Send official Supabase password reset link to user's email
+  Future<SupabaseAuthResult> sendPasswordResetEmail(String email) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final c = client;
+    if (c == null) {
+      return SupabaseAuthResult(success: false, errorMessage: 'Supabase client is not available.');
+    }
+
+    try {
+      await c.auth.resetPasswordForEmail(cleanEmail);
+      return SupabaseAuthResult(success: true);
+    } on AuthException catch (e) {
+      return SupabaseAuthResult(success: false, errorMessage: e.message);
+    } catch (e) {
+      return SupabaseAuthResult(success: false, errorMessage: e.toString());
+    }
+  }
 
   /// Checks if an email address already exists and whether a password is set
   Future<UserAuthStatus> checkUserEmailStatus(String email) async {
@@ -135,118 +390,6 @@ class SupabaseService {
     } catch (e) {
       debugPrint('SupabaseService checkUserEmailStatus error: $e');
       return UserAuthStatus(exists: false, hasPassword: false);
-    }
-  }
-
-  /// Register a new user with Email, Name, Password, and Security Question/Answer
-  Future<bool> registerUserWithEmail({
-    required String email,
-    required String name,
-    required String password,
-    required String securityQuestion,
-    required String securityAnswer,
-  }) async {
-    final cleanEmail = email.trim().toLowerCase();
-    final cleanPwd = password.trim();
-    final c = client;
-    if (c == null || cleanEmail.isEmpty || cleanPwd.isEmpty) return false;
-
-    try {
-      final sanitizedEmailId = cleanEmail.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
-      final userId = 'usr_$sanitizedEmailId';
-
-      await c.from('app_users').upsert({
-        'email': cleanEmail,
-        'name': name.trim().isNotEmpty ? name.trim() : 'Patient',
-        'password': cleanPwd,
-        'security_pin': cleanPwd, // for legacy fallback
-        'security_question': securityQuestion.trim(),
-        'security_answer': securityAnswer.trim().toLowerCase(),
-        'is_verified': true,
-        'last_login': DateTime.now().toIso8601String(),
-      }, onConflict: 'email');
-
-      // Save local session
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_prefIsLoggedIn, true);
-      await prefs.setString(_prefUserEmail, cleanEmail);
-      await prefs.setString(_prefUserName, name.trim().isNotEmpty ? name.trim() : 'Patient');
-      await prefs.setString(_prefUserId, userId);
-      await prefs.setBool(_prefIsAdmin, false);
-
-      _currentUser = SupabaseUserSession(
-        id: userId,
-        email: cleanEmail,
-        name: name.trim().isNotEmpty ? name.trim() : 'Patient',
-        isAdmin: false,
-      );
-      return true;
-    } catch (e) {
-      debugPrint('SupabaseService registerUserWithEmail error: $e');
-      return false;
-    }
-  }
-
-  /// Verify email and password for an existing user and complete login
-  Future<bool> loginWithEmail({
-    required String email,
-    required String password,
-  }) async {
-    final cleanEmail = email.trim().toLowerCase();
-    final cleanPwd = password.trim();
-    final c = client;
-    if (c == null || cleanEmail.isEmpty || cleanPwd.isEmpty) return false;
-
-    try {
-      final res = await c
-          .from('app_users')
-          .select('id, email, name, password, security_pin, phone_number, is_admin')
-          .eq('email', cleanEmail)
-          .maybeSingle();
-
-      if (res == null) return false;
-
-      final savedPwd = res['password']?.toString().trim();
-      final savedPin = res['security_pin']?.toString().trim();
-
-      // Check password or legacy pin
-      if (savedPwd != cleanPwd && savedPin != cleanPwd) {
-        return false;
-      }
-
-      final userId = res['id']?.toString() ?? 'usr_${cleanEmail.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
-      final name = res['name']?.toString() ?? 'Patient';
-      final phone = res['phone_number']?.toString();
-      final isAdm = res['is_admin'] == true;
-
-      // Save local persistent session
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_prefIsLoggedIn, true);
-      await prefs.setString(_prefUserEmail, cleanEmail);
-      if (phone != null && phone.isNotEmpty) {
-        await prefs.setString(_prefUserPhone, phone);
-      }
-      await prefs.setString(_prefUserName, name);
-      await prefs.setString(_prefUserId, userId);
-      await prefs.setBool(_prefIsAdmin, isAdm);
-
-      _currentUser = SupabaseUserSession(
-        id: userId,
-        email: cleanEmail,
-        phoneNumber: phone,
-        name: name,
-        isAdmin: isAdm,
-      );
-
-      // Update last login timestamp in background
-      await c.from('app_users').update({
-        'last_login': DateTime.now().toIso8601String(),
-      }).eq('email', cleanEmail);
-
-      return true;
-    } catch (e) {
-      debugPrint('SupabaseService loginWithEmail error: $e');
-      return false;
     }
   }
 
@@ -476,13 +619,14 @@ class SupabaseService {
     required String securityAnswer,
   }) async {
     if (phoneNumber.contains('@')) {
-      return registerUserWithEmail(
+      final res = await registerUserWithEmail(
         email: phoneNumber,
         name: name,
         password: pin,
         securityQuestion: securityQuestion,
         securityAnswer: securityAnswer,
       );
+      return res.success;
     }
     final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
     final c = client;
@@ -528,7 +672,8 @@ class SupabaseService {
     required String enteredPin,
   }) async {
     if (phoneNumber.contains('@')) {
-      return loginWithEmail(email: phoneNumber, password: enteredPin);
+      final res = await loginWithEmail(email: phoneNumber, password: enteredPin);
+      return res.success;
     }
     final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
     final c = client;
