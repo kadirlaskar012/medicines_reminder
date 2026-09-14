@@ -23,13 +23,13 @@ class _UserOnboardingProfileScreenState extends State<UserOnboardingProfileScree
   final _ageController = TextEditingController();
 
   final List<Map<String, dynamic>> _avatarOptions = [
-    {'emoji': '👨', 'label': 'পুরুষ', 'color': 0xFF0D9488},
-    {'emoji': '👩', 'label': 'মহিলা', 'color': 0xFFEC4899},
-    {'emoji': '👦', 'label': 'তরুণ', 'color': 0xFF0284C7},
-    {'emoji': '👧', 'label': 'তরুণী', 'color': 0xFF8B5CF6},
-    {'emoji': '👴', 'label': 'প্রবীণ', 'color': 0xFFD97706},
-    {'emoji': '👵', 'label': 'প্রবীণা', 'color': 0xFFE11D48},
-    {'emoji': '👤', 'label': 'সাধারণ', 'color': 0xFF10B981},
+    {'emoji': '👨', 'label': 'Man', 'color': 0xFF0D9488},
+    {'emoji': '👩', 'label': 'Woman', 'color': 0xFFEC4899},
+    {'emoji': '👦', 'label': 'Boy', 'color': 0xFF0284C7},
+    {'emoji': '👧', 'label': 'Girl', 'color': 0xFF8B5CF6},
+    {'emoji': '👴', 'label': 'Elder Man', 'color': 0xFFD97706},
+    {'emoji': '👵', 'label': 'Elder Woman', 'color': 0xFFE11D48},
+    {'emoji': '👤', 'label': 'Neutral', 'color': 0xFF10B981},
   ];
 
   late String _selectedEmoji;

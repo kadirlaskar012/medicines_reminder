@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/medicine.dart';
@@ -22,6 +23,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = context.watch<LanguageProvider>().languageCode;
+    final s = AppStrings.of(lang);
     final medProvider = context.watch<MedicineProvider>();
 
     final now = DateTime.now();
@@ -56,7 +58,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              lang == 'bn' ? 'বিজ্ঞপ্তি ও অ্যাক্টিভিটি' : 'Notifications & Hub',
+              s.notifHubTitle,
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 18,
@@ -85,7 +87,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           // Live Test Alarm Button
           IconButton(
-            tooltip: lang == 'bn' ? 'টেস্ট নোটিফিকেশন পাঠান' : 'Test Live Notification',
+            tooltip: s.notifTestTooltip,
             icon: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
@@ -108,9 +110,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            lang == 'bn'
-                                ? 'লকস্ক্রিন ও সিস্টেম নোটিফিকেশন টেস্ট পাঠানো হয়েছে!'
-                                : 'Live test notification triggered on your phone!',
+                            s.notifTestTriggered,
                             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                           ),
                         ),
@@ -134,7 +134,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: _buildHeroAdherenceCard(
                 context,
                 isDark: isDark,
-                lang: lang,
+                s: s,
                 adherencePercent: adherencePercent,
                 takenCount: medProvider.todayTakenCount,
                 totalCount: medProvider.todayTotalCount,
@@ -151,14 +151,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Row(
                 children: [
                   _buildFilterPill(
-                    label: lang == 'bn' ? 'সকল' : 'All',
+                    label: s.notifFilterAll,
                     count: totalAlerts + completedDoses.length,
                     filterKey: 'all',
                     isDark: isDark,
                   ),
                   const SizedBox(width: 8),
                   _buildFilterPill(
-                    label: lang == 'bn' ? 'অ্যাকশন চাই' : 'Action Needed',
+                    label: s.notifFilterAction,
                     count: overdueDoses.length,
                     filterKey: 'action',
                     isDark: isDark,
@@ -166,7 +166,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                   const SizedBox(width: 8),
                   _buildFilterPill(
-                    label: lang == 'bn' ? 'আসন্ন' : 'Upcoming',
+                    label: s.notifFilterUpcoming,
                     count: upcomingDoses.length,
                     filterKey: 'upcoming',
                     isDark: isDark,
@@ -174,7 +174,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                   const SizedBox(width: 8),
                   _buildFilterPill(
-                    label: lang == 'bn' ? 'স্টক এলার্ট' : 'Stock Alert',
+                    label: s.notifFilterStock,
                     count: lowStockMeds.length,
                     filterKey: 'stock',
                     isDark: isDark,
@@ -182,7 +182,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                   const SizedBox(width: 8),
                   _buildFilterPill(
-                    label: lang == 'bn' ? 'নেওয়া ওষুধ' : 'Completed',
+                    label: s.notifFilterCompleted,
                     count: completedDoses.length,
                     filterKey: 'completed',
                     isDark: isDark,
@@ -200,7 +200,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               context,
               medProvider: medProvider,
               isDark: isDark,
-              lang: lang,
+              s: s,
               overdueDoses: overdueDoses,
               upcomingDoses: upcomingDoses,
               lowStockMeds: lowStockMeds,
@@ -217,7 +217,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget _buildHeroAdherenceCard(
     BuildContext context, {
     required bool isDark,
-    required String lang,
+    required AppStrings s,
     required int adherencePercent,
     required int takenCount,
     required int totalCount,
@@ -291,7 +291,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  lang == 'bn' ? 'আজকের ওষুধ নিয়মনিষ্ঠা' : "Today's Dose Adherence",
+                  s.notifAdherenceTitle,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -300,9 +300,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  lang == 'bn'
-                      ? '$totalCount টি ডোজের মধ্যে $takenCount টি সম্পূর্ণ'
-                      : '$takenCount of $totalCount doses completed',
+                  s.notifDosesCompletedOf(takenCount, totalCount),
                   style: TextStyle(
                     fontSize: 13,
                     color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
@@ -324,7 +322,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       const Text('🔥', style: TextStyle(fontSize: 13)),
                       const SizedBox(width: 4),
                       Text(
-                        lang == 'bn' ? 'ধারাবাহিকতা: ৭ দিন চালু' : '7-Day Streak Active',
+                        s.notifStreakDays(7),
                         style: const TextStyle(
                           color: Color(0xFFB45309),
                           fontSize: 12,
@@ -420,7 +418,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     BuildContext context, {
     required MedicineProvider medProvider,
     required bool isDark,
-    required String lang,
+    required AppStrings s,
     required List<ScheduledDose> overdueDoses,
     required List<ScheduledDose> upcomingDoses,
     required List<Medicine> lowStockMeds,
@@ -432,28 +430,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     // 1. Overdue / Action Needed Cards
     if (_selectedFilter == 'all' || _selectedFilter == 'action') {
       for (final dose in overdueDoses) {
-        items.add(_buildOverdueCard(context, dose, medProvider, isDark: isDark, lang: lang, textPrimary: textPrimary));
+        items.add(_buildOverdueCard(context, dose, medProvider, isDark: isDark, s: s, textPrimary: textPrimary));
       }
     }
 
     // 2. Low Stock Alerts
     if (_selectedFilter == 'all' || _selectedFilter == 'stock') {
       for (final med in lowStockMeds) {
-        items.add(_buildStockAlertCard(context, med, isDark: isDark, lang: lang, textPrimary: textPrimary));
+        items.add(_buildStockAlertCard(context, med, isDark: isDark, s: s, textPrimary: textPrimary));
       }
     }
 
     // 3. Upcoming Cards
     if (_selectedFilter == 'all' || _selectedFilter == 'upcoming') {
       for (final dose in upcomingDoses) {
-        items.add(_buildUpcomingCard(context, dose, isDark: isDark, lang: lang, textPrimary: textPrimary));
+        items.add(_buildUpcomingCard(context, dose, isDark: isDark, s: s, textPrimary: textPrimary));
       }
     }
 
     // 4. Completed Cards
     if (_selectedFilter == 'all' || _selectedFilter == 'completed') {
       for (final dose in completedDoses) {
-        items.add(_buildCompletedCard(context, dose, isDark: isDark, lang: lang, textPrimary: textPrimary));
+        items.add(_buildCompletedCard(context, dose, isDark: isDark, s: s, textPrimary: textPrimary));
       }
     }
 
@@ -479,7 +477,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  lang == 'bn' ? 'কোন নতুন নোটিফিকেশন নেই' : 'All Caught Up!',
+                  s.notifAllCaughtUpTitle,
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
@@ -488,9 +486,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  lang == 'bn'
-                      ? 'আপনার সব ওষুধের সময়সূচী ঠিকমতো চলছে।'
-                      : 'All scheduled medicines and stock alerts are up to date.',
+                  s.notifAllCaughtUpSub,
                   style: TextStyle(
                     fontSize: 13,
                     color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
@@ -523,7 +519,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     ScheduledDose dose,
     MedicineProvider medProvider, {
     required bool isDark,
-    required String lang,
+    required AppStrings s,
     required Color textPrimary,
   }) {
     final med = dose.medicine;
@@ -575,7 +571,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            lang == 'bn' ? 'বাকি রয়েছে' : 'OVERDUE',
+                            s.notifOverdueBadge,
                             style: const TextStyle(
                               color: Color(0xFFDC2626),
                               fontSize: 11,
@@ -643,9 +639,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  lang == 'bn'
-                                      ? '${med.name} ডোজ সম্পূর্ণ হিসেবে রেকর্ড করা হয়েছে!'
-                                      : '${med.name} marked as taken!',
+                                  s.notifDoseTakenSuccess(med.name),
                                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                                 ),
                               ),
@@ -657,7 +651,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   },
                   icon: const Icon(Icons.check_rounded, size: 18, color: Colors.white),
                   label: Text(
-                    lang == 'bn' ? 'খেয়েছি' : 'Take Now',
+                    s.notifTakeNowBtn,
                     style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -682,9 +676,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           content: Text(
-                            lang == 'bn'
-                                ? '১০ মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে!'
-                                : 'Snoozed for 10 minutes!',
+                            s.notifSnoozeSuccess,
                             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                           ),
                         ),
@@ -693,7 +685,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   },
                   icon: Icon(Icons.schedule_rounded, size: 18, color: isDark ? Colors.white70 : const Color(0xFF475569)),
                   label: Text(
-                    lang == 'bn' ? '১০ মি. পরে' : 'Snooze 10m',
+                    s.notifSnooze10mBtn,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
@@ -720,7 +712,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     BuildContext context,
     ScheduledDose dose, {
     required bool isDark,
-    required String lang,
+    required AppStrings s,
     required Color textPrimary,
   }) {
     final med = dose.medicine;
@@ -754,7 +746,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Row(
                   children: [
                     Text(
-                      lang == 'bn' ? 'আসন্ন রিমাইন্ডার' : 'Upcoming Reminder',
+                      s.notifFilterUpcoming,
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -802,7 +794,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     BuildContext context,
     Medicine med, {
     required bool isDark,
-    required String lang,
+    required AppStrings s,
     required Color textPrimary,
   }) {
     return Container(
@@ -831,7 +823,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  lang == 'bn' ? 'স্টক শেষ এলার্ট' : 'Low Stock Warning',
+                  s.notifLowStockWarning,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -849,9 +841,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  lang == 'bn'
-                      ? 'মাত্র ${med.currentStock} টি ওষুধ অবশিষ্ট আছে।'
-                      : 'Only ${med.currentStock} doses left! Refill soon.',
+                  s.notifLowStockDosesLeft(med.currentStock),
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.darkTextMuted : const Color(0xFF78350F),
@@ -876,7 +866,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             child: Text(
-              lang == 'bn' ? 'রিফিল' : 'Refill',
+              s.notifRefillBtn,
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
             ),
           ),
@@ -890,7 +880,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     BuildContext context,
     ScheduledDose dose, {
     required bool isDark,
-    required String lang,
+    required AppStrings s,
     required Color textPrimary,
   }) {
     final med = dose.medicine;
@@ -924,7 +914,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Row(
                   children: [
                     Text(
-                      lang == 'bn' ? 'সম্পন্ন ডোজ' : 'Dose Completed',
+                      s.notifCompletedDose,
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -953,7 +943,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  lang == 'bn' ? 'সফলভাবে নেওয়া হয়েছে' : 'Confirmed taken on time',
+                  s.notifConfirmedTaken,
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),

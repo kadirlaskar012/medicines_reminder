@@ -924,7 +924,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(ok ? '☁️ ${s.cloudSyncActive}' : '⚠️ ক্লাউড সিঙ্ক ব্যর্থ হয়েছে। API কী বা ইন্টারনেট চেক করুন।'),
+                              content: Text(ok
+                                  ? '☁️ ${s.cloudSyncActive}'
+                                  : (s.code == 'bn'
+                                      ? '⚠️ ক্লাউড সিঙ্ক ব্যর্থ হয়েছে। API কী বা ইন্টারনেট চেক করুন।'
+                                      : (s.code == 'hi'
+                                          ? '⚠️ क्लाउड सिंक विफल हुआ। इंटरनेट कनेक्शन जांचें।'
+                                          : '⚠️ Cloud sync failed. Please check your internet connection.'))),
                               backgroundColor: ok ? AppColors.success : AppColors.error,
                             ),
                           );
@@ -960,7 +966,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('🔄 $count টি ওষুধ ক্লাউড থেকে রিস্টোর হয়েছে!'),
+                            content: Text(
+                              s.code == 'bn'
+                                  ? '🔄 $count টি ওষুধ ক্লাউড থেকে রিস্টোর হয়েছে!'
+                                  : (s.code == 'hi'
+                                      ? '🔄 $count दवाएं क्लाउड से रीस्टोर हुईं!'
+                                      : '🔄 Restored $count medicines from cloud!'),
+                            ),
                             backgroundColor: AppColors.primary,
                           ),
                         );

@@ -1090,22 +1090,29 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   }
 
   void _confirmDeleteMedicine(BuildContext context) {
+    final s = context.read<LanguageProvider>().strings;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.delete_forever_rounded, color: AppColors.error),
-            SizedBox(width: 8),
-            Text('ওষুধ মুছুন', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Icon(Icons.delete_forever_rounded, color: AppColors.error),
+            const SizedBox(width: 8),
+            Text(s.deleteConfirmTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text('আপনি কি নিশ্চিত যে "${widget.medicineToEdit?.name}" মুছে ফেলতে চান?'),
+        content: Text(
+          s.code == 'bn'
+              ? 'আপনি কি নিশ্চিত যে "${widget.medicineToEdit?.name}" মুছে ফেলতে চান?'
+              : (s.code == 'hi'
+                  ? 'क्या आप वाकई "${widget.medicineToEdit?.name}" को हटाना चाहते हैं?'
+                  : 'Are you sure you want to delete "${widget.medicineToEdit?.name}"?'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('বাতিল'),
+            child: Text(s.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1121,7 +1128,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 }
               }
             },
-            child: const Text('মুছে ফেলুন'),
+            child: Text(s.delete),
           ),
         ],
       ),

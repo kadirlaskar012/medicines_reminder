@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/services/supabase_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
@@ -10,7 +11,7 @@ import '../../providers/medicine_provider.dart';
 
 enum AuthMode { signIn, signUp }
 
-// Type alias so any caller can reference EmailAuthScreen or PhoneLoginScreen
+// Type alias so any existing caller can reference EmailAuthScreen or PhoneLoginScreen
 typedef EmailAuthScreen = PhoneLoginScreen;
 
 class PhoneLoginScreen extends StatefulWidget {
@@ -43,15 +44,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   bool _obscureConfirmPassword = true;
   bool _obscureNewPassword = true;
 
-  final List<String> _securityQuestions = [
-    'আপনার জন্মস্থান বা প্রিয় শহর কোনটি?',
-    'আপনার প্রথম স্কুলের নাম কী?',
-    'আপনার প্রিয় খাবার কোনটি?',
-    'আপনার শৈশবের প্রিয় বন্ধুর নাম কী?',
-    'আপনার প্রিয় বই বা লেখকের নাম কী?',
-  ];
-  late String _selectedSecurityQuestion;
-
+  int _selectedSecurityQuestionIndex = 0;
   String? _existingSecurityQuestion;
   String? _existingUserName;
 
@@ -59,7 +52,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   void initState() {
     super.initState();
     _mode = widget.initialMode;
-    _selectedSecurityQuestion = _securityQuestions.first;
   }
 
   @override
@@ -80,16 +72,16 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
   // ==================== FLOW HANDLERS ====================
 
-  Future<void> _handleSignIn() async {
+  Future<void> _handleSignIn(AppStrings s) async {
     final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text.trim();
 
     if (!_isValidEmail(email)) {
-      _showToast('অনুগ্রহ করে একটি সঠিক ইমেল ঠিকানা লিখুন (যেমন: name@gmail.com)', isError: true);
+      _showToast(s.errEnterValidEmail, isError: true);
       return;
     }
     if (password.isEmpty) {
-      _showToast('অনুগ্রহ করে আপনার পাসওয়ার্ড লিখুন', isError: true);
+      _showToast(s.errEnterPassword, isError: true);
       return;
     }
 
@@ -108,14 +100,14 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       if (!ok) {
         if (!mounted) return;
         setState(() => _isLoading = false);
-        _showToast(authProvider.errorMessage ?? '❌ ভুল ইমেল বা পাসওয়ার্ড! সঠিক তথ্য দিন অথবা Forgot Password চাপুন।', isError: true);
+        _showToast(s.msgInvalidCredentials, isError: true);
         return;
       }
 
       if (!mounted) return;
 
       setState(() => _isLoading = false);
-      _showToast('🎉 সফলভাবে সাইন ইন হয়েছে! ক্লাউড ডেটা সিঙ্ক সক্রিয়।');
+      _showToast(s.msgSignInSuccess);
 
       if (widget.isModal || Navigator.canPop(context)) {
         Navigator.pop(context, true);
@@ -123,12 +115,12 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showToast('ত্রুটি: $e', isError: true);
+        _showToast('Error: $e', isError: true);
       }
     }
   }
 
-  Future<void> _handleSignUp() async {
+  Future<void> _handleSignUp(AppStrings s) async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text.trim();
@@ -136,23 +128,23 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     final answer = _securityAnswerController.text.trim();
 
     if (name.isEmpty) {
-      _showToast('অনুগ্রহ করে আপনার পুরো নাম লিখুন', isError: true);
+      _showToast(s.errEnterFullName, isError: true);
       return;
     }
     if (!_isValidEmail(email)) {
-      _showToast('একটি সঠিক ইমেল ঠিকানা লিখুন (যেমন: name@gmail.com)', isError: true);
+      _showToast(s.errEnterValidEmail, isError: true);
       return;
     }
     if (password.length < 6) {
-      _showToast('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে', isError: true);
+      _showToast(s.errPasswordLength, isError: true);
       return;
     }
     if (password != confirmPassword) {
-      _showToast('দুইবারের পাসওয়ার্ড মিলছে না! একই পাসওয়ার্ড দিন।', isError: true);
+      _showToast(s.errPasswordsDoNotMatch, isError: true);
       return;
     }
     if (answer.isEmpty) {
-      _showToast('পাসওয়ার্ড রিকভারির জন্য সিকিউরিটি প্রশ্নের উত্তর দিন', isError: true);
+      _showToast(s.errEnterSecurityAnswer, isError: true);
       return;
     }
 
@@ -162,11 +154,16 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       final authProvider = context.read<AuthProvider>();
       final medProvider = context.read<MedicineProvider>();
 
+      final questions = s.authSecurityQuestions;
+      final selectedQuestion = (_selectedSecurityQuestionIndex >= 0 && _selectedSecurityQuestionIndex < questions.length)
+          ? questions[_selectedSecurityQuestionIndex]
+          : questions.first;
+
       final ok = await authProvider.signUpWithEmail(
         email: email,
         name: name,
         password: password,
-        securityQuestion: _selectedSecurityQuestion,
+        securityQuestion: selectedQuestion,
         securityAnswer: answer,
         medicineProvider: medProvider,
       );
@@ -174,14 +171,16 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       if (!ok) {
         if (!mounted) return;
         setState(() => _isLoading = false);
-        _showToast(authProvider.errorMessage ?? 'অ্যাকাউন্ট তৈরি ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।', isError: true);
+        _showToast(s.code == 'bn'
+            ? 'অ্যাকাউন্ট তৈরি ব্যর্থ হয়েছে। এই ইমেলে ইতিমধ্যে অ্যাকাউন্ট থাকতে পারে।'
+            : (s.code == 'hi' ? 'खाता निर्माण विफल रहा। शायद यह ईमेल पहले से मौजूद है।' : 'Account creation failed. An account may already exist with this email.'), isError: true);
         return;
       }
 
       if (!mounted) return;
 
       setState(() => _isLoading = false);
-      _showToast('🛡️ সফলভাবে অ্যাকাউন্ট তৈরি হয়েছে ও ক্লাউড ব্যাকআপ সক্রিয় হয়েছে!');
+      _showToast(s.msgSignUpSuccess);
 
       if (widget.isModal || Navigator.canPop(context)) {
         Navigator.pop(context, true);
@@ -189,15 +188,15 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showToast('ত্রুটি: $e', isError: true);
+        _showToast('Error: $e', isError: true);
       }
     }
   }
 
-  Future<void> _handleForgotPasswordInit() async {
+  Future<void> _handleForgotPasswordInit(AppStrings s) async {
     final email = _emailController.text.trim().toLowerCase();
     if (!_isValidEmail(email)) {
-      _showToast('আগে আপনার সঠিক ইমেল ঠিকানাটি লিখুন', isError: true);
+      _showToast(s.errEnterValidEmail, isError: true);
       return;
     }
 
@@ -207,7 +206,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
     if (!status.exists) {
       setState(() => _isLoading = false);
-      _showToast('এই ইমেলে কোনো রেজিস্টার্ড অ্যাকাউন্ট পাওয়া যায়নি!', isError: true);
+      _showToast(s.msgEmailNotFound, isError: true);
       return;
     }
 
@@ -219,11 +218,11 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     });
   }
 
-  Future<void> _handleAnswerSecurityQuestion() async {
+  Future<void> _handleAnswerSecurityQuestion(AppStrings s) async {
     final email = _emailController.text.trim().toLowerCase();
     final answer = _securityAnswerController.text.trim();
     if (answer.isEmpty) {
-      _showToast('অনুগ্রহ করে উত্তরটি লিখুন', isError: true);
+      _showToast(s.errEnterSecurityAnswer, isError: true);
       return;
     }
 
@@ -237,18 +236,18 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     if (!ok) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showToast('❌ উত্তর সঠিক নয়! পুনরায় চেষ্টা করুন অথবা অ্যাডমিনের সাহায্য নিন।', isError: true);
+        _showToast(s.msgAnswerIncorrect, isError: true);
       }
       return;
     }
 
     if (mounted) {
       setState(() => _isLoading = false);
-      _showEnterNewPasswordDialog(email);
+      _showEnterNewPasswordDialog(email, s);
     }
   }
 
-  void _showEnterNewPasswordDialog(String email) {
+  void _showEnterNewPasswordDialog(String email, AppStrings s) {
     _newPasswordController.clear();
     _confirmNewPasswordController.clear();
     final authProvider = context.read<AuthProvider>();
@@ -262,24 +261,34 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           builder: (dialogContext, setDlgState) {
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: const Row(
+              title: Row(
                 children: [
-                  Icon(Icons.lock_reset_rounded, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Text('নতুন পাসওয়ার্ড দিন', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Icon(Icons.lock_reset_rounded, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    s.code == 'bn' ? 'নতুন পাসওয়ার্ড দিন' : (s.code == 'hi' ? 'नया पासवर्ड दर्ज करें' : 'Set New Password'),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('উত্তর সঠিক হয়েছে! নতুন পাসওয়ার্ড নির্ধারণ করুন (কমপক্ষে ৬ অক্ষর):', style: TextStyle(fontSize: 13)),
+                  Text(
+                    s.code == 'bn'
+                        ? 'উত্তর সঠিক হয়েছে! নতুন পাসওয়ার্ড দিন (কমপক্ষে ৬ অক্ষর):'
+                        : (s.code == 'hi'
+                            ? 'उत्तर सही है! नया पासवर्ड दर्ज करें (कम से कम ६ अक्षर):'
+                            : 'Security answer verified! Enter your new password (at least 6 characters):'),
+                    style: const TextStyle(fontSize: 13),
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _newPasswordController,
                     obscureText: _obscureNewPassword,
                     decoration: InputDecoration(
-                      hintText: 'নতুন পাসওয়ার্ড',
+                      hintText: s.authPasswordHint,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       prefixIcon: const Icon(Icons.lock_outline_rounded),
                       suffixIcon: IconButton(
@@ -293,7 +302,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                     controller: _confirmNewPasswordController,
                     obscureText: _obscureNewPassword,
                     decoration: InputDecoration(
-                      hintText: 'পাসওয়ার্ড নিশ্চিত করুন',
+                      hintText: s.authConfirmPasswordHint,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       prefixIcon: const Icon(Icons.check_circle_outline_rounded),
                     ),
@@ -303,7 +312,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('বাতিল'),
+                  child: Text(s.cancel),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -315,11 +324,11 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                     final newPwd = _newPasswordController.text.trim();
                     final confirmNewPwd = _confirmNewPasswordController.text.trim();
                     if (newPwd.length < 6) {
-                      _showToast('কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড দিন', isError: true);
+                      _showToast(s.errPasswordLength, isError: true);
                       return;
                     }
                     if (newPwd != confirmNewPwd) {
-                      _showToast('দুইবারের পাসওয়ার্ড মিলছে না!', isError: true);
+                      _showToast(s.errPasswordsDoNotMatch, isError: true);
                       return;
                     }
                     Navigator.pop(ctx);
@@ -335,13 +344,13 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
                     if (mounted) {
                       setState(() => _isLoading = false);
-                      _showToast('✅ পাসওয়ার্ড সফলভাবে পরিবর্তন ও সাইন ইন সম্পন্ন হয়েছে!');
+                      _showToast(s.msgPasswordResetSuccess);
                       if (widget.isModal || Navigator.canPop(context)) {
                         Navigator.pop(context, true);
                       }
                     }
                   },
-                  child: const Text('সংরক্ষণ ও লগইন'),
+                  child: Text(s.code == 'bn' ? 'সংরক্ষণ ও লগইন' : (s.code == 'hi' ? 'सहेजें व लॉगिन' : 'Save & Sign In')),
                 ),
               ],
             );
@@ -351,7 +360,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     );
   }
 
-  Future<void> _handleRequestAdminHelp() async {
+  Future<void> _handleRequestAdminHelp(AppStrings s) async {
     final email = _emailController.text.trim().toLowerCase();
     setState(() => _isLoading = true);
     final ok = await SupabaseService.instance.submitPasswordResetRequest(
@@ -367,11 +376,12 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       builder: (ctx) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.headset_mic_rounded, color: AppColors.primary),
-              SizedBox(width: 8),
-              Text('অ্যাডমিন সাপোর্ট', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Icon(Icons.headset_mic_rounded, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(s.code == 'bn' ? 'অ্যাডমিন সাপোর্ট' : (s.code == 'hi' ? 'एडमिन सहायता' : 'Admin Support'),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ],
           ),
           content: Column(
@@ -380,12 +390,21 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             children: [
               Text(
                 ok
-                    ? '✅ আপনার অনুরোধ অ্যাডমিনের কাছে পাঠানো হয়েছে! অ্যাডমিন প্যানেল থেকে আপনার অ্যাকাউন্ট যাচাই করে সহায়তা করা হবে।'
-                    : 'অনুরোধ পাঠানো হয়েছে।',
+                    ? (s.code == 'bn'
+                        ? '✅ আপনার অনুরোধ অ্যাডমিনের কাছে পাঠানো হয়েছে! অ্যাডমিন প্যানেল থেকে আপনার অ্যাকাউন্ট যাচাই করে সহায়তা করা হবে।'
+                        : (s.code == 'hi'
+                            ? '✅ आपका अनुरोध एडमिन को भेज दिया गया है। एडमिन सत्यापन के बाद आपकी सहायता करेगा।'
+                            : '✅ Your request has been sent to the admin. The administrator will verify and assist you.'))
+                    : (s.code == 'bn' ? 'অনুরোধ পাঠানো হয়েছে।' : (s.code == 'hi' ? 'अनुरोध भेजा गया।' : 'Request submitted.')),
                 style: const TextStyle(fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 16),
-              const Text('তাৎক্ষণিক সহায়তার জন্য যোগাযোগ করুন:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              Text(
+                s.code == 'bn'
+                    ? 'তাৎক্ষণিক সহায়তার জন্য যোগাযোগ করুন:'
+                    : (s.code == 'hi' ? 'तत्काल सहायता के लिए संपर्क करें:' : 'Contact for immediate assistance:'),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -396,7 +415,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                         if (await canLaunchUrl(uri)) launchUrl(uri);
                       },
                       icon: const Icon(Icons.call_rounded, size: 16),
-                      label: const Text('সরাসরি কল'),
+                      label: Text(s.code == 'bn' ? 'সরাসরি কল' : (s.code == 'hi' ? 'कॉल करें' : 'Call Support')),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -404,7 +423,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
                       onPressed: () async {
-                        final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent("হ্যালো MediRemind সাপোর্ট, আমার অ্যাকাউন্ট $email-এর পাসওয়ার্ড রিসেট করতে সাহায্য চাই।")}');
+                        final uri = Uri.parse(
+                            'https://wa.me/?text=${Uri.encodeComponent("Hello MediRemind Support, I need help resetting my password for account $email.")}');
                         if (await canLaunchUrl(uri)) launchUrl(uri, mode: LaunchMode.externalApplication);
                       },
                       icon: const Icon(Icons.chat_rounded, size: 16),
@@ -418,7 +438,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('ঠিক আছে'),
+              child: Text(s.ok),
             ),
           ],
         );
@@ -442,6 +462,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = context.watch<LanguageProvider>();
+    final s = AppStrings.of(lang.languageCode);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
@@ -449,7 +470,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: Icon(Icons.arrow_back_rounded, color: isDark ? Colors.white : AppColors.lightTextPrimary),
           onPressed: () {
             if (_isForgotPasswordView) {
               setState(() => _isForgotPasswordView = false);
@@ -463,25 +484,25 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: _isForgotPasswordView
-              ? _buildForgotPasswordView(isDark, lang)
-              : (_mode == AuthMode.signIn ? _buildSignInView(isDark, lang) : _buildSignUpView(isDark, lang)),
+              ? _buildForgotPasswordView(isDark, s)
+              : (_mode == AuthMode.signIn ? _buildSignInView(isDark, s) : _buildSignUpView(isDark, s)),
         ),
       ),
     );
   }
 
-  // ==================== SCREEN 06: SIGN IN (WELCOME BACK) ====================
-  Widget _buildSignInView(bool isDark, LanguageProvider lang) {
+  // ==================== SIGN IN VIEW ====================
+  Widget _buildSignInView(bool isDark, AppStrings s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Mode Switcher Tabs [Sign In] | [Sign Up]
-        _buildModeTabBar(isDark, lang),
+        _buildModeTabBar(isDark, s),
         const SizedBox(height: 28),
 
         // Header
         Text(
-          lang.languageCode == 'bn' ? 'স্বাগতম ফিরে আসার জন্য' : (lang.languageCode == 'hi' ? 'वापसी पर स्वागत है' : 'Welcome Back'),
+          s.authSignInTitle,
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w900,
@@ -491,11 +512,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          lang.languageCode == 'bn'
-              ? 'আপনার ওষুধের রিমাইন্ডার ও স্বাস্থ্য ডেটা সিঙ্ক করতে ইমেল দিয়ে সাইন ইন করুন'
-              : (lang.languageCode == 'hi'
-                  ? 'अपनी दवाइयों के रिमाइंडर और स्वास्थ्य डेटा के लिए ईमेल से साइन इन करें'
-                  : 'Sign in with your email to access your reminders & health data'),
+          s.authSignInSub,
           style: TextStyle(
             fontSize: 13,
             color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
@@ -507,7 +524,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         // Email Input Field
         _buildInputField(
           controller: _emailController,
-          hint: 'আপনার ইমেল ঠিকানা (যেমন: user@gmail.com)',
+          hint: s.authEmailHint,
           icon: Icons.alternate_email_rounded,
           keyboardType: TextInputType.emailAddress,
           isDark: isDark,
@@ -517,7 +534,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         // Password Input Field
         _buildInputField(
           controller: _passwordController,
-          hint: 'গোপন পাসওয়ার্ড লিখুন',
+          hint: s.authPasswordSecretHint,
           icon: Icons.lock_outline_rounded,
           isDark: isDark,
           obscureText: _obscurePassword,
@@ -532,26 +549,22 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: _handleForgotPasswordInit,
+            onPressed: () => _handleForgotPasswordInit(s),
             style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
             child: Text(
-              lang.languageCode == 'bn' ? 'পাসওয়ার্ড ভুলে গেছেন? (Forgot Password?)' : (lang.languageCode == 'hi' ? 'पासवर्ड भूल गए?' : 'Forgot Password?'),
+              s.authForgotPasswordLink,
               style: const TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
 
         // Primary Sign In Button
         _buildPrimaryButton(
-          title: lang.languageCode == 'bn' ? 'ইমেল দিয়ে সাইন ইন করুন' : (lang.languageCode == 'hi' ? 'साइन इन करें' : 'Sign In with Email'),
-          onPressed: _isLoading ? null : _handleSignIn,
+          title: s.authSignInBtn,
+          onPressed: _isLoading ? null : () => _handleSignIn(s),
         ),
-        const SizedBox(height: 24),
-
-        // Social Indicators
-        _buildSocialLoginSection(isDark, lang),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
 
         // Bottom Switch Link
         Center(
@@ -559,14 +572,14 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             onPressed: () => setState(() => _mode = AuthMode.signUp),
             child: RichText(
               text: TextSpan(
-                text: lang.languageCode == 'bn' ? 'কোনো অ্যাকাউন্ট নেই? ' : (lang.languageCode == 'hi' ? 'कोई खाता नहीं है? ' : "Don't have an account? "),
+                text: s.authDontHaveAccount,
                 style: TextStyle(
                   fontSize: 13,
                   color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                 ),
                 children: [
                   TextSpan(
-                    text: lang.languageCode == 'bn' ? 'নতুন অ্যাকাউন্ট খুলুন' : (lang.languageCode == 'hi' ? 'खाता बनाएं' : 'Create Account'),
+                    text: s.authSignUpTab,
                     style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
                   ),
                 ],
@@ -578,18 +591,23 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     ).animate().fadeIn(duration: 250.ms);
   }
 
-  // ==================== SCREEN 05: CREATE ACCOUNT (SIGN UP) ====================
-  Widget _buildSignUpView(bool isDark, LanguageProvider lang) {
+  // ==================== SIGN UP VIEW ====================
+  Widget _buildSignUpView(bool isDark, AppStrings s) {
+    final questions = s.authSecurityQuestions;
+    if (_selectedSecurityQuestionIndex >= questions.length) {
+      _selectedSecurityQuestionIndex = 0;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Mode Switcher Tabs [Sign In] | [Sign Up]
-        _buildModeTabBar(isDark, lang),
+        _buildModeTabBar(isDark, s),
         const SizedBox(height: 28),
 
         // Header
         Text(
-          lang.languageCode == 'bn' ? 'নতুন অ্যাকাউন্ট তৈরি করুন' : (lang.languageCode == 'hi' ? 'नया खाता बनाएं' : 'Create Account'),
+          s.authSignUpTitle,
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w900,
@@ -599,11 +617,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          lang.languageCode == 'bn'
-              ? 'নিরাপদ ক্লাউড ব্যাকআপের জন্য আপনার ইমেল দিয়ে অ্যাকাউন্ট খুলুন'
-              : (lang.languageCode == 'hi'
-                  ? 'सुरक्षित क्लाउड बैकअप के लिए ईमेल से खाता बनाएं'
-                  : 'Sign up with your email for secure cloud backup'),
+          s.authSignUpSub,
           style: TextStyle(
             fontSize: 13,
             color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
@@ -615,7 +629,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         // Full Name Input
         _buildInputField(
           controller: _nameController,
-          hint: 'আপনার পুরো নাম (যেমন: কাদির লস্কর)',
+          hint: s.authFullNameHint,
           icon: Icons.person_outline_rounded,
           isDark: isDark,
         ),
@@ -624,7 +638,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         // Email Address Input
         _buildInputField(
           controller: _emailController,
-          hint: 'আপনার ইমেল ঠিকানা (যেমন: name@gmail.com)',
+          hint: s.authEmailHint,
           icon: Icons.alternate_email_rounded,
           keyboardType: TextInputType.emailAddress,
           isDark: isDark,
@@ -634,7 +648,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         // Password & Confirm Password
         _buildInputField(
           controller: _passwordController,
-          hint: 'পাসওয়ার্ড দিন (কমপক্ষে ৬ অক্ষর)',
+          hint: s.authPasswordHint,
           icon: Icons.lock_outline_rounded,
           isDark: isDark,
           obscureText: _obscurePassword,
@@ -647,7 +661,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
         _buildInputField(
           controller: _confirmPasswordController,
-          hint: 'পাসওয়ার্ড নিশ্চিত করুন',
+          hint: s.authConfirmPasswordHint,
           icon: Icons.lock_reset_rounded,
           isDark: isDark,
           obscureText: _obscureConfirmPassword,
@@ -658,7 +672,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Security Question & Answer Card
+        // Security Question & Answer Card (Mandatory for safe password recovery without mobile OTP)
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -669,16 +683,17 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.security_rounded, size: 16, color: AppColors.primary),
-                  SizedBox(width: 6),
-                  Text('পাসওয়ার্ড রিকভারি সিকিউরিটি প্রশ্ন', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
+                  const Icon(Icons.security_rounded, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text(s.authSecurityQuestionLabel,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
                 ],
               ),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedSecurityQuestion,
+              DropdownButtonFormField<int>(
+                initialValue: _selectedSecurityQuestionIndex,
                 isExpanded: true,
                 decoration: InputDecoration(
                   filled: true,
@@ -686,16 +701,22 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 ),
-                items: _securityQuestions.map((q) => DropdownMenuItem(value: q, child: Text(q, style: const TextStyle(fontSize: 12)))).toList(),
+                items: List.generate(
+                  questions.length,
+                  (idx) => DropdownMenuItem(
+                    value: idx,
+                    child: Text(questions[idx], style: const TextStyle(fontSize: 12)),
+                  ),
+                ),
                 onChanged: (val) {
-                  if (val != null) setState(() => _selectedSecurityQuestion = val);
+                  if (val != null) setState(() => _selectedSecurityQuestionIndex = val);
                 },
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _securityAnswerController,
                 decoration: InputDecoration(
-                  hintText: 'আপনার উত্তর (যেমন: কলকাতা, ঢাকা)',
+                  hintText: s.authSecurityAnswerHint,
                   hintStyle: const TextStyle(fontSize: 12),
                   filled: true,
                   fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -706,18 +727,14 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
 
         // Primary Create Account Button
         _buildPrimaryButton(
-          title: lang.languageCode == 'bn' ? 'অ্যাকাউন্ট তৈরি করুন' : (lang.languageCode == 'hi' ? 'खाता बनाएं' : 'Create Account'),
-          onPressed: _isLoading ? null : _handleSignUp,
+          title: s.authSignUpBtn,
+          onPressed: _isLoading ? null : () => _handleSignUp(s),
         ),
-        const SizedBox(height: 20),
-
-        // Social Buttons
-        _buildSocialLoginSection(isDark, lang),
-        const SizedBox(height: 20),
+        const SizedBox(height: 28),
 
         // Bottom Switch Link
         Center(
@@ -725,14 +742,14 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             onPressed: () => setState(() => _mode = AuthMode.signIn),
             child: RichText(
               text: TextSpan(
-                text: lang.languageCode == 'bn' ? 'ইতিমধ্যে অ্যাকাউন্ট আছে? ' : (lang.languageCode == 'hi' ? 'पहले से खाता है? ' : 'Already have an account? '),
+                text: s.authAlreadyHaveAccount,
                 style: TextStyle(
                   fontSize: 13,
                   color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                 ),
                 children: [
                   TextSpan(
-                    text: lang.languageCode == 'bn' ? 'সাইন ইন করুন' : (lang.languageCode == 'hi' ? 'साइन इन करें' : 'Sign In'),
+                    text: s.authSignInTab,
                     style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
                   ),
                 ],
@@ -746,11 +763,11 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
   // ==================== COMMON WIDGETS ====================
 
-  Widget _buildModeTabBar(bool isDark, LanguageProvider lang) {
+  Widget _buildModeTabBar(bool isDark, AppStrings s) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -760,21 +777,32 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               onTap: () => setState(() => _mode = AuthMode.signIn),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: _mode == AuthMode.signIn ? (isDark ? const Color(0xFF0B132B) : Colors.white) : Colors.transparent,
+                  color: _mode == AuthMode.signIn
+                      ? (isDark ? const Color(0xFF0F172A) : Colors.white)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: _mode == AuthMode.signIn
-                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2))]
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
                       : null,
                 ),
-                child: Text(
-                  lang.languageCode == 'bn' ? 'সাইন ইন' : (lang.languageCode == 'hi' ? 'साइन इन' : 'Sign In'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: _mode == AuthMode.signIn ? FontWeight.w800 : FontWeight.w600,
-                    color: _mode == AuthMode.signIn ? AppColors.primary : (isDark ? Colors.white60 : Colors.black54),
-                    fontSize: 14,
+                child: Center(
+                  child: Text(
+                    s.authSignInTab,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: _mode == AuthMode.signIn
+                          ? AppColors.primary
+                          : (isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
+                    ),
                   ),
                 ),
               ),
@@ -785,21 +813,32 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               onTap: () => setState(() => _mode = AuthMode.signUp),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: _mode == AuthMode.signUp ? (isDark ? const Color(0xFF0B132B) : Colors.white) : Colors.transparent,
+                  color: _mode == AuthMode.signUp
+                      ? (isDark ? const Color(0xFF0F172A) : Colors.white)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: _mode == AuthMode.signUp
-                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2))]
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
                       : null,
                 ),
-                child: Text(
-                  lang.languageCode == 'bn' ? 'অ্যাকাউন্ট খুলুন' : (lang.languageCode == 'hi' ? 'साइन अप' : 'Sign Up'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: _mode == AuthMode.signUp ? FontWeight.w800 : FontWeight.w600,
-                    color: _mode == AuthMode.signUp ? AppColors.primary : (isDark ? Colors.white60 : Colors.black54),
-                    fontSize: 14,
+                child: Center(
+                  child: Text(
+                    s.authSignUpTab,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: _mode == AuthMode.signUp
+                          ? AppColors.primary
+                          : (isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
+                    ),
                   ),
                 ),
               ),
@@ -815,108 +854,88 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     required String hint,
     required IconData icon,
     required bool isDark,
-    TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
     Widget? suffixIcon,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: TextField(
         controller: controller,
-        keyboardType: keyboardType,
         obscureText: obscureText,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        keyboardType: keyboardType,
+        style: TextStyle(
+          fontSize: 15,
+          color: isDark ? Colors.white : const Color(0xFF0F172A),
+        ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(fontSize: 13, color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.normal),
-          border: InputBorder.none,
-          prefixIcon: Icon(icon, color: AppColors.primary),
+          hintStyle: TextStyle(
+            color: isDark ? AppColors.darkTextMuted : const Color(0xFF94A3B8),
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(icon, color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B), size: 20),
           suffixIcon: suffixIcon,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );
   }
 
-  Widget _buildPrimaryButton({required String title, required VoidCallback? onPressed}) {
-    return SizedBox(
+  Widget _buildPrimaryButton({
+    required String title,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
       height: 52,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 4,
-          shadowColor: AppColors.primary.withValues(alpha: 0.35),
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: _isLoading
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-            : Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+              )
+            : Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: 0.2,
+                ),
+              ),
       ),
-    );
-  }
-
-  Widget _buildSocialLoginSection(bool isDark, LanguageProvider lang) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            const Expanded(child: Divider()),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                lang.languageCode == 'bn' ? 'অথবা মাধ্যম ব্যবহার করুন' : (lang.languageCode == 'hi' ? 'या जारी रखें' : 'Or continue with'),
-                style: TextStyle(fontSize: 12, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
-              ),
-            ),
-            const Expanded(child: Divider()),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  _showToast('Google Sign-In শীঘ্রই আসছে (Next update)');
-                },
-                icon: const Icon(Icons.g_mobiledata_rounded, size: 24, color: Color(0xFFEA4335)),
-                label: const Text('Google', style: TextStyle(fontWeight: FontWeight.w700)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  _showToast('Apple ID Sign-In শীঘ্রই আসছে (Next update)');
-                },
-                icon: Icon(Icons.apple_rounded, size: 22, color: isDark ? Colors.white : Colors.black87),
-                label: const Text('Apple', style: TextStyle(fontWeight: FontWeight.w700)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
   // ==================== FORGOT PASSWORD RECOVERY VIEW ====================
-  Widget _buildForgotPasswordView(bool isDark, LanguageProvider lang) {
+  Widget _buildForgotPasswordView(bool isDark, AppStrings s) {
     final email = _emailController.text.trim().toLowerCase();
 
     return Column(
@@ -931,14 +950,16 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           ),
         ),
         const SizedBox(height: 14),
-        const Text(
-          'পাসওয়ার্ড রিকভারি ও অ্যাডমিন সাপোর্ট',
+        Text(
+          s.code == 'bn'
+              ? 'পাসওয়ার্ড রিকভারি ও অ্যাডমিন সাপোর্ট'
+              : (s.code == 'hi' ? 'पासवर्ड रिकवरी व एडमिन सहायता' : 'Password Recovery & Support'),
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
-          'ইমেল: $email',
+          'Email: $email',
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600),
         ),
@@ -953,23 +974,28 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.quiz_rounded, color: AppColors.primary, size: 20),
-                    SizedBox(width: 8),
-                    Text('উপায় ১: সিকিউরিটি প্রশ্ন', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const Icon(Icons.quiz_rounded, color: AppColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      s.code == 'bn'
+                          ? 'উপায় ১: সিকিউরিটি প্রশ্ন'
+                          : (s.code == 'hi' ? 'तरीका १: सुरक्षा प्रश्न' : 'Method 1: Security Question'),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  _existingSecurityQuestion ?? 'আপনার জন্মস্থান বা প্রিয় শহর কোনটি?',
+                  _existingSecurityQuestion ?? s.authSecurityQuestions.first,
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _securityAnswerController,
                   decoration: InputDecoration(
-                    hintText: 'সঠিক উত্তরটি লিখুন',
+                    hintText: s.authSecurityAnswerHint,
                     filled: true,
                     fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
@@ -979,13 +1005,15 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleAnswerSecurityQuestion,
+                    onPressed: _isLoading ? null : () => _handleAnswerSecurityQuestion(s),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: const Text('উত্তর যাচাই করে নতুন পাসওয়ার্ড দিন'),
+                    child: Text(s.code == 'bn'
+                        ? 'উত্তর যাচাই করে নতুন পাসওয়ার্ড দিন'
+                        : (s.code == 'hi' ? 'सत्यापित करें और नया पासवर्ड सेट करें' : 'Verify & Set New Password')),
                   ),
                 ),
               ],
@@ -1004,25 +1032,36 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.support_agent_rounded, color: Colors.blue, size: 20),
-                    SizedBox(width: 8),
-                    Text('উপায় ২: অ্যাডমিনের সাহায্য নিন', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const Icon(Icons.support_agent_rounded, color: Colors.blue, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      s.code == 'bn'
+                          ? 'উপায় ২: অ্যাডমিনের সাহায্য নিন'
+                          : (s.code == 'hi' ? 'तरीका २: एडमिन सहायता लें' : 'Method 2: Contact Admin Support'),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'আপনি যদি প্রশ্ন ও উত্তর ভুলে যান, তবে সরাসরি অ্যাডমিনকে অনুরোধ পাঠান। অ্যাডমিন আপনার অ্যাকাউন্ট যাচাই করে পাসওয়ার্ড রিসেট করে দেবে।',
-                  style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.4),
+                Text(
+                  s.code == 'bn'
+                      ? 'আপনি যদি প্রশ্ন ও উত্তর ভুলে যান, তবে সরাসরি অ্যাডমিনকে অনুরোধ পাঠান। অ্যাডমিন আপনার অ্যাকাউন্ট যাচাই করে পাসওয়ার্ড রিসেট করে দেবে।'
+                      : (s.code == 'hi'
+                          ? 'यदि आप प्रश्न और उत्तर भूल गए हैं, तो सीधे एडमिन को अनुरोध भेजें। एडमिन आपके खाते का सत्यापन करेगा।'
+                          : 'If you forgot your security question and answer, request assistance from the administrator.'),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.4),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _handleRequestAdminHelp,
+                    onPressed: _isLoading ? null : () => _handleRequestAdminHelp(s),
                     icon: const Icon(Icons.send_rounded, size: 16),
-                    label: const Text('অ্যাডমিনকে রিকোয়েস্ট পাঠান'),
+                    label: Text(s.code == 'bn'
+                        ? 'অ্যাডমিনকে রিকোয়েস্ট পাঠান'
+                        : (s.code == 'hi' ? 'एडमिन को अनुरोध भेजें' : 'Send Request to Admin')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade700,
                       foregroundColor: Colors.white,
@@ -1038,4 +1077,3 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     ).animate().fadeIn(duration: 250.ms);
   }
 }
-

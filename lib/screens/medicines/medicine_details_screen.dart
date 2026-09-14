@@ -230,8 +230,14 @@ class MedicineDetailsScreen extends StatelessWidget {
                       text: 'MediRemind: ${medicine.name} (${medicine.dosage}) - ${s.foodInstructionName(medicine.instruction.name)} at $timeStr.',
                     ));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('📋 ওষধের প্রেসক্রিপশন ক্লিপবোর্ডে কপি হয়েছে!'),
+                      SnackBar(
+                        content: Text(
+                          s.code == 'bn'
+                              ? '📋 ওষুধের প্রেসক্রিপশন ক্লিপবোর্ডে কপি হয়েছে!'
+                              : (s.code == 'hi'
+                                  ? '📋 दवा का विवरण क्लिपबोर्ड पर कॉपी किया गया!'
+                                  : '📋 Prescription copied to clipboard!'),
+                        ),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );

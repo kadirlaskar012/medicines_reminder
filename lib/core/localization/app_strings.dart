@@ -45,7 +45,7 @@ class AppStrings {
   String get morning => code == 'bn' ? 'সকাল' : (code == 'hi' ? 'सुबह' : 'Morning');
   String get afternoon => code == 'bn' ? 'দুপুর' : (code == 'hi' ? 'दोपहर' : 'Afternoon');
   String get evening => code == 'bn' ? 'সন্ধ্যা' : (code == 'hi' ? 'शाम' : 'Evening');
-  String get night => code == 'bn' ? 'রাত' : (code == 'hi' ? 'রাত' : 'Night');
+  String get night => code == 'bn' ? 'রাত' : (code == 'hi' ? 'रात' : 'Night');
   String get noDosesScheduled => code == 'bn' ? 'এই দিনের জন্য কোনো ওষুধ নেই' : (code == 'hi' ? 'इस दिन के लिए कोई दवा नहीं है' : 'No medicines scheduled for this day');
   String get tapToAddFirst => code == 'bn' ? 'নতুন ওষুধ যুক্ত করতে নিচের + বোতাম চাপুন' : (code == 'hi' ? 'नई दवा जोड़ने के लिए नीचे + बटन दबाएं' : 'Tap + below to add your medicines');
   String get adherenceScore => code == 'bn' ? 'আজকের গ্রহণের হার' : (code == 'hi' ? 'आज की सफलता दर' : 'Today\'s Adherence');
@@ -425,5 +425,99 @@ class AppStrings {
   String get expiresOn => code == 'bn' ? 'মেয়াদ শেষ:' : (code == 'hi' ? 'समाप्ति:' : 'Expires:');
   String get expiredAlert => code == 'bn' ? 'মেয়াদোত্তীর্ণ!' : (code == 'hi' ? 'समाप्त!' : 'Expired!');
   String get change => code == 'bn' ? 'পরিবর্তন' : (code == 'hi' ? 'बदलें' : 'Change');
+
+  // ==================== AUTH & ACCOUNT (EMAIL & PASSWORD) ====================
+  String get authSignInTitle => code == 'bn' ? 'স্বাগতম ফিরে আসার জন্য' : (code == 'hi' ? 'वापसी पर स्वागत है' : 'Welcome Back');
+  String get authSignInSub => code == 'bn'
+      ? 'আপনার ওষুধের রিমাইন্ডার ও স্বাস্থ্য ডেটা সিঙ্ক করতে ইমেল দিয়ে সাইন ইন করুন'
+      : (code == 'hi' ? 'अपनी दवाइयों के रिमाइंडर और स्वास्थ्य डेटा के लिए ईमेल से साइन इन करें' : 'Sign in with your email to access your reminders & health data');
+  String get authSignUpTitle => code == 'bn' ? 'নতুন অ্যাকাউন্ট তৈরি করুন' : (code == 'hi' ? 'नया खाता बनाएं' : 'Create Account');
+  String get authSignUpSub => code == 'bn'
+      ? 'নিরাপদ ক্লাউড ব্যাকআপের জন্য আপনার ইমেল দিয়ে অ্যাকাউন্ট খুলুন'
+      : (code == 'hi' ? 'सुरक्षित क्लाउड बैकअप के लिए ईमेल से खाता बनाएं' : 'Sign up with your email for secure cloud backup');
+  String get authSignInTab => code == 'bn' ? 'সাইন ইন' : (code == 'hi' ? 'साइन इन' : 'Sign In');
+  String get authSignUpTab => code == 'bn' ? 'সাইন আপ' : (code == 'hi' ? 'साइन अप' : 'Sign Up');
+  String get authFullNameHint => code == 'bn' ? 'আপনার পুরো নাম (যেমন: কাদির লস্কর)' : (code == 'hi' ? 'आपका पूरा नाम (उदा. राहुल शर्मा)' : 'Your Full Name (e.g. John Doe)');
+  String get authEmailHint => code == 'bn' ? 'আপনার ইমেল ঠিকানা (যেমন: name@gmail.com)' : (code == 'hi' ? 'आपका ईमेल पता (उदा. name@gmail.com)' : 'Your Email Address (e.g. name@gmail.com)');
+  String get authPasswordHint => code == 'bn' ? 'পাসওয়ার্ড দিন (কমপক্ষে ৬ অক্ষর)' : (code == 'hi' ? 'पासवर्ड दर्ज करें (कम से कम ६ अक्षर)' : 'Password (at least 6 characters)');
+  String get authPasswordSecretHint => code == 'bn' ? 'গোপন পাসওয়ার্ড লিখুন' : (code == 'hi' ? 'गोपनीय पासवर्ड दर्ज करें' : 'Enter secret password');
+  String get authConfirmPasswordHint => code == 'bn' ? 'পাসওয়ার্ড নিশ্চিত করুন' : (code == 'hi' ? 'पासवर्ड की पुष्टि करें' : 'Confirm Password');
+  String get authSecurityQuestionLabel => code == 'bn' ? 'পাসওয়ার্ড রিকভারি সিকিউরিটি প্রশ্ন' : (code == 'hi' ? 'पासवर्ड रिकवरी सुरक्षा प्रश्न' : 'Password Recovery Security Question');
+  String get authSecurityAnswerHint => code == 'bn' ? 'আপনার উত্তর (যেমন: কলকাতা, ঢাকা)' : (code == 'hi' ? 'आपका उत्तर (उदा. कोलकाता, दिल्ली)' : 'Your Answer (e.g. London, Paris)');
+  String get authSignInBtn => code == 'bn' ? 'ইমেল দিয়ে সাইন ইন করুন' : (code == 'hi' ? 'ईमेल से साइन इन करें' : 'Sign In with Email');
+  String get authSignUpBtn => code == 'bn' ? 'অ্যাকাউন্ট তৈরি করুন' : (code == 'hi' ? 'खाता बनाएं' : 'Create Account');
+  String get authForgotPasswordLink => code == 'bn' ? 'পাসওয়ার্ড ভুলে গেছেন?' : (code == 'hi' ? 'पासवर्ड भूल गए?' : 'Forgot Password?');
+  String get authDontHaveAccount => code == 'bn' ? 'কোনো অ্যাকাউন্ট নেই? ' : (code == 'hi' ? 'कोई खाता नहीं है? ' : "Don't have an account? ");
+  String get authAlreadyHaveAccount => code == 'bn' ? 'ইতিমধ্যে অ্যাকাউন্ট আছে? ' : (code == 'hi' ? 'पहले से खाता है? ' : 'Already have an account? ');
+
+  List<String> get authSecurityQuestions {
+    if (code == 'bn') {
+      return [
+        'আপনার জন্মস্থান বা প্রিয় শহর কোনটি?',
+        'আপনার প্রথম স্কুলের নাম কী?',
+        'আপনার প্রিয় খাবার কোনটি?',
+        'আপনার শৈশবের প্রিয় বন্ধুর নাম কী?',
+        'আপনার প্রিয় বই বা লেখকের নাম কী?',
+      ];
+    } else if (code == 'hi') {
+      return [
+        'आपका जन्मस्थान या पसंदीदा शहर कौन सा है?',
+        'आपके पहले स्कूल का नाम क्या है?',
+        'आपका पसंदीदा भोजन कौन सा है?',
+        'आपके बचपन के सबसे अच्छे दोस्त का नाम क्या है?',
+        'आपकी पसंदीदा किताब या लेखक का नाम क्या है?',
+      ];
+    }
+    return [
+      'What is your birthplace or favorite city?',
+      'What is the name of your first school?',
+      'What is your favorite food or dish?',
+      'What is the name of your childhood best friend?',
+      'What is your favorite book or author?',
+    ];
+  }
+
+  // Auth Validation Messages
+  String get errEnterValidEmail => code == 'bn' ? 'অনুগ্রহ করে একটি সঠিক ইমেল ঠিকানা লিখুন (যেমন: name@gmail.com)' : (code == 'hi' ? 'कृपया एक वैध ईमेल पता दर्ज करें (उदा. name@gmail.com)' : 'Please enter a valid email address (e.g. name@gmail.com)');
+  String get errEnterPassword => code == 'bn' ? 'অনুগ্রহ করে আপনার পাসওয়ার্ড লিখুন' : (code == 'hi' ? 'कृपया अपना पासवर्ड दर्ज करें' : 'Please enter your password');
+  String get errEnterFullName => code == 'bn' ? 'অনুগ্রহ করে আপনার পুরো নাম লিখুন' : (code == 'hi' ? 'कृपया अपना पूरा नाम दर्ज करें' : 'Please enter your full name');
+  String get errPasswordLength => code == 'bn' ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' : (code == 'hi' ? 'पासवर्ड कम से कम ६ अक्षरों का होना चाहिए' : 'Password must be at least 6 characters');
+  String get errPasswordsDoNotMatch => code == 'bn' ? 'দুইবারের পাসওয়ার্ড মিলছে না! একই পাসওয়ার্ড দিন।' : (code == 'hi' ? 'दोनों पासवर्ड मेल नहीं खाते! कृपया समान पासवर्ड दर्ज करें।' : 'Passwords do not match! Please enter the same password.');
+  String get errEnterSecurityAnswer => code == 'bn' ? 'পাসওয়ার্ড রিকভারির জন্য সিকিউরিটি প্রশ্নের উত্তর দিন' : (code == 'hi' ? 'पासवर्ड रिकवरी के लिए सुरक्षा प्रश्न का उत्तर दें' : 'Please answer the security question for password recovery');
+  String get msgSignInSuccess => code == 'bn' ? '🎉 সফলভাবে সাইন ইন হয়েছে! ক্লাউড ডেটা সিঙ্ক সক্রিয়।' : (code == 'hi' ? '🎉 सफलतापूर्वक साइन इन हुआ! क्लाउड सिंक सक्रिय है।' : '🎉 Signed in successfully! Cloud sync active.');
+  String get msgSignUpSuccess => code == 'bn' ? '🛡️ সফলভাবে অ্যাকাউন্ট তৈরি হয়েছে ও ক্লাউড ব্যাকআপ সক্রিয় হয়েছে!' : (code == 'hi' ? '🛡️ खाता सफलतापूर्वक बनाया गया और क्लाउड बैकअप सक्रिय है!' : '🛡️ Account created successfully and cloud backup active!');
+  String get msgInvalidCredentials => code == 'bn' ? '❌ ভুল ইমেল বা পাসওয়ার্ড! সঠিক তথ্য দিন অথবা Forgot Password চাপুন।' : (code == 'hi' ? '❌ गलत ईमेल या पासवर्ड! कृपया जांचें या पासवर्ड भूल गए पर टैप करें।' : '❌ Incorrect email or password! Please verify or tap Forgot Password.');
+  String get msgEmailNotFound => code == 'bn' ? 'এই ইমেলে কোনো রেজিস্টার্ড অ্যাকাউন্ট পাওয়া যায়নি!' : (code == 'hi' ? 'इस ईमेल पर कोई पंजीकृत खाता नहीं मिला!' : 'No registered account found with this email!');
+  String get msgAnswerIncorrect => code == 'bn' ? '❌ উত্তর সঠিক নয়! পুনরায় চেষ্টা করুন অথবা অ্যাডমিনের সাহায্য নিন।' : (code == 'hi' ? '❌ उत्तर गलत है! पुनः प्रयास करें या एडमिन से मदद लें।' : '❌ Incorrect answer! Please retry or request admin assistance.');
+  String get msgPasswordResetSuccess => code == 'bn' ? '✅ পাসওয়ার্ড সফলভাবে পরিবর্তন ও সাইন ইন সম্পন্ন হয়েছে!' : (code == 'hi' ? '✅ पासवर्ड सफलतापूर्वक अपडेट किया गया!' : '✅ Password updated and signed in successfully!');
+
+  // ==================== NOTIFICATIONS & ACTIVITY HUB ====================
+  String get notifHubTitle => code == 'bn' ? 'বিজ্ঞপ্তি ও অ্যাক্টিভিটি' : (code == 'hi' ? 'सूचनाएं व हब' : 'Notifications & Hub');
+  String get notifTestTooltip => code == 'bn' ? 'টেস্ট নোটিফিকেশন পাঠান' : (code == 'hi' ? 'टेस्ट नोटिफिकेशन भेजें' : 'Test Live Notification');
+  String get notifTestTriggered => code == 'bn' ? 'লকস্ক্রিন ও সিস্টেম নোটিফিকেশন টেস্ট পাঠানো হয়েছে!' : (code == 'hi' ? 'लाइव टेस्ट नोटिफिकेशन आपके फोन पर भेजा गया!' : 'Live test notification triggered on your phone!');
+  String get notifAdherenceTitle => code == 'bn' ? 'আজকের ওষুধ নিয়মনিষ্ঠা' : (code == 'hi' ? 'आज की खुराक अनुपालन' : "Today's Dose Adherence");
+  String notifDosesCompletedOf(int taken, int total) => code == 'bn'
+      ? '$total টি ডোজের মধ্যে $taken টি সম্পূর্ণ'
+      : (code == 'hi' ? '$total में से $taken खुराक पूरी हुईं' : '$taken of $total doses completed');
+  String notifStreakDays(int days) => code == 'bn' ? 'ধারাবাহিকতা: $days দিন চালু' : (code == 'hi' ? 'क्रम: $days दिन सक्रिय' : '$days-Day Streak Active');
+  String get notifFilterAll => code == 'bn' ? 'সকল' : (code == 'hi' ? 'सभी' : 'All');
+  String get notifFilterAction => code == 'bn' ? 'অ্যাকশন চাই' : (code == 'hi' ? 'कार्रवाई आवश्यक' : 'Action Needed');
+  String get notifFilterUpcoming => code == 'bn' ? 'আসন্ন' : (code == 'hi' ? 'आगामी' : 'Upcoming');
+  String get notifFilterStock => code == 'bn' ? 'স্টক এলার্ট' : (code == 'hi' ? 'स्टॉक अलर्ट' : 'Stock Alert');
+  String get notifFilterCompleted => code == 'bn' ? 'নেওয়া ওষুধ' : (code == 'hi' ? 'पूर्ण' : 'Completed');
+  String get notifAllCaughtUpTitle => code == 'bn' ? 'কোন নতুন নোটিফিকেশন নেই' : (code == 'hi' ? 'सब कुछ अपडेट है!' : 'All Caught Up!');
+  String get notifAllCaughtUpSub => code == 'bn' ? 'আপনার সব ওষুধের সময়সূচী ঠিকমতো চলছে।' : (code == 'hi' ? 'आपकी सभी दवाएं समय पर चल रही हैं।' : 'All scheduled medicines and stock alerts are up to date.');
+  String get notifOverdueBadge => code == 'bn' ? 'বাকি রয়েছে' : (code == 'hi' ? 'अतिदेय' : 'OVERDUE');
+  String get notifTakeNowBtn => code == 'bn' ? 'খেয়েছি' : (code == 'hi' ? 'दवा ली' : 'Take Now');
+  String get notifSnooze10mBtn => code == 'bn' ? '১০ মি. পরে' : (code == 'hi' ? '১০ मि. बाद' : 'Snooze 10m');
+  String get notifSnoozeSuccess => code == 'bn' ? '১০ মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে!' : (code == 'hi' ? '১০ मिनट के लिए स्नूज़ किया गया!' : 'Snoozed for 10 minutes!');
+  String notifDoseTakenSuccess(String medName) => code == 'bn' ? '$medName ডোজ সম্পূর্ণ হিসেবে রেকর্ড করা হয়েছে!' : (code == 'hi' ? '$medName खुराक पूरी दर्ज की गई!' : '$medName marked as taken!');
+  String get notifLowStockWarning => code == 'bn' ? 'স্টক শেষ এলার্ট' : (code == 'hi' ? 'कम स्टॉक चेतावनी' : 'Low Stock Warning');
+  String notifLowStockDosesLeft(int stock) => code == 'bn' ? 'মাত্র $stock টি ওষুধ অবশিষ্ট আছে।' : (code == 'hi' ? 'केवल $stock खुराक बची हैं। जल्द रीफिल करें।' : 'Only $stock doses left! Refill soon.');
+  String get notifRefillBtn => code == 'bn' ? 'রিফিল' : (code == 'hi' ? 'रीफिल' : 'Refill');
+  String get notifCompletedDose => code == 'bn' ? 'সম্পন্ন ডোজ' : (code == 'hi' ? 'पूर्ण खुराक' : 'Dose Completed');
+  String get notifConfirmedTaken => code == 'bn' ? 'সফলভাবে নেওয়া হয়েছে' : (code == 'hi' ? 'सफलतापूर्वक ली गई' : 'Confirmed taken on time');
+  String get ok => code == 'bn' ? 'ঠিক আছে' : (code == 'hi' ? 'ठीक है' : 'OK');
 }
+
 

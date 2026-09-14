@@ -50,13 +50,13 @@ class AuthProvider extends ChangeNotifier {
     final cleanPwd = password.trim();
 
     if (cleanEmail.isEmpty || !cleanEmail.contains('@') || !cleanEmail.contains('.')) {
-      _errorMessage = 'একটি সঠিক ইমেল ঠিকানা প্রদান করুন';
+      _errorMessage = 'Please enter a valid email address';
       notifyListeners();
       return false;
     }
 
     if (cleanPwd.isEmpty) {
-      _errorMessage = 'পাসওয়ার্ড লিখুন';
+      _errorMessage = 'Please enter your password';
       notifyListeners();
       return false;
     }
@@ -73,7 +73,7 @@ class AuthProvider extends ChangeNotifier {
 
       if (!success) {
         _isLoading = false;
-        _errorMessage = 'ইমেল বা পাসওয়ার্ড ভুল দেওয়া হয়েছে!';
+        _errorMessage = 'Invalid email or password!';
         notifyListeners();
         return false;
       }
@@ -94,7 +94,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'সাইন ইন করতে ত্রুটি: $e';
+      _errorMessage = 'Sign in error: $e';
       notifyListeners();
       return false;
     }
@@ -115,25 +115,25 @@ class AuthProvider extends ChangeNotifier {
     final cleanAnswer = securityAnswer.trim();
 
     if (cleanName.isEmpty) {
-      _errorMessage = 'আপনার পুরো নাম লিখুন';
+      _errorMessage = 'Please enter your full name';
       notifyListeners();
       return false;
     }
 
     if (cleanEmail.isEmpty || !cleanEmail.contains('@') || !cleanEmail.contains('.')) {
-      _errorMessage = 'একটি সঠিক ইমেল ঠিকানা প্রদান করুন';
+      _errorMessage = 'Please enter a valid email address';
       notifyListeners();
       return false;
     }
 
     if (cleanPwd.length < 6) {
-      _errorMessage = 'কমপক্ষে ৬ অক্ষরের একটি শক্তিশালী পাসওয়ার্ড দিন';
+      _errorMessage = 'Password must be at least 6 characters';
       notifyListeners();
       return false;
     }
 
     if (cleanAnswer.isEmpty) {
-      _errorMessage = 'পাসওয়ার্ড রিকভারি প্রশ্নের উত্তর দিন';
+      _errorMessage = 'Please answer the security question';
       notifyListeners();
       return false;
     }
@@ -153,7 +153,7 @@ class AuthProvider extends ChangeNotifier {
 
       if (!success) {
         _isLoading = false;
-        _errorMessage = 'অ্যাকাউন্ট তৈরি করা যায়নি। এই ইমেলে অ্যাকাউন্ট থাকতে পারে।';
+        _errorMessage = 'Account creation failed. An account may already exist with this email.';
         notifyListeners();
         return false;
       }
@@ -171,7 +171,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'সাইন আপ করতে ত্রুটি: $e';
+      _errorMessage = 'Sign up error: $e';
       notifyListeners();
       return false;
     }
@@ -187,12 +187,11 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Legacy stubs for compatibility
+  // ==================== LEGACY PHONE STUBS ====================
   int get countdownSeconds => 0;
   bool get canResendOtp => true;
   bool get isCodeSent => false;
   String? get generatedVerificationCode => null;
-  Future<bool> sendOtp(String fullPhoneNumber) async => false;
-  Future<bool> verifyOtp(String enteredCode, MedicineProvider medicineProvider) async => false;
+  Future<bool> sendOtp(String phone) async => false;
+  Future<bool> verifyOtp(String otp, MedicineProvider med) async => false;
 }
-
