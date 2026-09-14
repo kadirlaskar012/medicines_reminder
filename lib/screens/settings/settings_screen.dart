@@ -324,19 +324,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  s.selectLanguage,
-                  style: const TextStyle(fontSize: 13, color: AppColors.lightTextMuted),
-                ),
-                const SizedBox(height: 14),
                 Row(
                   children: [
-                    _buildLanguageButton(context, 'en', 'English', '🇬🇧', lang.languageCode == 'en', isDark),
+                    const Icon(Icons.translate_rounded, color: AppColors.primary, size: 20),
                     const SizedBox(width: 8),
-                    _buildLanguageButton(context, 'bn', 'বাংলা', '🇧🇩', lang.languageCode == 'bn', isDark),
-                    const SizedBox(width: 8),
-                    _buildLanguageButton(context, 'hi', 'हिन्दी', '🇮🇳', lang.languageCode == 'hi', isDark),
+                    Text(
+                      s.selectLanguage,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                      ),
+                    ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: lang.languageCode,
+                      isExpanded: true,
+                      icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary),
+                      dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'en',
+                          child: Text(
+                            'English',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'bn',
+                          child: Text(
+                            'বাংলা (Bengali)',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'hi',
+                          child: Text(
+                            'हिन्दी (Hindi)',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          context.read<LanguageProvider>().setLanguage(val);
+                        }
+                      },
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -692,53 +741,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected
-                      ? Colors.white
-                      : (isDark ? Colors.white : Colors.black87),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLanguageButton(
-    BuildContext context,
-    String code,
-    String label,
-    String flag,
-    bool isSelected,
-    bool isDark,
-  ) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => context.read<LanguageProvider>().setLanguage(code),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary
-                : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected
-                  ? AppColors.primary
-                  : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-              width: 1.5,
-            ),
-          ),
-          child: Column(
-            children: [
-              Text(flag, style: const TextStyle(fontSize: 20)),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   color: isSelected
                       ? Colors.white

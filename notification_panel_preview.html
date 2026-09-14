@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MediRemind - Next-Gen Notification & Vitality Hub (Interactive Preview)</title>
+  <title>MediRemind - Next-Gen Notification & Vitality Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 30px 16px;
+      padding: 24px 16px;
       overflow-x: hidden;
     }
 
@@ -46,7 +46,7 @@
     .showcase-header {
       text-align: center;
       max-width: 800px;
-      margin-bottom: 28px;
+      margin-bottom: 20px;
     }
 
     .badge-chip {
@@ -62,71 +62,230 @@
       color: #2DD4BF;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     h1.title {
       font-family: 'Outfit', sans-serif;
-      font-size: 36px;
+      font-size: 32px;
       font-weight: 800;
       line-height: 1.2;
       background: linear-gradient(135deg, #FFFFFF 20%, #93C5FD 70%, #2DD4BF 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .subtitle {
-      font-size: 15px;
+      font-size: 14px;
       color: #94A3B8;
       line-height: 1.5;
     }
 
-    /* Control Bar */
+    /* Controls Bar */
     .controls-bar {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
       justify-content: center;
-      margin-bottom: 24px;
+      align-items: center;
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 10px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .lang-dropdown-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .lang-dropdown-box label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #94A3B8;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ctrl-select {
+      background: #0F172A;
+      border: 1px solid #334155;
+      color: #F8FAFC;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      outline: none;
     }
 
     .ctrl-btn {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 8px 16px;
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 7px 14px;
+      border-radius: 10px;
       color: #E2E8F0;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      backdrop-filter: blur(10px);
+      gap: 6px;
+      transition: all 0.2s;
     }
 
     .ctrl-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.15);
       transform: translateY(-1px);
     }
 
-    .ctrl-btn.active {
+    .ctrl-btn.primary {
       background: #0D9488;
       border-color: #14B8A6;
-      color: #FFF;
-      box-shadow: 0 0 16px rgba(13, 148, 136, 0.45);
+      color: white;
+    }
+
+    /* Main Container: Live Creator & Phone */
+    .preview-layout {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 960px;
+      width: 100%;
+    }
+
+    /* Interactive Medicine Creator Sidebar */
+    .creator-panel {
+      width: 320px;
+      background: rgba(19, 27, 46, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 20px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .creator-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #F8FAFC;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #94A3B8;
+      margin-bottom: 4px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: #0B0F19;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 9px 12px;
+      color: #F8FAFC;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+      border-color: #0D9488;
+    }
+
+    .creator-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .btn-create {
+      width: 100%;
+      background: linear-gradient(135deg, #0D9488, #059669);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-create:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 15px rgba(13, 148, 136, 0.4);
+    }
+
+    .btn-sample {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      color: #CBD5E1;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 9px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-sample:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-clear {
+      width: 100%;
+      background: rgba(239, 68, 68, 0.1);
+      color: #F87171;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      padding: 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-clear:hover {
+      background: rgba(239, 68, 68, 0.2);
     }
 
     /* Device Mockup Shell */
     .phone-container {
       position: relative;
-      width: 390px;
-      height: 800px;
+      width: 380px;
+      height: 740px;
       background: #0F172A;
-      border-radius: 46px;
+      border-radius: 44px;
       border: 8px solid #334155;
       box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7),
                   0 0 0 2px rgba(255, 255, 255, 0.1),
@@ -142,14 +301,11 @@
       background: #F8FAFC;
       color: #0F172A;
       border-color: #CBD5E1;
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.25),
-                  0 0 0 2px rgba(0, 0, 0, 0.05),
-                  0 0 40px rgba(13, 148, 136, 0.15);
     }
 
     /* Phone Status Bar */
     .status-bar {
-      height: 38px;
+      height: 36px;
       padding: 10px 24px 0 24px;
       display: flex;
       justify-content: space-between;
@@ -161,42 +317,29 @@
     }
 
     .notch {
-      width: 110px;
-      height: 20px;
+      width: 100px;
+      height: 18px;
       background: #000;
-      border-radius: 12px;
+      border-radius: 10px;
       margin: 0 auto;
       position: absolute;
       top: 8px;
       left: 50%;
       transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
     }
 
-    .notch-camera {
-      width: 8px;
-      height: 8px;
-      background: #111827;
-      border-radius: 50%;
-      border: 1px solid #1F2937;
-    }
-
-    /* Top AppBar in App */
+    /* App Header */
     .app-bar {
       padding: 12px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      position: relative;
     }
 
     .app-bar-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 12px;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
       background: rgba(255, 255, 255, 0.06);
       display: flex;
       align-items: center;
@@ -204,20 +347,15 @@
       cursor: pointer;
       border: none;
       color: inherit;
-      transition: all 0.2s;
     }
 
     .light-theme .app-bar-btn {
       background: rgba(0, 0, 0, 0.05);
     }
 
-    .app-bar-btn:hover {
-      transform: scale(1.05);
-    }
-
     .app-bar-title {
       font-family: 'Outfit', sans-serif;
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 800;
       display: flex;
       align-items: center;
@@ -225,7 +363,7 @@
     }
 
     .badge-count {
-      background: linear-gradient(135deg, #2563EB, #3B82F6);
+      background: #2563EB;
       color: white;
       font-size: 11px;
       font-weight: 800;
@@ -237,116 +375,85 @@
     .app-content {
       flex: 1;
       overflow-y: auto;
-      padding: 8px 16px 24px 16px;
+      padding: 8px 16px 20px 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
 
-    .app-content::-webkit-scrollbar {
-      width: 4px;
-    }
-    .app-content::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 4px;
-    }
-
-    /* Card 1: Vitality & Adherence Hero Barometer */
+    /* Hero Vitality Barometer */
     .hero-capsule {
-      background: linear-gradient(135deg, rgba(13, 148, 136, 0.22) 0%, rgba(37, 99, 235, 0.22) 100%);
-      border: 1px solid rgba(45, 212, 191, 0.35);
-      border-radius: 24px;
-      padding: 16px 18px;
+      background: linear-gradient(135deg, rgba(13, 148, 136, 0.25) 0%, rgba(37, 99, 235, 0.15) 100%);
+      border: 1px solid rgba(45, 212, 191, 0.3);
+      border-radius: 20px;
+      padding: 16px;
       position: relative;
-      overflow: hidden;
-      box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.25);
     }
 
     .light-theme .hero-capsule {
-      background: linear-gradient(135deg, #E0F2FE 0%, #CCFBF1 100%);
+      background: linear-gradient(135deg, #CCFBF1 0%, #DBEAFE 100%);
       border-color: #99F6E4;
-      box-shadow: 0 10px 20px -5px rgba(13, 148, 136, 0.15);
     }
 
     .hero-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .hero-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: #5EEAD4;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #2DD4BF;
     }
 
     .light-theme .hero-title {
-      color: #0F766E;
+      color: #0D9488;
     }
 
     .streak-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(245, 158, 11, 0.2);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      padding: 3px 9px;
-      border-radius: 999px;
       font-size: 11px;
-      font-weight: 800;
-      color: #FBBF24;
-    }
-
-    .light-theme .streak-badge {
-      background: #FEF3C7;
-      border-color: #FCD34D;
-      color: #B45309;
+      font-weight: 700;
+      background: rgba(245, 158, 11, 0.15);
+      color: #F59E0B;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 2px 8px;
+      border-radius: 999px;
     }
 
     .hero-stats-row {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
       margin-bottom: 10px;
     }
 
     .adherence-percent {
       font-family: 'Outfit', sans-serif;
-      font-size: 32px;
+      font-size: 34px;
       font-weight: 900;
-      background: linear-gradient(135deg, #FFFFFF, #5EEAD4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #F8FAFC;
     }
 
     .light-theme .adherence-percent {
-      background: linear-gradient(135deg, #0F172A, #0D9488);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #0F172A;
     }
 
     .adherence-subtext {
       font-size: 12px;
       color: #94A3B8;
-      font-weight: 600;
-      text-align: right;
+      line-height: 1.3;
     }
 
-    .light-theme .adherence-subtext {
-      color: #475569;
-    }
-
-    /* Pill Progress Bar */
     .pill-progress-track {
       height: 8px;
-      background: rgba(255, 255, 255, 0.12);
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 999px;
       overflow: hidden;
-      position: relative;
     }
 
     .light-theme .pill-progress-track {
@@ -355,17 +462,16 @@
 
     .pill-progress-fill {
       height: 100%;
-      width: 75%;
+      width: 0%;
       background: linear-gradient(90deg, #10B981, #06B6D4, #3B82F6);
       border-radius: 999px;
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: width 0.4s ease;
     }
 
     /* Filter Chips */
     .filter-scroll {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       overflow-x: auto;
       padding-bottom: 2px;
     }
@@ -375,16 +481,16 @@
     }
 
     .filter-chip {
-      padding: 6px 14px;
+      padding: 5px 12px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: #94A3B8;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s ease;
+      transition: all 0.2s;
     }
 
     .light-theme .filter-chip {
@@ -397,7 +503,6 @@
       background: #0D9488;
       border-color: #14B8A6;
       color: white;
-      box-shadow: 0 2px 10px rgba(13, 148, 136, 0.35);
     }
 
     /* Notification Cards */
@@ -408,21 +513,18 @@
       letter-spacing: 0.8px;
       color: #64748B;
       margin-top: 4px;
-      margin-bottom: -6px;
     }
 
     .notif-card {
       background: var(--card-dark);
       border: 1px solid var(--card-border-dark);
-      border-radius: 20px;
-      padding: 16px;
+      border-radius: 18px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       backdrop-filter: blur(14px);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
+      transition: all 0.25s;
     }
 
     .light-theme .notif-card {
@@ -431,59 +533,32 @@
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
     }
 
-    .notif-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    /* Urgent Overdue Halo */
     .notif-card.urgent {
       border-color: rgba(244, 63, 94, 0.4);
       background: linear-gradient(135deg, rgba(244, 63, 94, 0.08) 0%, rgba(30, 41, 59, 0.6) 100%);
     }
 
-    .light-theme .notif-card.urgent {
-      background: linear-gradient(135deg, #FFF1F2 0%, #FFFFFF 100%);
-      border-color: #FECDD3;
-    }
-
     .card-top {
       display: flex;
-      align-items: flex-start;
       gap: 12px;
+      align-items: center;
     }
 
     .card-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
+      font-size: 18px;
       flex-shrink: 0;
     }
 
-    .icon-urgent {
-      background: rgba(244, 63, 94, 0.15);
-      color: #F43F5E;
-      box-shadow: 0 0 12px rgba(244, 63, 94, 0.25);
-    }
-
-    .icon-family {
-      background: rgba(139, 92, 246, 0.15);
-      color: #8B5CF6;
-    }
-
-    .icon-stock {
-      background: rgba(245, 158, 11, 0.15);
-      color: #F59E0B;
-    }
-
-    .icon-completed {
-      background: rgba(16, 185, 129, 0.15);
-      color: #10B981;
-    }
+    .icon-urgent { background: rgba(244, 63, 94, 0.15); color: #F43F5E; }
+    .icon-family { background: rgba(139, 92, 246, 0.15); color: #8B5CF6; }
+    .icon-stock { background: rgba(245, 158, 11, 0.15); color: #F59E0B; }
+    .icon-completed { background: rgba(16, 185, 129, 0.15); color: #10B981; }
 
     .card-info {
       flex: 1;
@@ -491,44 +566,28 @@
 
     .card-title-row {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      margin-bottom: 3px;
+      align-items: center;
+      margin-bottom: 2px;
     }
 
     .card-med-name {
-      font-family: 'Outfit', sans-serif;
-      font-size: 15px;
       font-weight: 700;
+      font-size: 14px;
     }
 
     .urgent-badge {
-      background: #F43F5E;
-      color: white;
       font-size: 10px;
       font-weight: 800;
-      padding: 2px 7px;
+      background: #EF4444;
+      color: white;
+      padding: 2px 6px;
       border-radius: 6px;
-      letter-spacing: 0.5px;
-      animation: pulseGlow 1.8s infinite;
-    }
-
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.75; transform: scale(1.04); }
     }
 
     .card-subtext {
-      font-size: 12px;
+      font-size: 11px;
       color: #94A3B8;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 500;
-    }
-
-    .light-theme .card-subtext {
-      color: #64748B;
     }
 
     .card-actions {
@@ -542,89 +601,93 @@
       color: white;
       border: none;
       padding: 8px 12px;
-      border-radius: 12px;
-      font-size: 13px;
+      border-radius: 10px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
       transition: all 0.2s;
     }
 
     .btn-take:hover {
       transform: scale(1.02);
-      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
     }
 
     .btn-snooze {
       background: rgba(255, 255, 255, 0.08);
       color: #CBD5E1;
       border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 8px 14px;
-      border-radius: 12px;
-      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
+    }
+
+    /* Empty State */
+    .empty-state-box {
       display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-
-    .light-theme .btn-snooze {
-      background: #F1F5F9;
-      color: #334155;
-      border-color: #E2E8F0;
-    }
-
-    .btn-snooze:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .btn-refill {
-      flex: 1;
-      background: linear-gradient(135deg, #F59E0B, #D97706);
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-      transition: all 0.2s;
+      text-align: center;
+      padding: 36px 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
     }
 
-    .btn-refill:hover {
-      transform: scale(1.02);
+    .light-theme .empty-state-box {
+      background: rgba(0, 0, 0, 0.02);
+      border-color: #CBD5E1;
     }
 
-    /* Toast in mockup */
+    .empty-icon {
+      font-size: 36px;
+      margin-bottom: 10px;
+      opacity: 0.8;
+    }
+
+    .empty-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #E2E8F0;
+    }
+
+    .light-theme .empty-title {
+      color: #1E293B;
+    }
+
+    .empty-desc {
+      font-size: 12px;
+      color: #64748B;
+      max-width: 240px;
+      line-height: 1.4;
+    }
+
+    /* Toast */
     .mock-toast {
       position: absolute;
       bottom: 24px;
-      left: 20px;
-      right: 20px;
+      left: 18px;
+      right: 18px;
       background: #0D9488;
       color: white;
-      padding: 12px 16px;
-      border-radius: 14px;
-      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 12px;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-      transform: translateY(120px);
+      transform: translateY(100px);
       opacity: 0;
-      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       z-index: 100;
     }
 
@@ -635,7 +698,7 @@
 
     /* Bottom Nav */
     .phone-bottom-nav {
-      height: 60px;
+      height: 56px;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
       background: rgba(19, 27, 46, 0.85);
       backdrop-filter: blur(10px);
@@ -654,7 +717,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 3px;
+      gap: 2px;
       color: #64748B;
       font-size: 10px;
       font-weight: 700;
@@ -669,7 +732,6 @@
       color: #0D9488;
     }
 
-    /* Confetti Particle Canvas */
     #confettiCanvas {
       position: absolute;
       top: 0;
@@ -684,389 +746,503 @@
 <body>
 
   <div class="showcase-header">
-    <div class="badge-chip">✨ Interactive Design Prototype</div>
-    <h1 class="title">Next-Gen Notification & Vitality Hub</h1>
-    <p class="subtitle">An ultra-engaging, premium notification center engineered for patient adherence, instant actions, and zero clutter.</p>
+    <div class="badge-chip">✨ Live Prototype • Zero Mock Data</div>
+    <h1 class="title">Notification & Vitality Hub</h1>
+    <p class="subtitle">Interactive adherence center driven entirely by your real inputs. Start at 0% and test custom medications.</p>
   </div>
 
-  <!-- Interactive Controls Bar -->
+  <!-- Top Controls Bar with Flag-free Dropdown -->
   <div class="controls-bar">
-    <button class="ctrl-btn active" id="btnLangEn" onclick="setLanguage('en')">🇺🇸 English</button>
-    <button class="ctrl-btn" id="btnLangBn" onclick="setLanguage('bn')">🇧🇩 বাংলা</button>
-    <button class="ctrl-btn" id="btnLangHi" onclick="setLanguage('hi')">🇮🇳 हिन्दी</button>
-    <button class="ctrl-btn" id="btnToggleTheme" onclick="toggleTheme()">🌓 Toggle Dark / Light</button>
+    <div class="lang-dropdown-box">
+      <label for="langSelect">🌐 Language:</label>
+      <select class="ctrl-select" id="langSelect" onchange="setLanguage(this.value)">
+        <option value="en">English</option>
+        <option value="bn">বাংলা (Bengali)</option>
+        <option value="hi">हिन्दी (Hindi)</option>
+      </select>
+    </div>
+    <button class="ctrl-btn" onclick="toggleTheme()">🌓 Dark / Light</button>
     <button class="ctrl-btn" onclick="triggerTestAlarm()">🔔 Test Audio Alarm</button>
   </div>
 
-  <!-- Phone Mockup -->
-  <div class="phone-container" id="phoneMockup">
-    <canvas id="confettiCanvas"></canvas>
+  <div class="preview-layout">
 
-    <!-- Top Status Bar -->
-    <div class="status-bar">
-      <span>09:41</span>
-      <div class="notch">
-        <div class="notch-camera"></div>
+    <!-- Interactive Live Creator Sidebar -->
+    <div class="creator-panel">
+      <div class="creator-title">
+        <span>💊</span>
+        <span id="txtCreatorTitle">Add Medicine to Hub</span>
       </div>
-      <span>5G &nbsp; 🔋 98%</span>
+
+      <div class="form-group">
+        <label id="lblMedName">Medicine Name</label>
+        <input type="text" id="inputMedName" class="form-control" placeholder="e.g. Paracetamol 500mg" value="">
+      </div>
+
+      <div class="form-group">
+        <label id="lblProfile">Patient Profile</label>
+        <select id="selectProfile" class="form-control">
+          <option value="Myself">Myself</option>
+          <option value="Mom">Mom</option>
+          <option value="Dad">Dad</option>
+          <option value="Child">Child</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label id="lblTime">Time & Status</label>
+        <select id="selectAlertStatus" class="form-control">
+          <option value="urgent">Overdue Alert (Requires Action)</option>
+          <option value="normal">Upcoming Dose (Today)</option>
+          <option value="stock">Low Stock Warning</option>
+        </select>
+      </div>
+
+      <div class="creator-actions">
+        <button class="btn-create" onclick="addCustomMedicine()">
+          ➕ <span id="btnAddMed">Add to Hub</span>
+        </button>
+        <button class="btn-sample" onclick="loadSampleMedicines()">
+          ⚡ <span id="btnLoadSample">Load Sample Dose</span>
+        </button>
+        <button class="btn-clear" onclick="clearAllMedicines()">
+          🗑 <span id="btnClearAll">Reset to 0 (Clear All)</span>
+        </button>
+      </div>
     </div>
 
-    <!-- App Header -->
-    <div class="app-bar">
-      <button class="app-bar-btn" onclick="showToast(getLangString('backToast'))">
-        ‹
-      </button>
-      <div class="app-bar-title">
-        <span id="txtHubTitle">Notifications & Hub</span>
-        <span class="badge-count" id="txtTotalBadge">3</span>
-      </div>
-      <button class="app-bar-btn" onclick="triggerTestAlarm()" title="Test alarm ringtone">
-        🔔
-      </button>
-    </div>
+    <!-- Phone Mockup -->
+    <div class="phone-container" id="phoneMockup">
+      <canvas id="confettiCanvas"></canvas>
 
-    <!-- Scrollable Content -->
-    <div class="app-content">
-
-      <!-- Hero Vitality Barometer -->
-      <div class="hero-capsule">
-        <div class="hero-header">
-          <span class="hero-title" id="txtAdherenceTitle">⚡ Today's Adherence</span>
-          <span class="streak-badge" id="txtStreakBadge">🔥 7-Day Streak</span>
-        </div>
-        <div class="hero-stats-row">
-          <span class="adherence-percent" id="txtAdherencePct">75%</span>
-          <div class="adherence-subtext" id="txtDosesCount">3 of 4 Doses<br>Completed</div>
-        </div>
-        <div class="pill-progress-track">
-          <div class="pill-progress-fill" id="progressFill"></div>
-        </div>
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <span>09:41</span>
+        <div class="notch"></div>
+        <span>5G &nbsp; 🔋 98%</span>
       </div>
 
-      <!-- Filter Pills -->
-      <div class="filter-scroll">
-        <button class="filter-chip active" onclick="filterCards('all', this)" id="chipAll">All (3)</button>
-        <button class="filter-chip" onclick="filterCards('urgent', this)" id="chipAction">Action Needed (1)</button>
-        <button class="filter-chip" onclick="filterCards('family', this)" id="chipFamily">Family (1)</button>
-        <button class="filter-chip" onclick="filterCards('stock', this)" id="chipStock">Stock Alert (1)</button>
-        <button class="filter-chip" onclick="filterCards('completed', this)" id="chipCompleted">Completed (3)</button>
+      <!-- App Bar -->
+      <div class="app-bar">
+        <button class="app-bar-btn" onclick="showToast(getLangString('backToast'))">‹</button>
+        <div class="app-bar-title">
+          <span id="txtHubTitle">Notifications & Hub</span>
+          <span class="badge-count" id="txtTotalBadge">0</span>
+        </div>
+        <button class="app-bar-btn" onclick="triggerTestAlarm()">🔔</button>
       </div>
 
-      <div class="notif-section-label" id="txtActiveSectionLabel">Active Reminders</div>
+      <!-- Scrollable App Content -->
+      <div class="app-content">
 
-      <!-- Card 1: Urgent Overdue Medicine -->
-      <div class="notif-card urgent" data-category="urgent" id="cardMetformin">
-        <div class="card-top">
-          <div class="card-icon icon-urgent">💊</div>
-          <div class="card-info">
-            <div class="card-title-row">
-              <span class="card-med-name">Metformin 500mg</span>
-              <span class="urgent-badge" id="txtBadgeOverdue">OVERDUE</span>
-            </div>
-            <div class="card-subtext">
-              <span>⏰ 08:30 AM (35m overdue)</span> • <span>🍳 After Breakfast</span>
-            </div>
+        <!-- Hero Vitality Barometer (Starts at 0%, 0 of 0) -->
+        <div class="hero-capsule">
+          <div class="hero-header">
+            <span class="hero-title" id="txtAdherenceTitle">⚡ Today's Adherence</span>
+            <span class="streak-badge" id="txtStreakBadge">🔥 0-Day Streak</span>
+          </div>
+          <div class="hero-stats-row">
+            <span class="adherence-percent" id="txtAdherencePct">0%</span>
+            <div class="adherence-subtext" id="txtDosesCount">0 of 0 Doses<br>Completed</div>
+          </div>
+          <div class="pill-progress-track">
+            <div class="pill-progress-fill" id="progressFill" style="width: 0%;"></div>
           </div>
         </div>
-        <div class="card-actions">
-          <button class="btn-take" onclick="takeDose('Metformin', 'cardMetformin')">
-            ✓ <span id="btnTakeNow">Take Now</span>
-          </button>
-          <button class="btn-snooze" onclick="snoozeDose('Metformin')">
-            ⏱ <span id="btnSnooze10m">10m</span>
-          </button>
-        </div>
-      </div>
 
-      <!-- Card 2: Family Vitality Card -->
-      <div class="notif-card" data-category="family" id="cardMom">
-        <div class="card-top">
-          <div class="card-icon icon-family">👵</div>
-          <div class="card-info">
-            <div class="card-title-row">
-              <span class="card-med-name">Amlodipine 5mg</span>
-              <span style="font-size: 11px; font-weight: 700; color: #A78BFA;" id="txtMomBadge">Mom's Dose</span>
-            </div>
-            <div class="card-subtext">
-              <span>⏰ 12:00 PM (In 15m)</span> • <span>💧 With Water</span>
-            </div>
+        <!-- Filter Chips -->
+        <div class="filter-scroll">
+          <button class="filter-chip active" onclick="filterCards('all', this)" id="chipAll">All (0)</button>
+          <button class="filter-chip" onclick="filterCards('urgent', this)" id="chipAction">Action Needed (0)</button>
+          <button class="filter-chip" onclick="filterCards('family', this)" id="chipFamily">Family (0)</button>
+          <button class="filter-chip" onclick="filterCards('stock', this)" id="chipStock">Stock Alert (0)</button>
+          <button class="filter-chip" onclick="filterCards('completed', this)" id="chipCompleted">Completed (0)</button>
+        </div>
+
+        <div class="notif-section-label" id="txtActiveSectionLabel">Active Reminders</div>
+
+        <!-- Dynamic Medicine Cards Container -->
+        <div id="cardsList" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Empty State (No fake data) -->
+          <div class="empty-state-box" id="emptyStateBox">
+            <div class="empty-icon">🔔</div>
+            <div class="empty-title" id="txtEmptyTitle">No Pending Alerts</div>
+            <div class="empty-desc" id="txtEmptyDesc">Add a medication to the hub or click 'Load Sample Dose' to test live adherence.</div>
           </div>
         </div>
-        <div class="card-actions">
-          <button class="btn-take" style="background: linear-gradient(135deg, #8B5CF6, #6D28D9);" onclick="nudgeFamily('Mom')">
-            💬 <span id="btnNudgeMom">Nudge Mom via WhatsApp</span>
-          </button>
-        </div>
+
       </div>
 
-      <!-- Card 3: Stock Alert Card -->
-      <div class="notif-card" data-category="stock" id="cardAtorvastatin">
-        <div class="card-top">
-          <div class="card-icon icon-stock">⚠️</div>
-          <div class="card-info">
-            <div class="card-title-row">
-              <span class="card-med-name">Atorvastatin 20mg</span>
-              <span style="font-size: 11px; font-weight: 800; color: #F59E0B;" id="txtStockBadge">3 PILLS LEFT</span>
-            </div>
-            <div class="card-subtext" id="txtStockSub">
-              Stock critical! Will run out in 3 days.
-            </div>
-          </div>
+      <!-- Floating Toast -->
+      <div class="mock-toast" id="mockToast">
+        <span>🎉</span>
+        <span id="toastMessage">Action completed!</span>
+      </div>
+
+      <!-- Bottom Nav -->
+      <div class="phone-bottom-nav">
+        <div class="nav-item">
+          <span style="font-size: 17px;">🏠</span>
+          <span id="navHome">Today</span>
         </div>
-        <div class="card-actions">
-          <button class="btn-refill" onclick="refillStock('Atorvastatin')">
-            ➕ <span id="btnRefillPills">Quick Refill (+10 Tablets)</span>
-          </button>
+        <div class="nav-item">
+          <span style="font-size: 17px;">💊</span>
+          <span id="navMeds">Medicines</span>
+        </div>
+        <div class="nav-item active">
+          <span style="font-size: 17px;">🔔</span>
+          <span id="navAlerts">Alerts</span>
+        </div>
+        <div class="nav-item">
+          <span style="font-size: 17px;">⚙️</span>
+          <span id="navSettings">Settings</span>
         </div>
       </div>
 
     </div>
 
-    <!-- Floating In-App Toast -->
-    <div class="mock-toast" id="mockToast">
-      <span>🎉</span>
-      <span id="toastMessage">Action completed!</span>
-    </div>
-
-    <!-- Bottom Navigation -->
-    <div class="phone-bottom-nav">
-      <div class="nav-item">
-        <span style="font-size: 18px;">🏠</span>
-        <span id="navHome">Today</span>
-      </div>
-      <div class="nav-item">
-        <span style="font-size: 18px;">💊</span>
-        <span id="navMeds">Medicines</span>
-      </div>
-      <div class="nav-item active">
-        <span style="font-size: 18px;">🔔</span>
-        <span id="navAlerts">Alerts</span>
-      </div>
-      <div class="nav-item">
-        <span style="font-size: 18px;">⚙️</span>
-        <span id="navSettings">Settings</span>
-      </div>
-    </div>
   </div>
 
   <script>
-    // Localization Data
+    // State Store - Zero fake data, fully dynamic
+    let currentLang = 'en';
+    let activeFilter = 'all';
+    let medicinesList = [];
+
     const i18n = {
       en: {
+        creatorTitle: "Add Medicine to Hub",
+        lblMedName: "Medicine Name",
+        lblProfile: "Patient Profile",
+        lblTime: "Time & Status",
+        btnAddMed: "Add to Hub",
+        btnLoadSample: "Load Sample Dose",
+        btnClearAll: "Reset to 0 (Clear All)",
         hubTitle: "Notifications & Hub",
         adherenceTitle: "⚡ Today's Adherence",
-        streakBadge: "🔥 7-Day Streak",
-        dosesCount: "3 of 4 Doses<br>Completed",
-        chipAll: "All (3)",
-        chipAction: "Action Needed (1)",
-        chipFamily: "Family (1)",
-        chipStock: "Stock Alert (1)",
-        chipCompleted: "Completed (3)",
         activeSection: "Active Reminders",
-        badgeOverdue: "OVERDUE",
-        takeNow: "Take Now",
-        snooze10m: "10m",
-        momBadge: "Mom's Dose",
-        nudgeMom: "Nudge Mom via WhatsApp",
-        stockBadge: "3 PILLS LEFT",
-        stockSub: "Stock critical! Will run out in 3 days.",
-        refillPills: "Quick Refill (+10 Tablets)",
+        emptyTitle: "No Pending Alerts",
+        emptyDesc: "Add a medication to the hub or click 'Load Sample Dose' to test live adherence.",
         navHome: "Today",
         navMeds: "Medicines",
         navAlerts: "Alerts",
         navSettings: "Settings",
-        toastTaken: "🎉 Dose confirmed! Adherence updated to 100%!",
-        toastSnooze: "⏱ Snoozed Metformin for 10 minutes!",
-        toastNudge: "💬 WhatsApp nudge opened for Mom!",
-        toastRefill: "📦 +10 Tablets added to Atorvastatin stock!",
-        toastAlarm: "🔔 Live audio alarm preview triggered!",
-        backToast: "Navigating to home screen..."
+        takeNow: "Take Now",
+        snooze: "10m",
+        overdue: "OVERDUE",
+        nudge: "WhatsApp Nudge",
+        stockLow: "LOW STOCK",
+        refill: "Quick Refill (+10)",
+        toastTaken: "🎉 Dose confirmed! Adherence updated.",
+        toastSnoozed: "⏱ Reminder snoozed for 10 minutes.",
+        toastRefilled: "📦 Stock refilled by 10 units.",
+        backToast: "Navigating back..."
       },
       bn: {
+        creatorTitle: "হাবে ওষুধ যোগ করুন",
+        lblMedName: "ওষুধের নাম",
+        lblProfile: "রোগীর প্রোফাইল",
+        lblTime: "সময় ও স্ট্যাটাস",
+        btnAddMed: "হাবে যোগ করুন",
+        btnLoadSample: "নমুনা ডোজ আনুন",
+        btnClearAll: "সব মুছে ০ করুন (রিসেট)",
         hubTitle: "বিজ্ঞপ্তি ও অ্যাক্টিভিটি",
         adherenceTitle: "⚡ আজকের ওষুধ নিয়মনিষ্ঠা",
-        streakBadge: "🔥 ৭ দিনের ধারাবাহিকতা",
-        dosesCount: "৪ টির মধ্যে ৩ টি ডোজ<br>সম্পূর্ণ হয়েছে",
-        chipAll: "সকল (৩)",
-        chipAction: "অ্যাকশন চাই (১)",
-        chipFamily: "পরিবার (১)",
-        chipStock: "স্টক এলার্ট (১)",
-        chipCompleted: "সম্পন্ন (৩)",
         activeSection: "সক্রিয় রিমাইন্ডার",
-        badgeOverdue: "বাকি রয়েছে",
-        takeNow: "খেয়েছি",
-        snooze10m: "১০ মি.",
-        momBadge: "মায়ের ওষুধ",
-        nudgeMom: "হোয়াটসঅ্যাপে মাকে মনে করিয়ে দিন",
-        stockBadge: "মাত্র ৩ টি বাকি",
-        stockSub: "স্টক শেষ পর্যায়ে! আগামী ৩ দিনে ওষুধ ফুরিয়ে যাবে।",
-        refillPills: "রিফিল করুন (+১০ টি)",
+        emptyTitle: "কোনো অ্যালার্ট বাকি নেই",
+        emptyDesc: "হাবে নতুন ওষুধ যোগ করুন অথবা টেস্ট করার জন্য 'নমুনা ডোজ আনুন' চাপুন।",
         navHome: "আজকের",
-        navMeds: "ওষুধ তালিকা",
+        navMeds: "ওষুধ",
         navAlerts: "বিজ্ঞপ্তি",
         navSettings: "সেটিংস",
-        toastTaken: "🎉 ওষুধ নেওয়া সম্পন্ন! নিয়মানুবর্তিতা ১০০% হয়েছে!",
-        toastSnooze: "⏱ ১০ মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে!",
-        toastNudge: "💬 মায়ের জন্য হোয়াটসঅ্যাপ মেসেজ তৈরি হয়েছে!",
-        toastRefill: "📦 এটোরভাস্টাটিনের স্টকে ১০ টি ওষুধ যোগ হয়েছে!",
-        toastAlarm: "🔔 টেস্ট নোটিফিকেশন এলার্ম বেজে উঠেছে!",
-        backToast: "হোম স্ক্রিনে ফিরে যাওয়া হচ্ছে..."
+        takeNow: "খেয়েছি",
+        snooze: "১০ মি.",
+        overdue: "বাকি রয়েছে",
+        nudge: "হোয়াটসঅ্যাপে জানান",
+        stockLow: "স্টক শেষ পর্যায়ে",
+        refill: "রিফিল (+১০)",
+        toastTaken: "🎉 ওষুধ নেওয়া সম্পন্ন! নিয়মনিষ্ঠা আপডেট হয়েছে।",
+        toastSnoozed: "⏱ ১০ মিনিটের জন্য স্থগিত করা হয়েছে।",
+        toastRefilled: "📦 ১০ টি ওষুধ স্টকে যোগ হয়েছে।",
+        backToast: "পূর্ববর্তী স্ক্রিনে যাওয়া হচ্ছে..."
       },
       hi: {
+        creatorTitle: "हब में दवा जोड़ें",
+        lblMedName: "दवा का नाम",
+        lblProfile: "मरीज की प्रोफाइल",
+        lblTime: "समय व स्थिति",
+        btnAddMed: "हब में जोड़ें",
+        btnLoadSample: "नमूना खुराक लोड करें",
+        btnClearAll: "सभी साफ़ कर शून्य करें",
         hubTitle: "सूचनाएं व हब",
         adherenceTitle: "⚡ आज की खुराक अनुपालन",
-        streakBadge: "🔥 ७ दिन का क्रम",
-        dosesCount: "४ में से ३ खुराक<br>पूरी हुईं",
-        chipAll: "सभी (३)",
-        chipAction: "कार्रवाई आवश्यक (१)",
-        chipFamily: "परिवार (१)",
-        chipStock: "स्टॉक अलर्ट (१)",
-        chipCompleted: "पूर्ण (३)",
         activeSection: "सक्रिय रिमाइंडर",
-        badgeOverdue: "अतिदेय",
-        takeNow: "दवा ली",
-        snooze10m: "१० मि.",
-        momBadge: "माता जी की खुराक",
-        nudgeMom: "व्हाट्सएप पर माता जी को याद दिलाएं",
-        stockBadge: "केवल ३ बची हैं",
-        stockSub: "स्टॉक कम है! अगले ३ दिनों में समाप्त हो जाएगा।",
-        refillPills: "रीफिल करें (+१० गोलियां)",
+        emptyTitle: "कोई लंबित अलर्ट नहीं",
+        emptyDesc: "हब में दवा जोड़ें या लाइव परीक्षण के लिए 'नमूना खुराक' पर क्लिक करें।",
         navHome: "आज",
         navMeds: "दवाइयां",
         navAlerts: "सूचनाएं",
         navSettings: "सेटिंग्स",
-        toastTaken: "🎉 खुराक पूरी दर्ज की गई! अनुपालन १००% हुआ!",
-        toastSnooze: "⏱ १० मिनट के लिए स्नूज़ किया गया!",
-        toastNudge: "💬 माता जी के लिए व्हाट्सएप संदेश तैयार किया गया!",
-        toastRefill: "📦 एटोरवास्टेटिन के स्टॉक में १० गोलियां जोड़ी गईं!",
-        toastAlarm: "🔔 टेस्ट अलार्म टोन बजाई गई!",
-        backToast: "होम स्क्रीन पर वापस जा रहे हैं..."
+        takeNow: "दवा ली",
+        snooze: "१० मि.",
+        overdue: "अतिदेय",
+        nudge: "व्हाट्सएप पर याद दिलाएं",
+        stockLow: "स्टॉक कम है",
+        refill: "रीफिल (+१०)",
+        toastTaken: "🎉 खुराक दर्ज की गई! अनुपालन अपडेट हुआ।",
+        toastSnoozed: "⏱ १० मिनट के लिए स्थगित किया गया।",
+        toastRefilled: "📦 १० गोलियां स्टॉक में जोड़ी गईं।",
+        backToast: "वापस जा रहे हैं..."
       }
     };
 
-    let currentLang = 'en';
-
     function setLanguage(lang) {
       currentLang = lang;
-      document.getElementById('btnLangEn').classList.toggle('active', lang === 'en');
-      document.getElementById('btnLangBn').classList.toggle('active', lang === 'bn');
-      document.getElementById('btnLangHi').classList.toggle('active', lang === 'hi');
-
       const d = i18n[lang];
+      document.getElementById('txtCreatorTitle').innerText = d.creatorTitle;
+      document.getElementById('lblMedName').innerText = d.lblMedName;
+      document.getElementById('lblProfile').innerText = d.lblProfile;
+      document.getElementById('lblTime').innerText = d.lblTime;
+      document.getElementById('btnAddMed').innerText = d.btnAddMed;
+      document.getElementById('btnLoadSample').innerText = d.btnLoadSample;
+      document.getElementById('btnClearAll').innerText = d.btnClearAll;
       document.getElementById('txtHubTitle').innerText = d.hubTitle;
       document.getElementById('txtAdherenceTitle').innerText = d.adherenceTitle;
-      document.getElementById('txtStreakBadge').innerText = d.streakBadge;
-      document.getElementById('txtDosesCount').innerHTML = d.dosesCount;
-      document.getElementById('chipAll').innerText = d.chipAll;
-      document.getElementById('chipAction').innerText = d.chipAction;
-      document.getElementById('chipFamily').innerText = d.chipFamily;
-      document.getElementById('chipStock').innerText = d.chipStock;
-      document.getElementById('chipCompleted').innerText = d.chipCompleted;
       document.getElementById('txtActiveSectionLabel').innerText = d.activeSection;
-      document.getElementById('txtBadgeOverdue').innerText = d.badgeOverdue;
-      document.getElementById('btnTakeNow').innerText = d.takeNow;
-      document.getElementById('btnSnooze10m').innerText = d.snooze10m;
-      document.getElementById('txtMomBadge').innerText = d.momBadge;
-      document.getElementById('btnNudgeMom').innerText = d.nudgeMom;
-      document.getElementById('txtStockBadge').innerText = d.stockBadge;
-      document.getElementById('txtStockSub').innerText = d.stockSub;
-      document.getElementById('btnRefillPills').innerText = d.refillPills;
+      document.getElementById('txtEmptyTitle').innerText = d.emptyTitle;
+      document.getElementById('txtEmptyDesc').innerText = d.emptyDesc;
       document.getElementById('navHome').innerText = d.navHome;
       document.getElementById('navMeds').innerText = d.navMeds;
       document.getElementById('navAlerts').innerText = d.navAlerts;
       document.getElementById('navSettings').innerText = d.navSettings;
+      renderCards();
     }
 
     function getLangString(key) {
-      return i18n[currentLang][key] || "";
+      return (i18n[currentLang] && i18n[currentLang][key]) ? i18n[currentLang][key] : "";
     }
 
     function toggleTheme() {
-      const mock = document.getElementById('phoneMockup');
-      mock.classList.toggle('light-theme');
+      document.getElementById('phoneMockup').classList.toggle('light-theme');
     }
 
     function showToast(msg) {
       const t = document.getElementById('mockToast');
       document.getElementById('toastMessage').innerText = msg;
       t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2800);
+      setTimeout(() => t.classList.remove('show'), 2400);
     }
 
-    function filterCards(category, btn) {
-      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
+    function addCustomMedicine() {
+      const input = document.getElementById('inputMedName');
+      const name = input.value.trim() || "Paracetamol 500mg";
+      const profile = document.getElementById('selectProfile').value;
+      const alertType = document.getElementById('selectAlertStatus').value;
 
-      const cards = document.querySelectorAll('.notif-card');
-      cards.forEach(c => {
-        if (category === 'all' || c.dataset.category === category) {
-          c.style.display = 'flex';
-        } else {
-          c.style.display = 'none';
+      const med = {
+        id: 'med_' + Date.now(),
+        name: name,
+        profile: profile,
+        type: alertType, // urgent, normal, stock
+        isTaken: false,
+        time: alertType === 'urgent' ? '08:30 AM (Overdue)' : '12:00 PM',
+        detail: profile !== 'Myself' ? `${profile}'s dose • With water` : 'After Breakfast'
+      };
+
+      medicinesList.unshift(med);
+      input.value = "";
+      playTone(587.33, 'sine', 0.15);
+      showToast(`Added ${med.name} to Hub!`);
+      renderCards();
+    }
+
+    function loadSampleMedicines() {
+      medicinesList = [
+        {
+          id: 'med_sample1',
+          name: 'Metformin 500mg',
+          profile: 'Myself',
+          type: 'urgent',
+          isTaken: false,
+          time: '08:30 AM (35m overdue)',
+          detail: 'After Breakfast • 1 Tablet'
+        },
+        {
+          id: 'med_sample2',
+          name: 'Amlodipine 5mg',
+          profile: 'Mom',
+          type: 'family',
+          isTaken: false,
+          time: '12:00 PM (In 20m)',
+          detail: "Mom's dose • With water"
         }
+      ];
+      playTone(659.25, 'sine', 0.15);
+      showToast('Sample medicines loaded!');
+      renderCards();
+    }
+
+    function clearAllMedicines() {
+      medicinesList = [];
+      renderCards();
+      showToast('Reset to 0 — All alerts cleared!');
+    }
+
+    function takeDose(id) {
+      const med = medicinesList.find(m => m.id === id);
+      if (!med) return;
+      med.isTaken = true;
+
+      playTone(523.25, 'sine', 0.15);
+      setTimeout(() => playTone(659.25, 'sine', 0.25), 100);
+      launchConfetti();
+      showToast(getLangString('toastTaken'));
+      renderCards();
+    }
+
+    function snoozeDose(id) {
+      playTone(440, 'triangle', 0.2);
+      showToast(getLangString('toastSnoozed'));
+    }
+
+    function refillStock(id) {
+      const med = medicinesList.find(m => m.id === id);
+      if (med) {
+        med.type = 'normal';
+        med.detail = 'Restocked (+10 Tablets)';
+      }
+      playTone(659.25, 'sine', 0.2);
+      showToast(getLangString('toastRefilled'));
+      renderCards();
+    }
+
+    function filterCards(cat, btn) {
+      activeFilter = cat;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderCards();
+    }
+
+    function renderCards() {
+      const container = document.getElementById('cardsList');
+      const emptyBox = document.getElementById('emptyStateBox');
+      const d = i18n[currentLang];
+
+      const totalCount = medicinesList.length;
+      const takenCount = medicinesList.filter(m => m.isTaken).length;
+      const urgentCount = medicinesList.filter(m => !m.isTaken && m.type === 'urgent').length;
+      const familyCount = medicinesList.filter(m => !m.isTaken && m.profile !== 'Myself').length;
+      const stockCount = medicinesList.filter(m => !m.isTaken && m.type === 'stock').length;
+
+      // Update Hero Adherence Stats
+      const pct = totalCount > 0 ? Math.round((takenCount / totalCount) * 100) : 0;
+      document.getElementById('txtAdherencePct').innerText = `${pct}%`;
+      document.getElementById('progressFill').style.width = `${pct}%`;
+
+      if (currentLang === 'bn') {
+        document.getElementById('txtDosesCount').innerHTML = `${totalCount} টির মধ্যে ${takenCount} টি ডোজ<br>সম্পূর্ণ`;
+        document.getElementById('txtStreakBadge').innerText = pct === 100 && totalCount > 0 ? '🔥 ১ দিনের ধারা' : '🔥 ০ দিনের ধারা';
+      } else if (currentLang === 'hi') {
+        document.getElementById('txtDosesCount').innerHTML = `${totalCount} में से ${takenCount} खुराक<br>पूरी`;
+        document.getElementById('txtStreakBadge').innerText = pct === 100 && totalCount > 0 ? '🔥 १ दिन का क्रम' : '🔥 ० दिन का क्रम';
+      } else {
+        document.getElementById('txtDosesCount').innerHTML = `${takenCount} of ${totalCount} Doses<br>Completed`;
+        document.getElementById('txtStreakBadge').innerText = pct === 100 && totalCount > 0 ? '🔥 1-Day Streak' : '🔥 0-Day Streak';
+      }
+
+      // Filter Chips Counts
+      document.getElementById('chipAll').innerText = `All (${totalCount})`;
+      document.getElementById('chipAction').innerText = `Action Needed (${urgentCount})`;
+      document.getElementById('chipFamily').innerText = `Family (${familyCount})`;
+      document.getElementById('chipStock').innerText = `Stock Alert (${stockCount})`;
+      document.getElementById('chipCompleted').innerText = `Completed (${takenCount})`;
+      document.getElementById('txtTotalBadge').innerText = `${totalCount - takenCount}`;
+
+      // Filtered list
+      let filtered = medicinesList;
+      if (activeFilter === 'urgent') filtered = medicinesList.filter(m => !m.isTaken && m.type === 'urgent');
+      else if (activeFilter === 'family') filtered = medicinesList.filter(m => !m.isTaken && m.profile !== 'Myself');
+      else if (activeFilter === 'stock') filtered = medicinesList.filter(m => !m.isTaken && m.type === 'stock');
+      else if (activeFilter === 'completed') filtered = medicinesList.filter(m => m.isTaken);
+
+      container.innerHTML = "";
+
+      if (filtered.length === 0) {
+        container.appendChild(emptyBox);
+        emptyBox.style.display = 'flex';
+        return;
+      }
+
+      emptyBox.style.display = 'none';
+
+      filtered.forEach(med => {
+        const card = document.createElement('div');
+        const isUrgent = !med.isTaken && med.type === 'urgent';
+        card.className = `notif-card ${isUrgent ? 'urgent' : ''}`;
+
+        let iconEmoji = "💊";
+        let iconClass = "icon-urgent";
+        if (med.isTaken) { iconEmoji = "✓"; iconClass = "icon-completed"; }
+        else if (med.profile !== 'Myself') { iconEmoji = "👵"; iconClass = "icon-family"; }
+        else if (med.type === 'stock') { iconEmoji = "⚠️"; iconClass = "icon-stock"; }
+
+        let badgeHtml = "";
+        if (med.isTaken) {
+          badgeHtml = `<span style="font-size: 11px; font-weight: 700; color: #10B981;">TAKEN</span>`;
+        } else if (isUrgent) {
+          badgeHtml = `<span class="urgent-badge">${d.overdue}</span>`;
+        } else if (med.profile !== 'Myself') {
+          badgeHtml = `<span style="font-size: 11px; font-weight: 700; color: #A78BFA;">${med.profile}</span>`;
+        } else if (med.type === 'stock') {
+          badgeHtml = `<span style="font-size: 11px; font-weight: 800; color: #F59E0B;">${d.stockLow}</span>`;
+        }
+
+        let actionHtml = "";
+        if (!med.isTaken) {
+          if (med.type === 'stock') {
+            actionHtml = `
+              <div class="card-actions">
+                <button class="btn-take" style="background: linear-gradient(135deg, #F59E0B, #D97706);" onclick="refillStock('${med.id}')">
+                  ➕ ${d.refill}
+                </button>
+              </div>`;
+          } else if (med.profile !== 'Myself') {
+            actionHtml = `
+              <div class="card-actions">
+                <button class="btn-take" style="background: linear-gradient(135deg, #8B5CF6, #6D28D9);" onclick="takeDose('${med.id}')">
+                  💬 ${d.nudge}
+                </button>
+                <button class="btn-snooze" onclick="snoozeDose('${med.id}')">⏱ ${d.snooze}</button>
+              </div>`;
+          } else {
+            actionHtml = `
+              <div class="card-actions">
+                <button class="btn-take" onclick="takeDose('${med.id}')">✓ ${d.takeNow}</button>
+                <button class="btn-snooze" onclick="snoozeDose('${med.id}')">⏱ ${d.snooze}</button>
+              </div>`;
+          }
+        }
+
+        card.innerHTML = `
+          <div class="card-top">
+            <div class="card-icon ${iconClass}">${iconEmoji}</div>
+            <div class="card-info">
+              <div class="card-title-row">
+                <span class="card-med-name">${med.name}</span>
+                ${badgeHtml}
+              </div>
+              <div class="card-subtext">
+                <span>⏰ ${med.time}</span> • <span>${med.detail}</span>
+              </div>
+            </div>
+          </div>
+          ${actionHtml}
+        `;
+        container.appendChild(card);
       });
     }
 
-    // Interactive Action: Take Dose with Confetti
-    function takeDose(medName, cardId) {
-      playTone(523.25, 'sine', 0.15); // C5
-      setTimeout(() => playTone(659.25, 'sine', 0.25), 120); // E5
-
-      launchConfetti();
-      showToast(getLangString('toastTaken'));
-
-      // Animate card away into completed state
-      const card = document.getElementById(cardId);
-      card.style.transition = 'all 0.4s ease';
-      card.style.transform = 'scale(0.95)';
-      card.style.opacity = '0.5';
-
-      setTimeout(() => {
-        card.dataset.category = 'completed';
-        card.className = 'notif-card';
-        card.innerHTML = `
-          <div class="card-top">
-            <div class="card-icon icon-completed">✓</div>
-            <div class="card-info">
-              <div class="card-title-row">
-                <span class="card-med-name">${medName} 500mg</span>
-                <span style="font-size: 11px; font-weight: 700; color: #10B981;">TAKEN</span>
-              </div>
-              <div class="card-subtext">Taken at 09:42 AM • On track</div>
-            </div>
-          </div>
-        `;
-        card.style.transform = 'scale(1)';
-        card.style.opacity = '1';
-
-        // Update hero barometer
-        document.getElementById('txtAdherencePct').innerText = '100%';
-        document.getElementById('progressFill').style.width = '100%';
-        document.getElementById('txtDosesCount').innerHTML = currentLang === 'bn' ? '৪ টির মধ্যে ৪ টি ডোজ<br>সম্পূর্ণ!' : (currentLang === 'hi' ? '४ में से ४ खुराक<br>पूरी!' : '4 of 4 Doses<br>Completed!');
-        document.getElementById('txtTotalBadge').innerText = '2';
-      }, 400);
-    }
-
-    function snoozeDose(medName) {
-      playTone(440, 'triangle', 0.2);
-      showToast(getLangString('toastSnooze'));
-    }
-
-    function nudgeFamily(person) {
-      playTone(587.33, 'sine', 0.2);
-      showToast(getLangString('toastNudge'));
-    }
-
-    function refillStock(medName) {
-      playTone(659.25, 'sine', 0.2);
-      showToast(getLangString('toastRefill'));
-      document.getElementById('txtStockBadge').innerText = "13 TABLETS";
-      document.getElementById('txtStockBadge').style.color = "#10B981";
-      document.getElementById('cardAtorvastatin').querySelector('.card-icon').innerText = "💊";
-      document.getElementById('cardAtorvastatin').querySelector('.card-icon').className = "card-icon icon-completed";
-    }
-
-    // Web Audio Synthesizer for Alarm and Interactions
+    // Web Audio Synthesizer
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playTone(freq, type, duration) {
       try {
@@ -1085,15 +1261,14 @@
     }
 
     function triggerTestAlarm() {
-      // Pleasant Medical Alert Melody
       const notes = [587.33, 659.25, 880, 1046.5];
       notes.forEach((freq, idx) => {
-        setTimeout(() => playTone(freq, 'sine', 0.25), idx * 160);
+        setTimeout(() => playTone(freq, 'sine', 0.22), idx * 150);
       });
-      showToast(getLangString('toastAlarm'));
+      showToast('🔔 Alarm Ringtone Preview!');
     }
 
-    // Lightweight Confetti Particles
+    // Confetti Particles
     function launchConfetti() {
       const canvas = document.getElementById('confettiCanvas');
       const ctx = canvas.getContext('2d');
@@ -1103,14 +1278,14 @@
       const particles = [];
       const colors = ['#10B981', '#06B6D4', '#3B82F6', '#F59E0B', '#EC4899'];
 
-      for (let i = 0; i < 45; i++) {
+      for (let i = 0; i < 40; i++) {
         particles.push({
           x: canvas.width / 2,
           y: canvas.height / 2,
           vx: (Math.random() - 0.5) * 8,
-          vy: (Math.random() - 0.8) * 9,
+          vy: (Math.random() - 0.8) * 8,
           color: colors[Math.floor(Math.random() * colors.length)],
-          size: Math.random() * 6 + 3,
+          size: Math.random() * 5 + 3,
           alpha: 1
         });
       }
@@ -1135,6 +1310,9 @@
       }
       render();
     }
+
+    // Initialize clean
+    renderCards();
   </script>
 </body>
 </html>

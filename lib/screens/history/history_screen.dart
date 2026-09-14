@@ -63,7 +63,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     final totalTaken = _recentLogs.where((l) => l.status == IntakeStatus.taken).length;
     final totalSkipped = _recentLogs.where((l) => l.status == IntakeStatus.skipped).length;
-    final adherenceScore = _recentLogs.isEmpty ? 100 : ((totalTaken / _recentLogs.length) * 100).toInt();
+    final adherenceScore = _recentLogs.isEmpty ? 0 : ((totalTaken / _recentLogs.length) * 100).toInt();
 
     final filteredLogs = _recentLogs.where((l) {
       if (_selectedFilter == 'taken') return l.status == IntakeStatus.taken;
@@ -99,7 +99,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 Expanded(
                   child: _buildMetricCard(
                     title: s.currentStreak,
-                    value: '5 ${s.daysUnit}',
+                    value: '${provider.currentStreakDays} ${s.daysUnit}',
                     subtitle: s.keepItUp,
                     icon: Icons.local_fire_department_rounded,
                     color: AppColors.accentMint,

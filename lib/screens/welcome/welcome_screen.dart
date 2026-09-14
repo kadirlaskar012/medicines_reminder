@@ -460,9 +460,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       child: PopupMenuButton<String>(
         onSelected: (code) => lang.setLanguage(code),
         itemBuilder: (ctx) => [
-          const PopupMenuItem(value: 'en', child: Text('🇬🇧 English')),
-          const PopupMenuItem(value: 'bn', child: Text('🇧🇩 বাংলা')),
-          const PopupMenuItem(value: 'hi', child: Text('🇮🇳 हिन्दी')),
+          const PopupMenuItem(value: 'en', child: Text('English')),
+          const PopupMenuItem(value: 'bn', child: Text('বাংলা (Bengali)')),
+          const PopupMenuItem(value: 'hi', child: Text('हिन्दी (Hindi)')),
         ],
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -470,7 +470,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             const Icon(Icons.language_rounded, size: 16, color: AppColors.primary),
             const SizedBox(width: 4),
             Text(
-              lang.languageCode == 'bn' ? 'বাংলা' : (lang.languageCode == 'hi' ? 'हिन्दी' : 'EN'),
+              lang.languageCode == 'bn' ? 'বাংলা' : (lang.languageCode == 'hi' ? 'हिन्दी' : 'English'),
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
             ),
             const Icon(Icons.arrow_drop_down_rounded, size: 16),

@@ -96,13 +96,72 @@ class MedicineProvider extends ChangeNotifier {
   // Adherence Calculations
   double get todayAdherenceRate {
     final total = dosesForSelectedDate.length;
-    if (total == 0) return 1.0;
+    if (total == 0) return 0.0;
     final taken = dosesForSelectedDate.where((d) => d.isTaken).length;
     return taken / total;
   }
 
   int get todayTakenCount => dosesForSelectedDate.where((d) => d.isTaken).length;
   int get todayTotalCount => dosesForSelectedDate.length;
+
+  /// Get scheduled doses for any specific date
+  List<ScheduledDose> getDosesForDate(DateTime date) {
+    final weekday = date.weekday;
+    final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final List<ScheduledDose> list = [];
+
+    for (final med in filteredMedicines) {
+      if (!med.isActive) continue;
+      final reminders = _remindersByMedicine[med.id] ?? [];
+      for (final rem in reminders) {
+        if (rem.daysOfWeek.contains(weekday)) {
+          final key = '${med.id}_${rem.id}_$dateStr';
+          final record = _recordsByDoseKey[key];
+          list.add(ScheduledDose(
+            medicine: med,
+            reminder: rem,
+            record: record,
+            scheduledDate: date,
+          ));
+        }
+      }
+    }
+    return list;
+  }
+
+  /// Real adherence rate for any specific date (0.0 to 1.0)
+  double getAdherenceRateForDate(DateTime date) {
+    final doses = getDosesForDate(date);
+    if (doses.isEmpty) return 0.0;
+    final taken = doses.where((d) => d.isTaken).length;
+    return taken / doses.length;
+  }
+
+  /// Real consecutive adherence streak (in days) based on real intake records
+  int get currentStreakDays {
+    if (_medicines.isEmpty) return 0;
+    int streak = 0;
+    final now = DateTime.now();
+
+    final todayDoses = getDosesForDate(now);
+    if (todayDoses.isNotEmpty && todayDoses.every((d) => d.isTaken)) {
+      streak++;
+    }
+
+    for (int i = 1; i <= 365; i++) {
+      final prevDate = now.subtract(Duration(days: i));
+      final prevDoses = getDosesForDate(prevDate);
+      if (prevDoses.isEmpty) {
+        continue;
+      }
+      if (prevDoses.every((d) => d.isTaken)) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
 
   // ==================== INITIALIZATION ====================
   Future<void> loadInitialData() async {

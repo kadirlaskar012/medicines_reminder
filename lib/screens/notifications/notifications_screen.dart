@@ -40,7 +40,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final completedDoses = todayDoses.where((d) => d.isTaken).toList();
 
     final totalAlerts = overdueDoses.length + lowStockMeds.length + upcomingDoses.length;
-    final adherenceRate = medProvider.todayAdherenceRate;
+    final totalDoses = medProvider.todayTotalCount;
+    final adherenceRate = totalDoses > 0 ? (medProvider.todayTakenCount / totalDoses) : 0.0;
     final adherencePercent = (adherenceRate * 100).toInt();
 
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
@@ -138,6 +139,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 adherencePercent: adherencePercent,
                 takenCount: medProvider.todayTakenCount,
                 totalCount: medProvider.todayTotalCount,
+                streakDays: medProvider.currentStreakDays,
                 textPrimary: textPrimary,
               ),
             ),
@@ -221,9 +223,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required int adherencePercent,
     required int takenCount,
     required int totalCount,
+    required int streakDays,
     required Color textPrimary,
   }) {
-    final progress = totalCount > 0 ? (takenCount / totalCount).clamp(0.0, 1.0) : 1.0;
+    final progress = totalCount > 0 ? (takenCount / totalCount).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -322,7 +325,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       const Text('🔥', style: TextStyle(fontSize: 13)),
                       const SizedBox(width: 4),
                       Text(
-                        s.notifStreakDays(7),
+                        s.notifStreakDays(streakDays),
                         style: const TextStyle(
                           color: Color(0xFFB45309),
                           fontSize: 12,
