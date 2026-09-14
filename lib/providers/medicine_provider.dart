@@ -318,9 +318,10 @@ class MedicineProvider extends ChangeNotifier {
   }
 
   /// Restores all cloud medicines for a logged-in user into SQLite and updates UI
-  Future<int> restoreUserFromCloud(String phoneNumber) async {
+  Future<int> restoreUserFromCloud(String userIdentifier) async {
     final count = await CloudSyncService.instance.restoreFromCloud(
-      phoneNumber: phoneNumber,
+      email: userIdentifier.contains('@') ? userIdentifier : null,
+      phoneNumber: userIdentifier.contains('@') ? null : userIdentifier,
       db: _db,
       notifications: _notifications,
     );

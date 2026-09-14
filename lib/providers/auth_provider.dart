@@ -10,12 +10,6 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  String _phoneNumber = '';
-  String? _generatedVerificationCode;
-  bool _isCodeSent = false;
-  int _countdownSeconds = 0;
-  Timer? _timer;
-
   AuthProvider() {
     _init();
   }
@@ -26,17 +20,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   bool get isSignedIn => _supabase.isSignedIn;
-  String? get phoneNumber => _supabase.currentUser?.phoneNumber ?? (_phoneNumber.isNotEmpty ? _phoneNumber : null);
+  bool get isAdmin => _supabase.isAdmin;
+  String? get email => _supabase.currentUser?.email;
+  String? get phoneNumber => _supabase.currentUser?.phoneNumber;
   String? get displayName => _supabase.currentUser?.name;
   String? get userId => _supabase.currentUser?.id;
-  String? get email => phoneNumber != null ? '$phoneNumber' : null;
   String? get photoUrl => null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  int get countdownSeconds => _countdownSeconds;
-  bool get canResendOtp => _countdownSeconds == 0;
-  bool get isCodeSent => _isCodeSent;
-  String? get generatedVerificationCode => _generatedVerificationCode;
 
   void clearError() {
     _errorMessage = null;
@@ -44,56 +35,105 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void resetFlow() {
-    _isCodeSent = false;
-    _generatedVerificationCode = null;
     _errorMessage = null;
-    _timer?.cancel();
-    _countdownSeconds = 0;
+    _isLoading = false;
     notifyListeners();
   }
 
-  void _startCountdown() {
-    _timer?.cancel();
-    _countdownSeconds = 30;
-    notifyListeners();
+  /// Sign in with Email and Password
+  Future<bool> signInWithEmail({
+    required String email,
+    required String password,
+    required MedicineProvider medicineProvider,
+  }) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPwd = password.trim();
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_countdownSeconds > 0) {
-        _countdownSeconds--;
-        notifyListeners();
-      } else {
-        timer.cancel();
-      }
-    });
-  }
+    if (cleanEmail.isEmpty || !cleanEmail.contains('@') || !cleanEmail.contains('.')) {
+      _errorMessage = 'একটি সঠিক ইমেল ঠিকানা প্রদান করুন';
+      notifyListeners();
+      return false;
+    }
 
-  /// Request verification code: saves phone to Supabase and generates on-screen code
-  Future<bool> sendOtp(String fullPhoneNumber) async {
+    if (cleanPwd.isEmpty) {
+      _errorMessage = 'পাসওয়ার্ড লিখুন';
+      notifyListeners();
+      return false;
+    }
+
     _isLoading = true;
     _errorMessage = null;
-    _phoneNumber = fullPhoneNumber;
     notifyListeners();
 
     try {
-      final code = await _supabase.requestVerificationCode(fullPhoneNumber);
-      _generatedVerificationCode = code;
-      _isCodeSent = true;
+      final success = await _supabase.loginWithEmail(
+        email: cleanEmail,
+        password: cleanPwd,
+      );
+
+      if (!success) {
+        _isLoading = false;
+        _errorMessage = 'ইমেল বা পাসওয়ার্ড ভুল দেওয়া হয়েছে!';
+        notifyListeners();
+        return false;
+      }
+
+      // 1. Restore previous medicines from cloud for this email
+      await medicineProvider.restoreUserFromCloud(cleanEmail);
+
+      // 2. Sync local medicines/profiles to cloud
+      await CloudSyncService.instance.syncLocalToCloud(
+        profiles: medicineProvider.profiles,
+        medicines: medicineProvider.medicines,
+        remindersByMedicine: medicineProvider.remindersByMedicine,
+        records: medicineProvider.intakeRecords,
+      );
+
       _isLoading = false;
-      _startCountdown();
       notifyListeners();
       return true;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'Failed to generate code: $e';
+      _errorMessage = 'সাইন ইন করতে ত্রুটি: $e';
       notifyListeners();
       return false;
     }
   }
 
-  /// Verify on-screen code and automatically sync local SQLite data with Supabase
-  Future<bool> verifyOtp(String enteredCode, MedicineProvider medicineProvider) async {
-    if (_generatedVerificationCode == null) {
-      _errorMessage = 'No active verification session. Please request code again.';
+  /// Sign up / Create Account with Email and Password
+  Future<bool> signUpWithEmail({
+    required String email,
+    required String name,
+    required String password,
+    required String securityQuestion,
+    required String securityAnswer,
+    required MedicineProvider medicineProvider,
+  }) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanName = name.trim();
+    final cleanPwd = password.trim();
+    final cleanAnswer = securityAnswer.trim();
+
+    if (cleanName.isEmpty) {
+      _errorMessage = 'আপনার পুরো নাম লিখুন';
+      notifyListeners();
+      return false;
+    }
+
+    if (cleanEmail.isEmpty || !cleanEmail.contains('@') || !cleanEmail.contains('.')) {
+      _errorMessage = 'একটি সঠিক ইমেল ঠিকানা প্রদান করুন';
+      notifyListeners();
+      return false;
+    }
+
+    if (cleanPwd.length < 6) {
+      _errorMessage = 'কমপক্ষে ৬ অক্ষরের একটি শক্তিশালী পাসওয়ার্ড দিন';
+      notifyListeners();
+      return false;
+    }
+
+    if (cleanAnswer.isEmpty) {
+      _errorMessage = 'পাসওয়ার্ড রিকভারি প্রশ্নের উত্তর দিন';
       notifyListeners();
       return false;
     }
@@ -103,37 +143,35 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final isSuccess = await _supabase.verifyCode(
-        phoneNumber: _phoneNumber,
-        enteredCode: enteredCode,
-        expectedCode: _generatedVerificationCode!,
-        userName: medicineProvider.profiles.isNotEmpty ? medicineProvider.profiles.first.name : 'User',
+      final success = await _supabase.registerUserWithEmail(
+        email: cleanEmail,
+        name: cleanName,
+        password: cleanPwd,
+        securityQuestion: securityQuestion,
+        securityAnswer: cleanAnswer,
       );
 
-      _isLoading = false;
-      _timer?.cancel();
-
-      if (isSuccess) {
-        notifyListeners();
-        // 1. First restore previous medicines from cloud (if user reinstalled or cleared data)
-        await medicineProvider.restoreUserFromCloud(_phoneNumber);
-
-        // 2. Sync local medicines/profiles to cloud (merges offline data to cloud)
-        await CloudSyncService.instance.syncLocalToCloud(
-          profiles: medicineProvider.profiles,
-          medicines: medicineProvider.medicines,
-          remindersByMedicine: medicineProvider.remindersByMedicine,
-          records: medicineProvider.intakeRecords,
-        );
-        return true;
-      } else {
-        _errorMessage = 'ভুল কোড দেওয়া হয়েছে! অনুগ্রহ করে স্ক্রিনে দেখানো কোডটি সঠিক লিখুন।';
+      if (!success) {
+        _isLoading = false;
+        _errorMessage = 'অ্যাকাউন্ট তৈরি করা যায়নি। এই ইমেলে অ্যাকাউন্ট থাকতে পারে।';
         notifyListeners();
         return false;
       }
+
+      // Sync existing local medicines to cloud for new account
+      await CloudSyncService.instance.syncLocalToCloud(
+        profiles: medicineProvider.profiles,
+        medicines: medicineProvider.medicines,
+        remindersByMedicine: medicineProvider.remindersByMedicine,
+        records: medicineProvider.intakeRecords,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = e.toString();
+      _errorMessage = 'সাইন আপ করতে ত্রুটি: $e';
       notifyListeners();
       return false;
     }
@@ -149,9 +187,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+  // Legacy stubs for compatibility
+  int get countdownSeconds => 0;
+  bool get canResendOtp => true;
+  bool get isCodeSent => false;
+  String? get generatedVerificationCode => null;
+  Future<bool> sendOtp(String fullPhoneNumber) async => false;
+  Future<bool> verifyOtp(String enteredCode, MedicineProvider medicineProvider) async => false;
 }
+

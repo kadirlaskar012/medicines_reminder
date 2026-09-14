@@ -852,8 +852,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: AppColors.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      auth.email != null ? Icons.account_circle_rounded : Icons.phone_android_rounded,
+                    child: const Icon(
+                      Icons.mark_email_read_rounded,
                       color: AppColors.primary,
                       size: 24,
                     ),
@@ -864,10 +864,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        auth.displayName ?? auth.email ?? auth.phoneNumber ?? 'User',
+                        auth.displayName ?? auth.email ?? 'User',
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                       ),
-                      if (auth.displayName != null && auth.email != null)
+                      if (auth.email != null)
                         Text(
                           auth.email!,
                           style: const TextStyle(fontSize: 12, color: AppColors.lightTextMuted),
@@ -901,7 +901,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              s.phoneLoginSub,
+              s.code == 'bn'
+                  ? 'আপনার ইমেল অ্যাকাউন্টের মাধ্যমে ওষুধ ও রিমাইন্ডার ক্লাউডে সুরক্ষিত রয়েছে।'
+                  : (s.code == 'hi'
+                      ? 'आपका डेटा क्लाउड में सुरक्षित रूप से बैकअप है।'
+                      : 'Your medicine data is securely synchronized to your email account in the cloud.'),
               style: const TextStyle(fontSize: 12, color: AppColors.lightTextMuted, height: 1.3),
             ),
             const SizedBox(height: 14),
@@ -950,9 +954,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final phone = auth.phoneNumber;
-                      if (phone == null || phone.isEmpty) return;
-                      final count = await provider.restoreUserFromCloud(phone);
+                      final userKey = auth.email ?? auth.phoneNumber;
+                      if (userKey == null || userKey.isEmpty) return;
+                      final count = await provider.restoreUserFromCloud(userKey);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

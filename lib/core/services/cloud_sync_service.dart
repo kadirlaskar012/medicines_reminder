@@ -14,6 +14,7 @@ class CloudSyncService {
 
   SupabaseService get _supabase => SupabaseService.instance;
 
+  String? get _userEmail => _supabase.currentUser?.email;
   String? get _userPhone => _supabase.currentUser?.phoneNumber;
 
   /// Sync all current local data (profiles, medicines, reminders, records) to Supabase
@@ -23,9 +24,12 @@ class CloudSyncService {
     required Map<String, List<ReminderTime>> remindersByMedicine,
     required List<IntakeRecord> records,
   }) async {
+    final email = _userEmail;
     final phone = _userPhone;
     final client = _supabase.client;
-    if (phone == null || phone.isEmpty || client == null) {
+    final userKey = email ?? phone;
+
+    if (userKey == null || userKey.isEmpty || client == null) {
       debugPrint('CloudSyncService: Skipping sync - user not logged in or client null');
       return false;
     }
@@ -33,15 +37,28 @@ class CloudSyncService {
     try {
       // 1. Sync User Profiles
       for (final profile in profiles) {
-        await client.from('app_users').upsert(
-          {
-            'phone_number': phone,
-            'name': profile.name,
-            'is_verified': true,
-            'last_login': DateTime.now().toIso8601String(),
-          },
-          onConflict: 'phone_number',
-        );
+        if (email != null && email.isNotEmpty) {
+          await client.from('app_users').upsert(
+            {
+              'email': email.trim().toLowerCase(),
+              if (phone != null && phone.isNotEmpty) 'phone_number': phone,
+              'name': profile.name,
+              'is_verified': true,
+              'last_login': DateTime.now().toIso8601String(),
+            },
+            onConflict: 'email',
+          );
+        } else if (phone != null && phone.isNotEmpty) {
+          await client.from('app_users').upsert(
+            {
+              'phone_number': phone,
+              'name': profile.name,
+              'is_verified': true,
+              'last_login': DateTime.now().toIso8601String(),
+            },
+            onConflict: 'phone_number',
+          );
+        }
       }
 
       // 2. Sync Medicines with complete reminders JSON to user_medicines table
@@ -52,7 +69,8 @@ class CloudSyncService {
         await client.from('user_medicines').upsert(
           {
             'id': med.id,
-            'phone_number': phone,
+            if (email != null && email.isNotEmpty) 'email': email.trim().toLowerCase(),
+            if (phone != null && phone.isNotEmpty) 'phone_number': phone,
             'profile_id': med.profileId,
             'name': med.name,
             'dosage': med.dosage,
@@ -81,7 +99,8 @@ class CloudSyncService {
             {
               'id': r.id,
               'medicine_id': med.id,
-              'phone_number': phone,
+              if (email != null && email.isNotEmpty) 'email': email.trim().toLowerCase(),
+              if (phone != null && phone.isNotEmpty) 'phone_number': phone,
               'time': '${r.hour.toString().padLeft(2, '0')}:${r.minute.toString().padLeft(2, '0')}',
               'hour': r.hour,
               'minute': r.minute,
@@ -102,7 +121,8 @@ class CloudSyncService {
         await client.from('user_dose_logs').upsert(
           {
             'id': rec.id,
-            'phone_number': phone,
+            if (email != null && email.isNotEmpty) 'email': email.trim().toLowerCase(),
+            if (phone != null && phone.isNotEmpty) 'phone_number': phone,
             'medicine_id': rec.medicineId,
             'scheduled_time': schedTimeStr,
             'status': rec.status.name,
@@ -113,7 +133,7 @@ class CloudSyncService {
         );
       }
 
-      debugPrint('CloudSyncService: Local data synced successfully with Supabase for $phone');
+      debugPrint('CloudSyncService: Local data synced successfully with Supabase for $userKey');
       return true;
     } catch (e) {
       debugPrint('CloudSyncService syncLocalToCloud error: $e');
@@ -123,23 +143,35 @@ class CloudSyncService {
 
   /// RESTORE FROM CLOUD: Pulls all medicines and reminders from Supabase and restores into local SQLite
   Future<int> restoreFromCloud({
-    required String phoneNumber,
+    String? email,
+    String? phoneNumber,
     required DBHelper db,
     required NotificationService notifications,
   }) async {
     final client = _supabase.client;
-    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
-    if (client == null || cleanPhone.isEmpty) {
-      debugPrint('CloudSyncService: Cannot restore - Supabase client null or empty phone');
+    final targetEmail = email ?? (phoneNumber != null && phoneNumber.contains('@') ? phoneNumber : _userEmail);
+    final targetPhone = phoneNumber ?? _userPhone;
+
+    if (client == null) {
+      debugPrint('CloudSyncService: Cannot restore - Supabase client null');
       return 0;
     }
 
     try {
-      debugPrint('CloudSyncService: Restoring cloud data for phone $cleanPhone...');
+      final cleanEmail = targetEmail?.trim().toLowerCase();
+      final cleanPhone = targetPhone?.replaceAll(RegExp(r'\s+'), '');
+      debugPrint('CloudSyncService: Restoring cloud data for email: $cleanEmail, phone: $cleanPhone...');
 
       // 1. Restore Profile Name if available in Supabase
       try {
-        final userRow = await client.from('app_users').select().eq('phone_number', cleanPhone).maybeSingle();
+        Map<String, dynamic>? userRow;
+        if (cleanEmail != null && cleanEmail.isNotEmpty) {
+          userRow = await client.from('app_users').select().eq('email', cleanEmail).maybeSingle();
+        }
+        if (userRow == null && cleanPhone != null && cleanPhone.isNotEmpty) {
+          userRow = await client.from('app_users').select().eq('phone_number', cleanPhone).maybeSingle();
+        }
+
         if (userRow != null && userRow['name'] != null) {
           final cloudName = userRow['name'].toString().trim();
           if (cloudName.isNotEmpty && cloudName != 'User' && cloudName != 'Patient') {
@@ -155,20 +187,31 @@ class CloudSyncService {
       }
 
       // 2. Fetch and restore medicines
-      final List<dynamic> rows = await client
-          .from('user_medicines')
-          .select()
-          .eq('phone_number', cleanPhone);
+      List<dynamic> rows = [];
+      if (cleanEmail != null && cleanEmail.isNotEmpty) {
+        rows = await client
+            .from('user_medicines')
+            .select()
+            .eq('email', cleanEmail);
+      }
+
+      // If empty by email and phone is available, try fallback by phone
+      if (rows.isEmpty && cleanPhone != null && cleanPhone.isNotEmpty) {
+        rows = await client
+            .from('user_medicines')
+            .select()
+            .eq('phone_number', cleanPhone);
+      }
 
       if (rows.isEmpty) {
-        debugPrint('CloudSyncService: No cloud medicines found for $cleanPhone');
+        debugPrint('CloudSyncService: No cloud medicines found for $cleanEmail / $cleanPhone');
         return 0;
       }
 
       int restoredCount = 0;
       for (final row in rows) {
         final map = row as Map<String, dynamic>;
-        
+
         final med = Medicine(
           id: map['id']?.toString() ?? '',
           profileId: map['profile_id']?.toString() ?? 'default_me',
@@ -245,7 +288,7 @@ class CloudSyncService {
         restoredCount++;
       }
 
-      debugPrint('CloudSyncService: Successfully restored $restoredCount medicines from cloud for $cleanPhone');
+      debugPrint('CloudSyncService: Successfully restored $restoredCount medicines from cloud');
       return restoredCount;
     } catch (e) {
       debugPrint('CloudSyncService restoreFromCloud error: $e');
@@ -258,16 +301,19 @@ class CloudSyncService {
     required Medicine medicine,
     required List<ReminderTime> reminders,
   }) async {
+    final email = _userEmail;
     final phone = _userPhone;
     final client = _supabase.client;
-    if (phone == null || phone.isEmpty || client == null) return;
+    if ((email == null || email.isEmpty) && (phone == null || phone.isEmpty)) return;
+    if (client == null) return;
 
     try {
       final remindersJson = jsonEncode(reminders.map((r) => r.toMap()).toList());
 
       await client.from('user_medicines').upsert({
         'id': medicine.id,
-        'phone_number': phone,
+        if (email != null && email.isNotEmpty) 'email': email.trim().toLowerCase(),
+        if (phone != null && phone.isNotEmpty) 'phone_number': phone,
         'profile_id': medicine.profileId,
         'name': medicine.name,
         'dosage': medicine.dosage,
@@ -292,7 +338,8 @@ class CloudSyncService {
         await client.from('user_reminders').upsert({
           'id': r.id,
           'medicine_id': medicine.id,
-          'phone_number': phone,
+          if (email != null && email.isNotEmpty) 'email': email.trim().toLowerCase(),
+          if (phone != null && phone.isNotEmpty) 'phone_number': phone,
           'time': '${r.hour.toString().padLeft(2, '0')}:${r.minute.toString().padLeft(2, '0')}',
           'hour': r.hour,
           'minute': r.minute,
@@ -322,15 +369,23 @@ class CloudSyncService {
 
   /// Push a single profile to Supabase
   Future<void> saveProfile(UserProfile profile) async {
+    final email = _userEmail;
     final phone = _userPhone;
     final client = _supabase.client;
-    if (phone == null || phone.isEmpty || client == null) return;
+    if (client == null) return;
 
     try {
-      await client.from('app_users').update({
-        'name': profile.name,
-        'last_login': DateTime.now().toIso8601String(),
-      }).eq('phone_number', phone);
+      if (email != null && email.isNotEmpty) {
+        await client.from('app_users').update({
+          'name': profile.name,
+          'last_login': DateTime.now().toIso8601String(),
+        }).eq('email', email.trim().toLowerCase());
+      } else if (phone != null && phone.isNotEmpty) {
+        await client.from('app_users').update({
+          'name': profile.name,
+          'last_login': DateTime.now().toIso8601String(),
+        }).eq('phone_number', phone);
+      }
     } catch (e) {
       debugPrint('CloudSyncService saveProfile error: $e');
     }
@@ -338,15 +393,17 @@ class CloudSyncService {
 
   /// Record dose intake event in Supabase
   Future<void> recordDoseIntake(IntakeRecord record) async {
+    final email = _userEmail;
     final phone = _userPhone;
     final client = _supabase.client;
-    if (phone == null || phone.isEmpty || client == null) return;
+    if (client == null) return;
 
     try {
       final schedTimeStr = '${record.scheduledDate}T${record.scheduledHour.toString().padLeft(2, '0')}:${record.scheduledMinute.toString().padLeft(2, '0')}:00Z';
       await client.from('user_dose_logs').upsert({
         'id': record.id,
-        'phone_number': phone,
+        if (email != null && email.isNotEmpty) 'email': email.trim().toLowerCase(),
+        if (phone != null && phone.isNotEmpty) 'phone_number': phone,
         'medicine_id': record.medicineId,
         'scheduled_time': schedTimeStr,
         'status': record.status.name,

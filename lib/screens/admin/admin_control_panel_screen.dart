@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/services/supabase_service.dart';
@@ -48,9 +47,10 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
         _filteredUsers = List.from(_users);
       } else {
         _filteredUsers = _users.where((u) {
+          final email = u['email']?.toString().toLowerCase() ?? '';
           final phone = u['phone_number']?.toString().toLowerCase() ?? '';
           final name = u['name']?.toString().toLowerCase() ?? '';
-          return phone.contains(query) || name.contains(query);
+          return email.contains(query) || phone.contains(query) || name.contains(query);
         }).toList();
       }
     });
@@ -100,7 +100,7 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
 
   Future<void> _openWhatsApp(String phoneNumber, String userName) async {
     final clean = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
-    final msg = Uri.encodeComponent('হ্যালো $userName, MediRemind সাপোর্ট থেকে যোগাযোগ করা হচ্ছে। আপনার পিন রিসেট করার বিষয়ে সাহায্য করতে আমরা প্রস্তুত।');
+    final msg = Uri.encodeComponent('হ্যালো $userName, MediRemind সাপোর্ট থেকে যোগাযোগ করা হচ্ছে। আপনার পাসওয়ার্ড রিসেট করার বিষয়ে সাহায্য করতে আমরা প্রস্তুত।');
     final uri = Uri.parse('https://wa.me/$clean?text=$msg');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -109,21 +109,21 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
     }
   }
 
-  void _showResetPinDialog({required String phoneNumber, required String userName, String? requestId}) {
-    final pinController = TextEditingController(text: '1234');
+  void _showResetPasswordDialog({required String userIdentifier, required String userName, String? requestId}) {
+    final pwdController = TextEditingController(text: '123456');
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
+          title: const Row(
             children: [
-              const Icon(Icons.vpn_key_rounded, color: AppColors.primary),
-              const SizedBox(width: 8),
+              Icon(Icons.vpn_key_rounded, color: AppColors.primary),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'পিন পরিবর্তন / রিসেট করুন',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  'পাসওয়ার্ড পরিবর্তন / রিসেট করুন',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -133,17 +133,14 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('ইউজার: $userName', style: const TextStyle(fontWeight: FontWeight.w600)),
-              Text('ফোন: $phoneNumber', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+              Text('অ্যাকাউন্ট: $userIdentifier', style: const TextStyle(color: Colors.grey, fontSize: 13)),
               const SizedBox(height: 16),
-              const Text('নতুন ৪-সংখ্যার সিকিউরিটি পিন দিন:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              const Text('নতুন পাসওয়ার্ড দিন (কমপক্ষে ৪-৬ অক্ষর):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
               TextField(
-                controller: pinController,
-                keyboardType: TextInputType.number,
-                maxLength: 4,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                controller: pwdController,
                 decoration: InputDecoration(
-                  hintText: '৪-সংখ্যার পিন',
+                  hintText: 'নতুন পাসওয়ার্ড',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   prefixIcon: const Icon(Icons.lock_outline_rounded),
                 ),
@@ -162,16 +159,22 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () async {
-                final newPin = pinController.text.trim();
-                if (newPin.length != 4) {
+                final newPwd = pwdController.text.trim();
+                if (newPwd.length < 4) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('৪ সংখ্যার পিন লিখুন'), backgroundColor: AppColors.error),
+                    const SnackBar(content: Text('কমপক্ষে ৪ অক্ষরের পাসওয়ার্ড লিখুন'), backgroundColor: AppColors.error),
                   );
                   return;
                 }
                 Navigator.pop(ctx);
 
-                final ok = await _supabase.adminUpdateUserPin(phoneNumber: phoneNumber, newPin: newPin);
+                bool ok;
+                if (userIdentifier.contains('@')) {
+                  ok = await _supabase.adminUpdateUserPassword(email: userIdentifier, newPassword: newPwd);
+                } else {
+                  ok = await _supabase.adminUpdateUserPin(phoneNumber: userIdentifier, newPin: newPwd);
+                }
+
                 if (requestId != null) {
                   await _supabase.adminResolveRequest(requestId);
                 }
@@ -179,7 +182,7 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
                 if (ok && mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('✅ $phoneNumber-এর পিন সফলভাবে পরিবর্তন করা হয়েছে: $newPin'),
+                      content: Text('✅ $userIdentifier-এর পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে: $newPwd'),
                       backgroundColor: AppColors.success,
                     ),
                   );
@@ -248,7 +251,7 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
     );
   }
 
-  // ==================== TAB 1: SUPPORT & PIN RESET REQUESTS ====================
+  // ==================== TAB 1: SUPPORT & PASSWORD RESET REQUESTS ====================
   Widget _buildRequestsTab(bool isDark) {
     if (_requests.isEmpty) {
       return Center(
@@ -259,7 +262,7 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
             const SizedBox(height: 12),
             const Text('কোনো সাপোর্ট রিকোয়েস্ট পেন্ডিং নেই!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 6),
-            const Text('ইউজাররা পিন ভুলে সাহায্য চাইলে এখানে প্রদর্শিত হবে।', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            const Text('ইউজাররা পাসওয়ার্ড ভুলে সাহায্য চাইলে এখানে প্রদর্শিত হবে।', style: TextStyle(color: Colors.grey, fontSize: 13)),
           ],
         ),
       );
@@ -270,9 +273,11 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
       itemCount: _requests.length,
       itemBuilder: (context, index) {
         final req = _requests[index];
+        final email = req['email']?.toString() ?? '';
         final phone = req['phone_number']?.toString() ?? '';
+        final identifier = email.isNotEmpty ? email : phone;
         final name = req['user_name']?.toString() ?? 'User';
-        final message = req['message']?.toString() ?? 'Forgot PIN';
+        final message = req['message']?.toString() ?? 'Forgot Password';
         final status = req['status']?.toString() ?? 'pending';
         final isPending = status == 'pending';
         final createdAtStr = req['created_at'] != null
@@ -311,7 +316,7 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text(phone, style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+                            Text(identifier, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
                           ],
                         ),
                       ],
@@ -346,43 +351,45 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _makeCall(phone),
-                        icon: const Icon(Icons.call_rounded, size: 16),
-                        label: const Text('কল দিন'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    if (phone.isNotEmpty) ...[
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _makeCall(phone),
+                          icon: const Icon(Icons.call_rounded, size: 16),
+                          label: const Text('কল দিন'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _openWhatsApp(phone, name),
-                        icon: const Icon(Icons.chat_rounded, size: 16),
-                        label: const Text('WhatsApp'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF25D366),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _openWhatsApp(phone, name),
+                          icon: const Icon(Icons.chat_rounded, size: 16),
+                          label: const Text('WhatsApp'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF25D366),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
+                      const SizedBox(width: 8),
+                    ],
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _showResetPinDialog(
-                          phoneNumber: phone,
+                        onPressed: () => _showResetPasswordDialog(
+                          userIdentifier: identifier,
                           userName: name,
                           requestId: req['id']?.toString(),
                         ),
                         icon: const Icon(Icons.key_rounded, size: 16),
-                        label: const Text('পিন রিসেট'),
+                        label: const Text('রিসেট'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -410,7 +417,7 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'ফোন নম্বর বা নাম দিয়ে খুঁজুন...',
+              hintText: 'ইমেল, নাম বা নম্বর দিয়ে খুঁজুন...',
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
@@ -433,9 +440,11 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
                   itemCount: _filteredUsers.length,
                   itemBuilder: (context, index) {
                     final u = _filteredUsers[index];
+                    final email = u['email']?.toString() ?? '';
                     final phone = u['phone_number']?.toString() ?? '';
+                    final identifier = email.isNotEmpty ? email : phone;
                     final name = u['name']?.toString() ?? 'Patient';
-                    final pin = u['security_pin']?.toString() ?? 'সেট করা নেই';
+                    final pwd = u['password']?.toString() ?? u['security_pin']?.toString() ?? 'সেট নেই';
                     final question = u['security_question']?.toString();
                     final lastLogin = u['last_login'] != null
                         ? DateFormat('dd/MM/yyyy hh:mm a').format(DateTime.tryParse(u['last_login']) ?? DateTime.now())
@@ -468,8 +477,11 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('📱 $phone', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)),
-                            Text('🔑 PIN: $pin', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                            if (email.isNotEmpty)
+                              Text('✉️ $email', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontWeight: FontWeight.w600)),
+                            if (phone.isNotEmpty)
+                              Text('📱 $phone', style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: 12)),
+                            Text('🔑 Password: $pwd', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 12)),
                             if (question != null)
                               Text('❓ প্রশ্ন: $question', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                             Text('🕒 শেষ সক্রিয়: $lastLogin', style: const TextStyle(fontSize: 11, color: Colors.grey)),
@@ -477,8 +489,8 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
                         ),
                         trailing: IconButton(
                           icon: const Icon(Icons.edit_note_rounded, color: AppColors.primary),
-                          tooltip: 'পিন পরিবর্তন করুন',
-                          onPressed: () => _showResetPinDialog(phoneNumber: phone, userName: name),
+                          tooltip: 'পাসওয়ার্ড পরিবর্তন করুন',
+                          onPressed: () => _showResetPasswordDialog(userIdentifier: identifier, userName: name),
                         ),
                       ),
                     );
@@ -503,7 +515,7 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
         final name = m['name']?.toString() ?? '';
         final dosage = m['dosage']?.toString() ?? '';
         final type = m['type']?.toString() ?? 'tablet';
-        final phone = m['phone_number']?.toString() ?? '';
+        final userKey = m['email']?.toString() ?? m['phone_number']?.toString() ?? '';
         final stock = m['current_stock']?.toString() ?? '0';
 
         return Card(
@@ -516,7 +528,7 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
               child: const Icon(Icons.medication_rounded, color: AppColors.primary),
             ),
             title: Text('$name ($dosage)', style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('ইউজার: $phone • ধরন: $type • স্টক: $stock টি'),
+            subtitle: Text('ইউজার: $userKey • ধরন: $type • স্টক: $stock টি'),
           ),
         );
       },

@@ -5,14 +5,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseUserSession {
   final String id;
-  final String phoneNumber;
+  final String email;
+  final String? phoneNumber;
   final String name;
   final bool isVerified;
   final bool isAdmin;
 
   SupabaseUserSession({
     required this.id,
-    required this.phoneNumber,
+    required this.email,
+    this.phoneNumber,
     required this.name,
     this.isVerified = true,
     this.isAdmin = false,
@@ -20,6 +22,7 @@ class SupabaseUserSession {
 
   Map<String, dynamic> toMap() => {
     'id': id,
+    'email': email,
     'phoneNumber': phoneNumber,
     'name': name,
     'isVerified': isVerified,
@@ -29,18 +32,23 @@ class SupabaseUserSession {
 
 class UserAuthStatus {
   final bool exists;
-  final bool hasPin;
+  final bool hasPassword;
+  final String? email;
   final String? name;
   final String? securityQuestion;
   final bool isAdmin;
 
   UserAuthStatus({
     required this.exists,
-    required this.hasPin,
+    this.hasPassword = false,
+    this.email,
     this.name,
     this.securityQuestion,
     this.isAdmin = false,
   });
+
+  // Backward compatibility getter
+  bool get hasPin => hasPassword;
 }
 
 class SupabaseService {
@@ -55,6 +63,7 @@ class SupabaseService {
     }
   }
 
+  static const String _prefUserEmail = 'supabase_user_email';
   static const String _prefUserPhone = 'supabase_user_phone';
   static const String _prefUserName = 'supabase_user_name';
   static const String _prefUserId = 'supabase_user_id';
@@ -74,13 +83,16 @@ class SupabaseService {
     final prefs = await SharedPreferences.getInstance();
     final isLoggedIn = prefs.getBool(_prefIsLoggedIn) ?? false;
     if (isLoggedIn) {
-      final phone = prefs.getString(_prefUserPhone) ?? '';
+      final email = prefs.getString(_prefUserEmail) ?? '';
+      final phone = prefs.getString(_prefUserPhone);
       final name = prefs.getString(_prefUserName) ?? 'User';
       final id = prefs.getString(_prefUserId) ?? 'user_${DateTime.now().millisecondsSinceEpoch}';
       final isAdm = prefs.getBool(_prefIsAdmin) ?? false;
-      if (phone.isNotEmpty) {
+
+      if (email.isNotEmpty || (phone != null && phone.isNotEmpty)) {
         _currentUser = SupabaseUserSession(
           id: id,
+          email: email.isNotEmpty ? email : (phone ?? ''),
           phoneNumber: phone,
           name: name,
           isAdmin: isAdm,
@@ -89,126 +101,139 @@ class SupabaseService {
     }
   }
 
-  // ==================== PIN AUTHENTICATION ====================
+  // ==================== EMAIL & PASSWORD AUTHENTICATION ====================
 
-  /// Checks if a phone number already exists and whether a security PIN is set
-  Future<UserAuthStatus> checkUserStatus(String phoneNumber) async {
-    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+  /// Checks if an email address already exists and whether a password is set
+  Future<UserAuthStatus> checkUserEmailStatus(String email) async {
+    final cleanEmail = email.trim().toLowerCase();
     final c = client;
-    if (c == null) {
-      return UserAuthStatus(exists: false, hasPin: false);
+    if (c == null || cleanEmail.isEmpty) {
+      return UserAuthStatus(exists: false, hasPassword: false);
     }
 
     try {
       final res = await c
           .from('app_users')
-          .select('phone_number, name, security_pin, security_question, is_admin')
-          .eq('phone_number', cleanPhone)
+          .select('email, name, password, security_pin, security_question, is_admin')
+          .eq('email', cleanEmail)
           .maybeSingle();
 
       if (res == null) {
-        return UserAuthStatus(exists: false, hasPin: false);
+        return UserAuthStatus(exists: false, hasPassword: false);
       }
 
-      final pin = res['security_pin']?.toString();
-      final hasPin = pin != null && pin.trim().isNotEmpty;
+      final pwd = res['password']?.toString() ?? res['security_pin']?.toString();
+      final hasPwd = pwd != null && pwd.trim().isNotEmpty;
       return UserAuthStatus(
         exists: true,
-        hasPin: hasPin,
+        hasPassword: hasPwd,
+        email: res['email']?.toString() ?? cleanEmail,
         name: res['name']?.toString(),
         securityQuestion: res['security_question']?.toString(),
         isAdmin: res['is_admin'] == true,
       );
     } catch (e) {
-      debugPrint('SupabaseService checkUserStatus error: $e');
-      return UserAuthStatus(exists: false, hasPin: false);
+      debugPrint('SupabaseService checkUserEmailStatus error: $e');
+      return UserAuthStatus(exists: false, hasPassword: false);
     }
   }
 
-  /// Register a new user with 4-digit Security PIN and Security Question/Answer
-  Future<bool> registerUserWithPin({
-    required String phoneNumber,
+  /// Register a new user with Email, Name, Password, and Security Question/Answer
+  Future<bool> registerUserWithEmail({
+    required String email,
     required String name,
-    required String pin,
+    required String password,
     required String securityQuestion,
     required String securityAnswer,
   }) async {
-    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPwd = password.trim();
     final c = client;
-    if (c == null) return false;
+    if (c == null || cleanEmail.isEmpty || cleanPwd.isEmpty) return false;
 
     try {
-      final userId = 'user_${cleanPhone.replaceAll('+', '')}';
+      final sanitizedEmailId = cleanEmail.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+      final userId = 'usr_$sanitizedEmailId';
 
       await c.from('app_users').upsert({
-        'phone_number': cleanPhone,
+        'email': cleanEmail,
         'name': name.trim().isNotEmpty ? name.trim() : 'Patient',
-        'security_pin': pin.trim(),
+        'password': cleanPwd,
+        'security_pin': cleanPwd, // for legacy fallback
         'security_question': securityQuestion.trim(),
         'security_answer': securityAnswer.trim().toLowerCase(),
         'is_verified': true,
         'last_login': DateTime.now().toIso8601String(),
-      }, onConflict: 'phone_number');
+      }, onConflict: 'email');
 
       // Save local session
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_prefIsLoggedIn, true);
-      await prefs.setString(_prefUserPhone, cleanPhone);
-      await prefs.setString(_prefUserName, name);
+      await prefs.setString(_prefUserEmail, cleanEmail);
+      await prefs.setString(_prefUserName, name.trim().isNotEmpty ? name.trim() : 'Patient');
       await prefs.setString(_prefUserId, userId);
       await prefs.setBool(_prefIsAdmin, false);
 
       _currentUser = SupabaseUserSession(
         id: userId,
-        phoneNumber: cleanPhone,
-        name: name,
+        email: cleanEmail,
+        name: name.trim().isNotEmpty ? name.trim() : 'Patient',
         isAdmin: false,
       );
       return true;
     } catch (e) {
-      debugPrint('SupabaseService registerUserWithPin error: $e');
+      debugPrint('SupabaseService registerUserWithEmail error: $e');
       return false;
     }
   }
 
-  /// Verify PIN for an existing user and complete login
-  Future<bool> verifyPin({
-    required String phoneNumber,
-    required String enteredPin,
+  /// Verify email and password for an existing user and complete login
+  Future<bool> loginWithEmail({
+    required String email,
+    required String password,
   }) async {
-    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPwd = password.trim();
     final c = client;
-    if (c == null) return false;
+    if (c == null || cleanEmail.isEmpty || cleanPwd.isEmpty) return false;
 
     try {
       final res = await c
           .from('app_users')
-          .select('id, name, security_pin, is_admin')
-          .eq('phone_number', cleanPhone)
+          .select('id, email, name, password, security_pin, phone_number, is_admin')
+          .eq('email', cleanEmail)
           .maybeSingle();
 
       if (res == null) return false;
 
+      final savedPwd = res['password']?.toString().trim();
       final savedPin = res['security_pin']?.toString().trim();
-      if (savedPin != enteredPin.trim()) {
+
+      // Check password or legacy pin
+      if (savedPwd != cleanPwd && savedPin != cleanPwd) {
         return false;
       }
 
-      final userId = 'user_${cleanPhone.replaceAll('+', '')}';
+      final userId = res['id']?.toString() ?? 'usr_${cleanEmail.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
       final name = res['name']?.toString() ?? 'Patient';
+      final phone = res['phone_number']?.toString();
       final isAdm = res['is_admin'] == true;
 
-      // Save local session
+      // Save local persistent session
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_prefIsLoggedIn, true);
-      await prefs.setString(_prefUserPhone, cleanPhone);
+      await prefs.setString(_prefUserEmail, cleanEmail);
+      if (phone != null && phone.isNotEmpty) {
+        await prefs.setString(_prefUserPhone, phone);
+      }
       await prefs.setString(_prefUserName, name);
       await prefs.setString(_prefUserId, userId);
       await prefs.setBool(_prefIsAdmin, isAdm);
 
       _currentUser = SupabaseUserSession(
         id: userId,
-        phoneNumber: cleanPhone,
+        email: cleanEmail,
+        phoneNumber: phone,
         name: name,
         isAdmin: isAdm,
       );
@@ -216,82 +241,84 @@ class SupabaseService {
       // Update last login timestamp in background
       await c.from('app_users').update({
         'last_login': DateTime.now().toIso8601String(),
-      }).eq('phone_number', cleanPhone);
+      }).eq('email', cleanEmail);
 
       return true;
     } catch (e) {
-      debugPrint('SupabaseService verifyPin error: $e');
+      debugPrint('SupabaseService loginWithEmail error: $e');
       return false;
     }
   }
 
-  /// Verify Security Question Answer for PIN self-service recovery
-  Future<bool> verifySecurityAnswer({
-    required String phoneNumber,
+  /// Verify Security Question Answer for password recovery
+  Future<bool> verifySecurityAnswerByEmail({
+    required String email,
     required String enteredAnswer,
   }) async {
-    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    final cleanEmail = email.trim().toLowerCase();
     final c = client;
-    if (c == null) return false;
+    if (c == null || cleanEmail.isEmpty) return false;
 
     try {
       final res = await c
           .from('app_users')
           .select('security_answer')
-          .eq('phone_number', cleanPhone)
+          .eq('email', cleanEmail)
           .maybeSingle();
 
       if (res == null) return false;
       final savedAnswer = res['security_answer']?.toString().trim().toLowerCase();
       return savedAnswer == enteredAnswer.trim().toLowerCase();
     } catch (e) {
-      debugPrint('SupabaseService verifySecurityAnswer error: $e');
+      debugPrint('SupabaseService verifySecurityAnswerByEmail error: $e');
       return false;
     }
   }
 
-  /// Reset PIN after answering security question or through admin
-  Future<bool> resetPin({
-    required String phoneNumber,
-    required String newPin,
+  /// Reset Password after answering security question or through admin
+  Future<bool> resetPasswordByEmail({
+    required String email,
+    required String newPassword,
   }) async {
-    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPwd = newPassword.trim();
     final c = client;
-    if (c == null) return false;
+    if (c == null || cleanEmail.isEmpty || cleanPwd.isEmpty) return false;
 
     try {
       await c.from('app_users').update({
-        'security_pin': newPin.trim(),
+        'password': cleanPwd,
+        'security_pin': cleanPwd,
         'last_login': DateTime.now().toIso8601String(),
-      }).eq('phone_number', cleanPhone);
+      }).eq('email', cleanEmail);
       return true;
     } catch (e) {
-      debugPrint('SupabaseService resetPin error: $e');
+      debugPrint('SupabaseService resetPasswordByEmail error: $e');
       return false;
     }
   }
 
-  /// Submit a PIN reset support request to Admin table
-  Future<bool> submitPinResetRequest({
-    required String phoneNumber,
+  /// Submit a password reset support request to Admin table
+  Future<bool> submitPasswordResetRequest({
+    required String email,
     String? userName,
     String? message,
   }) async {
-    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    final cleanEmail = email.trim().toLowerCase();
     final c = client;
-    if (c == null) return false;
+    if (c == null || cleanEmail.isEmpty) return false;
 
     try {
       await c.from('pin_reset_requests').insert({
-        'phone_number': cleanPhone,
+        'email': cleanEmail,
         'user_name': userName ?? 'User',
-        'message': message ?? 'I forgot my PIN. Please help me reset.',
+        'message': message ?? 'I forgot my password. Please help me reset.',
         'status': 'pending',
         'created_at': DateTime.now().toIso8601String(),
       });
       return true;
     } catch (e) {
-      debugPrint('SupabaseService submitPinResetRequest error: $e');
+      debugPrint('SupabaseService submitPasswordResetRequest error: $e');
       return false;
     }
   }
@@ -349,11 +376,22 @@ class SupabaseService {
     }
   }
 
-  /// Update PIN directly for any user from the Admin panel
+  /// Update password directly for any user from the Admin panel
+  Future<bool> adminUpdateUserPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    return await resetPasswordByEmail(email: email, newPassword: newPassword);
+  }
+
+  /// Update user PIN directly (legacy compat)
   Future<bool> adminUpdateUserPin({
     required String phoneNumber,
     required String newPin,
   }) async {
+    if (phoneNumber.contains('@')) {
+      return await resetPasswordByEmail(email: phoneNumber, newPassword: newPin);
+    }
     return await resetPin(phoneNumber: phoneNumber, newPin: newPin);
   }
 
@@ -395,7 +433,227 @@ class SupabaseService {
     }
   }
 
-  // Legacy compatibility methods
+  // ==================== BACKWARD COMPATIBILITY / LEGACY METHODS ====================
+
+  Future<UserAuthStatus> checkUserStatus(String phoneOrEmail) async {
+    if (phoneOrEmail.contains('@')) {
+      return checkUserEmailStatus(phoneOrEmail);
+    }
+    final cleanPhone = phoneOrEmail.replaceAll(RegExp(r'\s+'), '');
+    final c = client;
+    if (c == null) return UserAuthStatus(exists: false, hasPassword: false);
+
+    try {
+      final res = await c
+          .from('app_users')
+          .select('phone_number, email, name, security_pin, password, security_question, is_admin')
+          .eq('phone_number', cleanPhone)
+          .maybeSingle();
+
+      if (res == null) return UserAuthStatus(exists: false, hasPassword: false);
+
+      final pwd = res['password']?.toString() ?? res['security_pin']?.toString();
+      final hasPwd = pwd != null && pwd.trim().isNotEmpty;
+      return UserAuthStatus(
+        exists: true,
+        hasPassword: hasPwd,
+        email: res['email']?.toString(),
+        name: res['name']?.toString(),
+        securityQuestion: res['security_question']?.toString(),
+        isAdmin: res['is_admin'] == true,
+      );
+    } catch (e) {
+      debugPrint('SupabaseService checkUserStatus error: $e');
+      return UserAuthStatus(exists: false, hasPassword: false);
+    }
+  }
+
+  Future<bool> registerUserWithPin({
+    required String phoneNumber,
+    required String name,
+    required String pin,
+    required String securityQuestion,
+    required String securityAnswer,
+  }) async {
+    if (phoneNumber.contains('@')) {
+      return registerUserWithEmail(
+        email: phoneNumber,
+        name: name,
+        password: pin,
+        securityQuestion: securityQuestion,
+        securityAnswer: securityAnswer,
+      );
+    }
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    final c = client;
+    if (c == null) return false;
+
+    try {
+      final userId = 'user_${cleanPhone.replaceAll('+', '')}';
+
+      await c.from('app_users').upsert({
+        'phone_number': cleanPhone,
+        'name': name.trim().isNotEmpty ? name.trim() : 'Patient',
+        'password': pin.trim(),
+        'security_pin': pin.trim(),
+        'security_question': securityQuestion.trim(),
+        'security_answer': securityAnswer.trim().toLowerCase(),
+        'is_verified': true,
+        'last_login': DateTime.now().toIso8601String(),
+      }, onConflict: 'phone_number');
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_prefIsLoggedIn, true);
+      await prefs.setString(_prefUserPhone, cleanPhone);
+      await prefs.setString(_prefUserName, name);
+      await prefs.setString(_prefUserId, userId);
+      await prefs.setBool(_prefIsAdmin, false);
+
+      _currentUser = SupabaseUserSession(
+        id: userId,
+        email: cleanPhone,
+        phoneNumber: cleanPhone,
+        name: name,
+        isAdmin: false,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('SupabaseService registerUserWithPin error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> verifyPin({
+    required String phoneNumber,
+    required String enteredPin,
+  }) async {
+    if (phoneNumber.contains('@')) {
+      return loginWithEmail(email: phoneNumber, password: enteredPin);
+    }
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    final c = client;
+    if (c == null) return false;
+
+    try {
+      final res = await c
+          .from('app_users')
+          .select('id, name, security_pin, password, is_admin')
+          .eq('phone_number', cleanPhone)
+          .maybeSingle();
+
+      if (res == null) return false;
+
+      final savedPin = res['password']?.toString().trim() ?? res['security_pin']?.toString().trim();
+      if (savedPin != enteredPin.trim()) return false;
+
+      final userId = 'user_${cleanPhone.replaceAll('+', '')}';
+      final name = res['name']?.toString() ?? 'Patient';
+      final isAdm = res['is_admin'] == true;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_prefIsLoggedIn, true);
+      await prefs.setString(_prefUserPhone, cleanPhone);
+      await prefs.setString(_prefUserName, name);
+      await prefs.setString(_prefUserId, userId);
+      await prefs.setBool(_prefIsAdmin, isAdm);
+
+      _currentUser = SupabaseUserSession(
+        id: userId,
+        email: cleanPhone,
+        phoneNumber: cleanPhone,
+        name: name,
+        isAdmin: isAdm,
+      );
+
+      await c.from('app_users').update({
+        'last_login': DateTime.now().toIso8601String(),
+      }).eq('phone_number', cleanPhone);
+
+      return true;
+    } catch (e) {
+      debugPrint('SupabaseService verifyPin error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> verifySecurityAnswer({
+    required String phoneNumber,
+    required String enteredAnswer,
+  }) async {
+    if (phoneNumber.contains('@')) {
+      return verifySecurityAnswerByEmail(email: phoneNumber, enteredAnswer: enteredAnswer);
+    }
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    final c = client;
+    if (c == null) return false;
+
+    try {
+      final res = await c
+          .from('app_users')
+          .select('security_answer')
+          .eq('phone_number', cleanPhone)
+          .maybeSingle();
+
+      if (res == null) return false;
+      final savedAnswer = res['security_answer']?.toString().trim().toLowerCase();
+      return savedAnswer == enteredAnswer.trim().toLowerCase();
+    } catch (e) {
+      debugPrint('SupabaseService verifySecurityAnswer error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> resetPin({
+    required String phoneNumber,
+    required String newPin,
+  }) async {
+    if (phoneNumber.contains('@')) {
+      return resetPasswordByEmail(email: phoneNumber, newPassword: newPin);
+    }
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    final c = client;
+    if (c == null) return false;
+
+    try {
+      await c.from('app_users').update({
+        'password': newPin.trim(),
+        'security_pin': newPin.trim(),
+        'last_login': DateTime.now().toIso8601String(),
+      }).eq('phone_number', cleanPhone);
+      return true;
+    } catch (e) {
+      debugPrint('SupabaseService resetPin error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> submitPinResetRequest({
+    required String phoneNumber,
+    String? userName,
+    String? message,
+  }) async {
+    if (phoneNumber.contains('@')) {
+      return submitPasswordResetRequest(email: phoneNumber, userName: userName, message: message);
+    }
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    final c = client;
+    if (c == null) return false;
+
+    try {
+      await c.from('pin_reset_requests').insert({
+        'phone_number': cleanPhone,
+        'user_name': userName ?? 'User',
+        'message': message ?? 'I forgot my PIN. Please help me reset.',
+        'status': 'pending',
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      return true;
+    } catch (e) {
+      debugPrint('SupabaseService submitPinResetRequest error: $e');
+      return false;
+    }
+  }
+
   String generateVerificationCode() {
     final rnd = Random();
     return (1000 + rnd.nextInt(9000)).toString();
@@ -418,6 +676,7 @@ class SupabaseService {
   Future<void> signOut() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefIsLoggedIn);
+    await prefs.remove(_prefUserEmail);
     await prefs.remove(_prefUserPhone);
     await prefs.remove(_prefUserName);
     await prefs.remove(_prefUserId);
