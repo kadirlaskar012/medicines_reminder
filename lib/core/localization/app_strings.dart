@@ -444,10 +444,21 @@ class AppStrings {
   String get allDosesCompletedSub => code == 'bn' ? 'আপনি সফলভাবে আজকের ১০০% নিয়ম মেনে চলেছেন। সুস্থ থাকুন!' : (code == 'hi' ? 'आपने आज १००% समय पर दवा ली है। स्वस्थ रहें!' : 'You reached 100% adherence for today. Keep staying healthy!');
 
   // Treatment Course Duration
-  String get treatmentCourse => code == 'bn' ? 'কোর্সের মেয়াদ (Treatment Course)' : (code == 'hi' ? 'इलाज की अवधि (Course)' : 'Treatment Course & Duration');
-  String get courseOngoing => code == 'bn' ? 'চলমান / দীর্ঘমেয়াদী' : (code == 'hi' ? 'दीर्घकालिक / नियमित' : 'Ongoing / Chronic');
-  String courseDaysLabel(int days) => code == 'bn' ? '$days দিন' : (code == 'hi' ? '$days दिन' : '$days Days');
-  String get customEndDate => code == 'bn' ? 'কাস্টম শেষ তারিখ' : (code == 'hi' ? 'कस्टम अंतिम तिथि' : 'Custom End Date');
+  String get treatmentCourse => code == 'bn' ? 'চিকিৎসার মেয়াদ / কোর্স (Treatment Course)' : (code == 'hi' ? 'इलाज की अवधि (Course)' : 'Treatment Course');
+  String get courseOngoing => code == 'bn' ? 'চলমান / নিয়মিত' : (code == 'hi' ? 'दीर्घकालिक / नियमित' : 'Ongoing / Chronic');
+  String courseDaysLabel(int days) {
+    if (days == 14) return code == 'bn' ? '২ সপ্তাহ' : (code == 'hi' ? '२ सप्ताह' : '2 Weeks');
+    if (days == 30) return code == 'bn' ? '১ মাস' : (code == 'hi' ? '१ महीना' : '1 Month');
+    return code == 'bn' ? '$days দিন' : (code == 'hi' ? '$days दिन' : '$days Days');
+  }
+  String get twoWeeks => code == 'bn' ? '২ সপ্তাহ' : (code == 'hi' ? '२ सप्ताह' : '2 Weeks');
+  String get threeDays => code == 'bn' ? '৩ দিন' : (code == 'hi' ? '३ दिन' : '3 Days');
+  String get sevenDays => code == 'bn' ? '৭ দিন' : (code == 'hi' ? '७ दिन' : '7 Days');
+  String get tenDays => code == 'bn' ? '১০ দিন' : (code == 'hi' ? '१० दिन' : '10 Days');
+  String get twentyOneDays => code == 'bn' ? '২১ দিন' : (code == 'hi' ? '२१ दिन' : '21 Days');
+  String get oneMonth => code == 'bn' ? '১ মাস' : (code == 'hi' ? '१ महीना' : '1 Month');
+  String get customCourse => code == 'bn' ? 'কাস্টম মেয়াদ' : (code == 'hi' ? 'कस्टम अवधि' : 'Custom Course');
+  String get customEndDate => code == 'bn' ? 'কাস্টম শেষ তারিখ' : (code == 'hi' ? 'কাস্টম শেষ তারিখ' : 'Custom End Date');
   String get courseCompleted => code == 'bn' ? 'কোর্স সম্পন্ন' : (code == 'hi' ? 'कोर्स पूरा हुआ' : 'Course Completed');
   String get courseEndsOn => code == 'bn' ? 'কোর্স শেষ হবে' : (code == 'hi' ? 'कोर्स समाप्त होगा' : 'Ends on');
 
@@ -460,13 +471,19 @@ class AppStrings {
   String get doseAsNeeded => code == 'bn' ? 'প্রয়োজনে (SOS / As Needed)' : (code == 'hi' ? 'ज़रूरत पड़ने पर (SOS)' : 'As Needed (SOS)');
 
   // Routine & Meal Presets
-  String get routineMealSlot => code == 'bn' ? 'খাবার ও রুটিন অনুযায়ী সময় (Meal Presets)' : (code == 'hi' ? 'भोजन और दिनचर्या के अनुसार समय' : 'Routine & Meal Time Presets');
+  String get routineMealSlot => code == 'bn' ? 'ওষুধ খাওয়ার সময় ও নিয়ম (Taking Time)' : (code == 'hi' ? 'दवा लेने का समय और नियम' : 'Taking Time & Routine');
+  String get morningSlot => code == 'bn' ? 'সকাল' : (code == 'hi' ? 'सुबह' : 'Morning');
+  String get lunchSlot => code == 'bn' ? 'দুপুর' : (code == 'hi' ? 'दोपहर' : 'Lunch');
+  String get afternoonSlot => code == 'bn' ? 'বিকাল' : (code == 'hi' ? 'दोपहर बाद' : 'Afternoon');
+  String get nightSlot => code == 'bn' ? 'রাত্রি' : (code == 'hi' ? 'रात' : 'Night');
   String get breakfast => code == 'bn' ? 'সকালের নাস্তা (Breakfast)' : (code == 'hi' ? 'सुबह का नाश्ता' : 'Breakfast');
   String get lunch => code == 'bn' ? 'দুপুরের খাবার (Lunch)' : (code == 'hi' ? 'दोपहर का भोजन' : 'Lunch');
   String get eveningSnacks => code == 'bn' ? 'বিকেলের নাস্তা (Evening)' : (code == 'hi' ? 'शाम का नाश्ता' : 'Evening Snacks');
   String get dinner => code == 'bn' ? 'রাতের খাবার (Dinner)' : (code == 'hi' ? 'रात का खाना' : 'Dinner');
   String get bedtimeSlot => code == 'bn' ? 'ঘুমানোর আগে (Bedtime)' : (code == 'hi' ? 'सोने से पहले' : 'Bedtime');
   String get customClock => code == 'bn' ? 'কাস্টম সময়' : (code == 'hi' ? 'कस्टम समय' : 'Custom Clock');
+  String get addCustomTime => code == 'bn' ? '+ অন্য কাস্টম সময় যোগ করুন' : (code == 'hi' ? '+ अन्य कस्टम समय जोड़ें' : '+ Add Custom Time');
+  String get extraDetailsOptional => code == 'bn' ? 'অতিরিক্ত তথ্য (ঐচ্ছিক)' : (code == 'hi' ? 'अतिरिक्त विवरण (वैकल्पिक)' : 'Additional Details (Optional)');
 
   // Days of Week
   String get daysOfWeekTitle => code == 'bn' ? 'সপ্তাহের নির্দিষ্ট দিন' : (code == 'hi' ? 'सप्ताह के विशिष्ट दिन' : 'Days of the Week');

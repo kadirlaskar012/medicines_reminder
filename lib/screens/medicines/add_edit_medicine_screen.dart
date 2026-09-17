@@ -43,7 +43,6 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   String? _photoPath;
 
   final List<ReminderTime> _reminders = [];
-  String? _selectedFrequencyPreset;
 
   bool get isEditing => widget.medicineToEdit != null;
 
@@ -72,9 +71,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
       final existingRems = context.read<MedicineProvider>().getRemindersForMedicine(med.id);
       _reminders.addAll(existingRems);
-      _selectedFrequencyPreset = _detectFrequencyPreset();
     } else {
       _selectedUnit = _selectedType.defaultUnit;
+      _selectedColorValue = _getColorForType(_selectedType);
       _stockController.text = _selectedType.defaultStock.toString();
       _refillThresholdController.text = _selectedType.defaultThreshold.toString();
 
@@ -88,7 +87,6 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         isAlarm: true,
         notificationId: 10001,
       ));
-      _selectedFrequencyPreset = '1-0-0';
     }
   }
 
@@ -157,173 +155,583 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     }
   }
 
-  // --- Custom End Date Picker for Course ---
-  void _pickCustomEndDate() async {
-    final now = _startDate ?? DateTime.now();
-    final picked = await showDatePicker(
+  int _getColorForType(MedicineType type) {
+    switch (type) {
+      case MedicineType.tablet:
+        return const Color(0xFF0EA5E9).toARGB32();
+      case MedicineType.capsule:
+        return const Color(0xFF6366F1).toARGB32();
+      case MedicineType.syrup:
+        return const Color(0xFFF59E0B).toARGB32();
+      case MedicineType.drops:
+        return const Color(0xFF10B981).toARGB32();
+      case MedicineType.inhaler:
+        return const Color(0xFF06B6D4).toARGB32();
+      case MedicineType.injection:
+        return const Color(0xFFEF4444).toARGB32();
+      case MedicineType.ointment:
+        return const Color(0xFF8B5CF6).toARGB32();
+      case MedicineType.supplement:
+        return const Color(0xFF10B981).toARGB32();
+      default:
+        return const Color(0xFF14B8A6).toARGB32();
+    }
+  }
+
+  // --- Custom Course Duration Picker ---
+  void _pickCustomCourseDays() async {
+    final s = context.read<LanguageProvider>().strings;
+    final textCtrl = TextEditingController(text: _durationDays > 0 ? '$_durationDays' : '15');
+    final result = await showDialog<int>(
       context: context,
-      initialDate: _endDate ?? now.add(const Duration(days: 7)),
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 365)),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.date_range_rounded, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text(s.code == 'bn' ? 'কাস্টম কোর্সের মেয়াদ' : 'Custom Course Duration'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              s.code == 'bn' ? 'কত দিন ওষুধটি চলবে?' : 'How many days should this medicine be taken?',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: textCtrl,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              decoration: InputDecoration(
+                suffixText: s.code == 'bn' ? 'দিন' : 'Days',
+                hintText: 'e.g. 15, 45, 60',
+              ),
+            ),
+            const SizedBox(height: 14),
+            Center(
+              child: TextButton.icon(
+                onPressed: () async {
+                  final now = _startDate ?? DateTime.now();
+                  final picked = await showDatePicker(
+                    context: ctx,
+                    initialDate: _endDate ?? now.add(const Duration(days: 15)),
+                    firstDate: now,
+                    lastDate: now.add(const Duration(days: 365 * 2)),
+                  );
+                  if (picked != null) {
+                    final diff = picked.difference(now).inDays;
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx, diff > 0 ? diff : 1);
+                    }
+                  }
+                },
+                icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                label: Text(s.code == 'bn' ? 'ক্যালেন্ডার থেকে শেষ তারিখ বাছুন' : 'Pick end date from calendar'),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(s.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = int.tryParse(textCtrl.text.trim());
+              if (val != null && val > 0) {
+                Navigator.pop(ctx, val);
+              } else {
+                Navigator.pop(ctx);
+              }
+            },
+            child: Text(s.save),
+          ),
+        ],
+      ),
     );
-    if (picked != null) {
-      final diff = picked.difference(now).inDays;
+
+    if (result != null && result > 0) {
       setState(() {
-        _endDate = picked;
-        _durationDays = diff > 0 ? diff : 1;
+        _durationDays = result;
+        _endDate = (_startDate ?? DateTime.now()).add(Duration(days: result));
       });
     }
   }
 
-  // --- Detect Frequency Preset from Current Reminders ---
-  String? _detectFrequencyPreset() {
-    if (_reminders.length == 1 && _reminders.any((r) => r.hour == 8 && r.minute == 0)) {
-      return '1-0-0';
-    }
-    if (_reminders.length == 2 &&
-        _reminders.any((r) => r.hour == 8 && r.minute == 0) &&
-        _reminders.any((r) => r.hour == 20 && r.minute == 30)) {
-      return '1-0-1';
-    }
-    if (_reminders.length == 3 &&
-        _reminders.any((r) => r.hour == 8 && r.minute == 0) &&
-        _reminders.any((r) => r.hour == 13 && r.minute == 30) &&
-        _reminders.any((r) => r.hour == 20 && r.minute == 30)) {
-      return '1-1-1';
-    }
-    if (_reminders.length == 4 &&
-        _reminders.any((r) => r.hour == 8 && r.minute == 0) &&
-        _reminders.any((r) => r.hour == 13 && r.minute == 30) &&
-        _reminders.any((r) => r.hour == 17 && r.minute == 30) &&
-        _reminders.any((r) => r.hour == 20 && r.minute == 30)) {
-      return '1-1-1-1';
+  // --- Meal Slot Checkers & Helpers ---
+  ReminderTime? _getSlotReminder(String slotKey) {
+    for (final r in _reminders) {
+      if (slotKey == 'morning' && r.hour >= 6 && r.hour < 12) return r;
+      if (slotKey == 'lunch' && r.hour >= 12 && r.hour < 16) return r;
+      if (slotKey == 'afternoon' && r.hour >= 16 && r.hour < 19) return r;
+      if (slotKey == 'night' && (r.hour >= 19 || r.hour < 6)) return r;
     }
     return null;
   }
 
-  // --- Quick Dose Frequency Presets (1+0+0, 1+0+1, 1+1+1, 1+1+1+1) ---
-  void _applyQuickFrequency(String preset) {
-    setState(() {
-      _selectedFrequencyPreset = preset;
-      _reminders.clear();
-      final now = DateTime.now();
-      if (preset == '1-0-0') {
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 8,
-          minute: 0,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: now.millisecondsSinceEpoch % 100000,
-        ));
-      } else if (preset == '1-0-1') {
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 8,
-          minute: 0,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: now.millisecondsSinceEpoch % 100000,
-        ));
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 20,
-          minute: 30,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: (now.millisecondsSinceEpoch + 1) % 100000,
-        ));
-      } else if (preset == '1-1-1') {
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 8,
-          minute: 0,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: now.millisecondsSinceEpoch % 100000,
-        ));
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 13,
-          minute: 30,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: (now.millisecondsSinceEpoch + 1) % 100000,
-        ));
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 20,
-          minute: 30,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: (now.millisecondsSinceEpoch + 2) % 100000,
-        ));
-      } else if (preset == '1-1-1-1') {
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 8,
-          minute: 0,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: now.millisecondsSinceEpoch % 100000,
-        ));
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 13,
-          minute: 30,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: (now.millisecondsSinceEpoch + 1) % 100000,
-        ));
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 17,
-          minute: 30,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: (now.millisecondsSinceEpoch + 2) % 100000,
-        ));
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: 20,
-          minute: 30,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: (now.millisecondsSinceEpoch + 3) % 100000,
-        ));
+  String _getSlotSubtitle(String slotKey, AppStrings s) {
+    final rem = _getSlotReminder(slotKey);
+    if (rem == null) {
+      return s.code == 'bn' ? 'সময় সেট করুন' : 'Tap to set';
+    }
+    String mealDesc;
+    if (slotKey == 'morning') {
+      if (rem.hour < 8) {
+        mealDesc = s.code == 'bn' ? 'খাবারের আগে' : 'Before breakfast';
+      } else {
+        mealDesc = s.code == 'bn' ? 'খাবারের পরে' : 'After breakfast';
       }
-    });
+    } else if (slotKey == 'lunch') {
+      if (rem.hour <= 13) {
+        mealDesc = s.code == 'bn' ? 'খাবারের আগে' : 'Before lunch';
+      } else {
+        mealDesc = s.code == 'bn' ? 'খাবারের পরে' : 'After lunch';
+      }
+    } else if (slotKey == 'afternoon') {
+      if (rem.hour < 17 || (rem.hour == 17 && rem.minute < 30)) {
+        mealDesc = s.code == 'bn' ? 'নাস্তার আগে' : 'Before snacks';
+      } else {
+        mealDesc = s.code == 'bn' ? 'নাস্তার পরে' : 'After snacks';
+      }
+    } else {
+      if (rem.hour >= 22) {
+        mealDesc = s.code == 'bn' ? 'ঘুমানোর আগে' : 'Bedtime';
+      } else if (rem.hour < 21) {
+        mealDesc = s.code == 'bn' ? 'খাবারের আগে' : 'Before dinner';
+      } else {
+        mealDesc = s.code == 'bn' ? 'খাবারের পরে' : 'After dinner';
+      }
+    }
+    return '${rem.formattedTime} • $mealDesc';
   }
 
-  // --- Toggle Meal Preset (Add or Remove Time) ---
-  void _toggleMealPreset(int hour, int minute) {
-    setState(() {
-      final existingIndex = _reminders.indexWhere((r) => r.hour == hour && r.minute == minute);
-      if (existingIndex >= 0) {
-        _reminders.removeAt(existingIndex);
-      } else {
-        _reminders.add(ReminderTime(
-          id: const Uuid().v4(),
-          medicineId: widget.medicineToEdit?.id ?? '',
-          hour: hour,
-          minute: minute,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          isAlarm: true,
-          notificationId: DateTime.now().millisecondsSinceEpoch % 100000,
-        ));
-      }
-      _selectedFrequencyPreset = _detectFrequencyPreset();
+  // --- Show Taking Time Modal Popup with Before / After Meal ---
+  Future<void> _showTimeSlotModal(String slotKey) async {
+    final s = context.read<LanguageProvider>().strings;
+
+    String title;
+    IconData slotIcon;
+    Color slotColor;
+    List<Map<String, dynamic>> options;
+    TimeOfDay defaultTime;
+
+    if (slotKey == 'morning') {
+      title = s.code == 'bn' ? 'সকালের ওষুধের সময় ও নিয়ম' : 'Morning Dose Timing';
+      slotIcon = Icons.wb_sunny_rounded;
+      slotColor = const Color(0xFFF59E0B);
+      defaultTime = const TimeOfDay(hour: 8, minute: 30);
+      options = [
+        {
+          'label': s.code == 'bn' ? 'খাবারের আগে (Before Breakfast)' : 'Before Breakfast',
+          'sub': s.code == 'bn' ? 'সকালের নাস্তার ৩০ মিনিট আগে' : '30 min before breakfast',
+          'hour': 7,
+          'minute': 30,
+          'instruction': FoodInstruction.beforeMeal,
+          'icon': Icons.hourglass_bottom_rounded,
+        },
+        {
+          'label': s.code == 'bn' ? 'খাবারের পরে (After Breakfast)' : 'After Breakfast',
+          'sub': s.code == 'bn' ? 'সকালের নাস্তার ৩০ মিনিটের মধ্যে' : 'Within 30 min after breakfast',
+          'hour': 8,
+          'minute': 30,
+          'instruction': FoodInstruction.afterMeal,
+          'icon': Icons.done_all_rounded,
+        },
+        {
+          'label': s.code == 'bn' ? 'খালি পেটে (Empty Stomach)' : 'Empty Stomach',
+          'sub': s.code == 'bn' ? 'সকালে ঘুম থেকে উঠে ১ গ্লাস পানিসহ' : 'Right after waking up with water',
+          'hour': 7,
+          'minute': 0,
+          'instruction': FoodInstruction.emptyStomach,
+          'icon': Icons.water_drop_rounded,
+        },
+      ];
+    } else if (slotKey == 'lunch') {
+      title = s.code == 'bn' ? 'দুপুরের ওষুধের সময় ও নিয়ম' : 'Lunch Dose Timing';
+      slotIcon = Icons.lunch_dining_rounded;
+      slotColor = const Color(0xFF3B82F6);
+      defaultTime = const TimeOfDay(hour: 14, minute: 0);
+      options = [
+        {
+          'label': s.code == 'bn' ? 'খাবারের আগে (Before Lunch)' : 'Before Lunch',
+          'sub': s.code == 'bn' ? 'দুপুরের খাওয়ার ৩০ মিনিট আগে' : '30 min before lunch',
+          'hour': 13,
+          'minute': 0,
+          'instruction': FoodInstruction.beforeMeal,
+          'icon': Icons.hourglass_bottom_rounded,
+        },
+        {
+          'label': s.code == 'bn' ? 'খাবারের পরে (After Lunch)' : 'After Lunch',
+          'sub': s.code == 'bn' ? 'দুপুরের খাওয়ার ৩০ মিনিটের মধ্যে' : 'Within 30 min after lunch',
+          'hour': 14,
+          'minute': 0,
+          'instruction': FoodInstruction.afterMeal,
+          'icon': Icons.done_all_rounded,
+        },
+        {
+          'label': s.code == 'bn' ? 'খাবারের সাথে (With Meal)' : 'With Meal',
+          'sub': s.code == 'bn' ? 'দুপুরের খাবার খাওয়ার সাথে' : 'While having lunch',
+          'hour': 13,
+          'minute': 30,
+          'instruction': FoodInstruction.withMeal,
+          'icon': Icons.flatware_rounded,
+        },
+      ];
+    } else if (slotKey == 'afternoon') {
+      title = s.code == 'bn' ? 'বিকালের ওষুধের সময় ও নিয়ম' : 'Afternoon Dose Timing';
+      slotIcon = Icons.coffee_rounded;
+      slotColor = const Color(0xFF8B5CF6);
+      defaultTime = const TimeOfDay(hour: 17, minute: 30);
+      options = [
+        {
+          'label': s.code == 'bn' ? 'নাস্তার আগে (Before Snacks)' : 'Before Snacks',
+          'sub': s.code == 'bn' ? 'বিকালের নাস্তা বা চা খাওয়ার আগে' : 'Before afternoon snacks',
+          'hour': 17,
+          'minute': 0,
+          'instruction': FoodInstruction.beforeMeal,
+          'icon': Icons.hourglass_bottom_rounded,
+        },
+        {
+          'label': s.code == 'bn' ? 'নাস্তার পরে (After Snacks)' : 'After Snacks',
+          'sub': s.code == 'bn' ? 'বিকালের নাস্তা বা চা খাওয়ার পর' : 'After afternoon snacks',
+          'hour': 17,
+          'minute': 45,
+          'instruction': FoodInstruction.afterMeal,
+          'icon': Icons.done_all_rounded,
+        },
+        {
+          'label': s.code == 'bn' ? 'সাধারণ সময় (Anytime)' : 'Anytime Afternoon',
+          'sub': s.code == 'bn' ? 'বিকালের যে কোনো সময়' : 'Anytime during afternoon',
+          'hour': 17,
+          'minute': 30,
+          'instruction': FoodInstruction.anytime,
+          'icon': Icons.access_time_rounded,
+        },
+      ];
+    } else {
+      title = s.code == 'bn' ? 'রাতের ওষুধের সময় ও নিয়ম' : 'Night Dose Timing';
+      slotIcon = Icons.bedtime_rounded;
+      slotColor = const Color(0xFF6366F1);
+      defaultTime = const TimeOfDay(hour: 21, minute: 30);
+      options = [
+        {
+          'label': s.code == 'bn' ? 'খাবারের আগে (Before Dinner)' : 'Before Dinner',
+          'sub': s.code == 'bn' ? 'রাতের খাওয়ার ৩০ মিনিট আগে' : '30 min before dinner',
+          'hour': 20,
+          'minute': 30,
+          'instruction': FoodInstruction.beforeMeal,
+          'icon': Icons.hourglass_bottom_rounded,
+        },
+        {
+          'label': s.code == 'bn' ? 'খাবারের পরে (After Dinner)' : 'After Dinner',
+          'sub': s.code == 'bn' ? 'রাতের খাওয়ার ৩০ মিনিটের মধ্যে' : 'Within 30 min after dinner',
+          'hour': 21,
+          'minute': 30,
+          'instruction': FoodInstruction.afterMeal,
+          'icon': Icons.done_all_rounded,
+        },
+        {
+          'label': s.code == 'bn' ? 'ঘুমানোর আগে (At Bedtime)' : 'At Bedtime',
+          'sub': s.code == 'bn' ? 'রাতে ঘুমানোর ঠিক আগে' : 'Right before sleeping',
+          'hour': 22,
+          'minute': 30,
+          'instruction': FoodInstruction.bedtime,
+          'icon': Icons.nightlight_round,
+        },
+      ];
+    }
+
+    final existingIndex = _reminders.indexWhere((r) {
+      if (slotKey == 'morning') return r.hour >= 6 && r.hour < 12;
+      if (slotKey == 'lunch') return r.hour >= 12 && r.hour < 16;
+      if (slotKey == 'afternoon') return r.hour >= 16 && r.hour < 19;
+      return r.hour >= 19 || r.hour < 6;
     });
+
+    int selectedOptionIdx = 1;
+    TimeOfDay customTime = defaultTime;
+    if (existingIndex >= 0) {
+      final curRem = _reminders[existingIndex];
+      customTime = TimeOfDay(hour: curRem.hour, minute: curRem.minute);
+      final matchIdx = options.indexWhere((opt) => opt['hour'] == curRem.hour && opt['minute'] == curRem.minute);
+      if (matchIdx >= 0) {
+        selectedOptionIdx = matchIdx;
+      } else {
+        final instIdx = options.indexWhere((opt) => opt['instruction'] == _selectedInstruction);
+        if (instIdx >= 0) selectedOptionIdx = instIdx;
+      }
+    }
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            final isDarkModal = Theme.of(ctx).brightness == Brightness.dark;
+
+            return Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              decoration: BoxDecoration(
+                color: isDarkModal ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDarkModal ? Colors.white24 : Colors.black12,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: slotColor.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(slotIcon, color: slotColor, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                              ),
+                              Text(
+                                s.code == 'bn' ? 'ওষুধ খাওয়ার নিয়ম বেছে নিন' : 'Choose food timing & instruction',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    ...options.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final opt = entry.value;
+                      final isOptSelected = selectedOptionIdx == idx;
+
+                      return GestureDetector(
+                        onTap: () {
+                          setModalState(() {
+                            selectedOptionIdx = idx;
+                            customTime = TimeOfDay(hour: opt['hour'] as int, minute: opt['minute'] as int);
+                          });
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isOptSelected
+                                ? slotColor.withValues(alpha: isDarkModal ? 0.2 : 0.1)
+                                : (isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isOptSelected
+                                  ? slotColor
+                                  : (isDarkModal ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                              width: isOptSelected ? 2 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                opt['icon'] as IconData,
+                                color: isOptSelected ? slotColor : (isDarkModal ? Colors.white54 : Colors.black45),
+                                size: 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      opt['label'] as String,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: isOptSelected ? FontWeight.w800 : FontWeight.w600,
+                                        color: isOptSelected ? slotColor : null,
+                                      ),
+                                    ),
+                                    Text(
+                                      opt['sub'] as String,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isOptSelected ? slotColor : (isDarkModal ? Colors.white38 : Colors.black38),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: isOptSelected
+                                    ? Center(
+                                        child: Container(
+                                          width: 12,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            color: slotColor,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
+                              const SizedBox(width: 8),
+                              Text(
+                                s.code == 'bn' ? 'অ্যালার্মের সময়:' : 'Alarm Time:',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                customTime.format(context),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          TextButton.icon(
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: customTime,
+                              );
+                              if (picked != null) {
+                                setModalState(() {
+                                  customTime = picked;
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.edit_rounded, size: 16),
+                            label: Text(s.change),
+                            style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        if (existingIndex >= 0) ...[
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _reminders.removeAt(existingIndex);
+                              });
+                              Navigator.pop(ctx);
+                            },
+                            icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                            label: Text(s.code == 'bn' ? 'মুছুন' : 'Remove', style: const TextStyle(color: AppColors.error)),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.error),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                        ],
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final selOpt = options[selectedOptionIdx];
+                              final instruction = selOpt['instruction'] as FoodInstruction;
+                              setState(() {
+                                _selectedInstruction = instruction;
+                                final newRem = ReminderTime(
+                                  id: existingIndex >= 0 ? _reminders[existingIndex].id : const Uuid().v4(),
+                                  medicineId: widget.medicineToEdit?.id ?? '',
+                                  hour: customTime.hour,
+                                  minute: customTime.minute,
+                                  daysOfWeek: existingIndex >= 0 ? _reminders[existingIndex].daysOfWeek : [1, 2, 3, 4, 5, 6, 7],
+                                  isAlarm: true,
+                                  notificationId: existingIndex >= 0
+                                      ? _reminders[existingIndex].notificationId
+                                      : (DateTime.now().millisecondsSinceEpoch % 100000),
+                                );
+                                if (existingIndex >= 0) {
+                                  _reminders[existingIndex] = newRem;
+                                } else {
+                                  _reminders.add(newRem);
+                                }
+                              });
+                              Navigator.pop(ctx);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: slotColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: Text(
+                              s.code == 'bn' ? 'রিমাইন্ডার সেট করুন' : 'Confirm Reminder',
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   // --- Add Custom Reminder via TimePicker ---
@@ -344,7 +752,6 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           isAlarm: true,
           notificationId: DateTime.now().millisecondsSinceEpoch % 100000,
         ));
-        _selectedFrequencyPreset = _detectFrequencyPreset();
       });
     }
   }
@@ -578,6 +985,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                         setState(() {
                           _selectedType = type;
                           _selectedUnit = type.defaultUnit;
+                          _selectedColorValue = _getColorForType(type);
                           if (!isEditing) {
                             _stockController.text = type.defaultStock.toString();
                             _refillThresholdController.text = type.defaultThreshold.toString();
@@ -648,96 +1056,67 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ),
             const SizedBox(height: 24),
 
-            // 3. Compact Pill Color Tag
-            _buildSectionHeader(s.pillColorTag),
-            const SizedBox(height: 10),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: AppColors.pillColors.map((color) {
-                  final isSelected = color.toARGB32() == _selectedColorValue;
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedColorValue = color.toARGB32()),
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 12),
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: isSelected
-                            ? Border.all(color: isDark ? Colors.white : AppColors.primary, width: 2.5)
-                            : null,
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.35),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: isSelected
-                          ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                          : null,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // 4. Treatment Course Duration
+            // 3. Treatment Course Duration (3d, 7d, 10d, 2w, 21d, 1m, custom, ongoing)
             _buildSectionHeader(s.treatmentCourse),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
+                _buildCourseChip(3, s.threeDays),
+                _buildCourseChip(7, s.sevenDays),
+                _buildCourseChip(10, s.tenDays),
+                _buildCourseChip(14, s.twoWeeks),
+                _buildCourseChip(21, s.twentyOneDays),
+                _buildCourseChip(30, s.oneMonth),
                 _buildCourseChip(0, s.courseOngoing),
-                _buildCourseChip(3, s.courseDaysLabel(3)),
-                _buildCourseChip(5, s.courseDaysLabel(5)),
-                _buildCourseChip(7, s.courseDaysLabel(7)),
-                _buildCourseChip(14, s.courseDaysLabel(14)),
-                _buildCourseChip(30, s.courseDaysLabel(30)),
                 ActionChip(
-                  avatar: const Icon(Icons.date_range_rounded, size: 16),
+                  avatar: const Icon(Icons.edit_calendar_rounded, size: 16),
                   label: Text(
-                    _durationDays > 0 && ![3, 5, 7, 14, 30].contains(_durationDays)
+                    _durationDays > 0 && ![3, 7, 10, 14, 21, 30].contains(_durationDays)
                         ? s.courseDaysLabel(_durationDays)
-                        : s.customEndDate,
+                        : s.customCourse,
                   ),
-                  backgroundColor: _durationDays > 0 && ![3, 5, 7, 14, 30].contains(_durationDays)
+                  backgroundColor: _durationDays > 0 && ![3, 7, 10, 14, 21, 30].contains(_durationDays)
                       ? AppColors.primary
                       : null,
                   labelStyle: TextStyle(
-                    color: _durationDays > 0 && ![3, 5, 7, 14, 30].contains(_durationDays)
+                    color: _durationDays > 0 && ![3, 7, 10, 14, 21, 30].contains(_durationDays)
                         ? Colors.white
                         : null,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
-                  onPressed: _pickCustomEndDate,
+                  onPressed: _pickCustomCourseDays,
                 ),
               ],
             ),
             if (_durationDays > 0 && _endDate != null) ...[
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
                 ),
-                child: Text(
-                  '${s.courseEndsOn}: ${DateFormat('dd MMM, yyyy').format(_endDate!)} (${s.courseDaysLabel(_durationDays)})',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                child: Row(
+                  children: [
+                    const Icon(Icons.event_available_rounded, size: 18, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${s.courseEndsOn}: ${DateFormat('dd MMMM, yyyy').format(_endDate!)} (${s.courseDaysLabel(_durationDays)})',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // Start Date Picker (Step 6)
+            // Start Date Picker
             _buildSectionHeader(s.code == 'bn' ? 'শুরুর তারিখ (Start Date)' : 'Start Date'),
             const SizedBox(height: 8),
             InkWell(
@@ -769,74 +1148,52 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ),
             const SizedBox(height: 24),
 
-            // 5. Food Instruction
-            _buildSectionHeader(s.foodTimingInstruction),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: FoodInstruction.values.map((inst) {
-                final isSelected = _selectedInstruction == inst;
-                return ChoiceChip(
-                  selected: isSelected,
-                  avatar: AppSvgIcons.render(
-                    inst.svgString,
-                    width: 16,
-                    height: 16,
-                    color: isSelected ? Colors.white : AppColors.secondary,
-                  ),
-                  label: Text(s.foodInstructionName(inst.name)),
-                  selectedColor: AppColors.secondary,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-                    fontWeight: FontWeight.w600,
-                  ),
-                  onSelected: (val) {
-                    if (val) setState(() => _selectedInstruction = inst);
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
-
-            // 6. Quick Dose Frequency Shortcuts (1+0+0, 1+0+1, 1+1+1)
-            _buildSectionHeader(s.quickDoseFrequency),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            // 4. Taking Time & Routine (Morning, Lunch, Afternoon, Night Slots with Before/After meal popup)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildFrequencyPresetBtn('1-0-0', s.doseOnceDaily, Icons.wb_sunny_rounded),
-                _buildFrequencyPresetBtn('1-0-1', s.doseTwiceDaily, Icons.timelapse_rounded),
-                _buildFrequencyPresetBtn('1-1-1', s.doseThriceDaily, Icons.repeat_rounded),
-                _buildFrequencyPresetBtn('1-1-1-1', s.doseFourDaily, Icons.alarm_on_rounded),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // 7. Routine & Meal Presets
-            _buildSectionHeader(s.routineMealSlot),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildMealPresetBtn('🍳 ${s.breakfast}', 8, 0),
-                _buildMealPresetBtn('🍛 ${s.lunch}', 13, 30),
-                _buildMealPresetBtn('☕ ${s.eveningSnacks}', 17, 30),
-                _buildMealPresetBtn('🍲 ${s.dinner}', 20, 30),
-                _buildMealPresetBtn('🛏️ ${s.bedtimeSlot}', 22, 30),
-                ActionChip(
-                  avatar: const Icon(Icons.add_alarm_rounded, size: 16, color: AppColors.primary),
-                  label: Text(s.customClock),
-                  labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.primary),
+                _buildSectionHeader(s.routineMealSlot),
+                TextButton.icon(
                   onPressed: _addCustomReminderTime,
+                  icon: const Icon(Icons.add_alarm_rounded, size: 16),
+                  label: Text(
+                    s.code == 'bn' ? 'কাস্টম সময়' : 'Custom Time',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                 ),
               ],
             ),
+            Text(
+              s.code == 'bn'
+                  ? 'সকাল, দুপুর, বিকাল বা রাত্রিতে ট্যাপ করে খাবারের আগে বা পরে সেট করুন'
+                  : 'Tap Morning, Lunch, Afternoon, or Night to configure food timing',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 2x2 Grid of Taking Time Slots
+            Row(
+              children: [
+                _buildSlotCard('morning', s.morningSlot, Icons.wb_sunny_rounded, const Color(0xFFF59E0B), s, isDark),
+                const SizedBox(width: 10),
+                _buildSlotCard('lunch', s.lunchSlot, Icons.lunch_dining_rounded, const Color(0xFF3B82F6), s, isDark),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                _buildSlotCard('afternoon', s.afternoonSlot, Icons.coffee_rounded, const Color(0xFF8B5CF6), s, isDark),
+                const SizedBox(width: 10),
+                _buildSlotCard('night', s.nightSlot, Icons.bedtime_rounded, const Color(0xFF6366F1), s, isDark),
+              ],
+            ),
             const SizedBox(height: 24),
 
-            // 8. Configured Reminders & Day-of-Week Schedule
+            // 5. Configured Reminders & Day-of-Week Schedule
             _buildSectionHeader(s.reminderSchedules),
             const SizedBox(height: 10),
 
@@ -916,7 +1273,6 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                             onPressed: () {
                               setState(() {
                                 _reminders.removeAt(idx);
-                                _selectedFrequencyPreset = _detectFrequencyPreset();
                               });
                             },
                           ),
@@ -1329,51 +1685,100 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     );
   }
 
-  Widget _buildFrequencyPresetBtn(String presetKey, String label, IconData icon) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isSelected = (_selectedFrequencyPreset == presetKey) ||
-        (_selectedFrequencyPreset == null && _detectFrequencyPreset() == presetKey);
+  Widget _buildSlotCard(
+    String slotKey,
+    String title,
+    IconData icon,
+    Color color,
+    AppStrings s,
+    bool isDark,
+  ) {
+    final rem = _getSlotReminder(slotKey);
+    final isConfigured = rem != null;
+    final subtitle = _getSlotSubtitle(slotKey, s);
 
-    return ChoiceChip(
-      avatar: Icon(
-        icon,
-        size: 16,
-        color: isSelected ? Colors.white : AppColors.secondary,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _showTimeSlotModal(slotKey),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: isConfigured
+                ? color.withValues(alpha: isDark ? 0.22 : 0.1)
+                : (isDark ? AppColors.darkCard : Colors.white),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isConfigured
+                  ? color
+                  : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+              width: isConfigured ? 2 : 1,
+            ),
+            boxShadow: isConfigured
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: isDark ? 0.3 : 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, size: 18, color: color),
+                  ),
+                  if (isConfigured)
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check_rounded, size: 12, color: Colors.white),
+                    )
+                  else
+                    Icon(Icons.add_rounded, size: 18, color: isDark ? Colors.white38 : Colors.black38),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: isConfigured
+                      ? (isDark ? Colors.white : color)
+                      : (isDark ? Colors.white : Colors.black87),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isConfigured ? FontWeight.w700 : FontWeight.w500,
+                  color: isConfigured
+                      ? (isDark ? const Color(0xFFA5B4FC) : color)
+                      : (isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
       ),
-      label: Text(label),
-      selected: isSelected,
-      selectedColor: AppColors.secondary,
-      checkmarkColor: Colors.white,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-        fontWeight: FontWeight.w600,
-        fontSize: 12,
-      ),
-      onSelected: (val) {
-        if (val) {
-          _applyQuickFrequency(presetKey);
-        } else {
-          setState(() => _selectedFrequencyPreset = null);
-        }
-      },
-    );
-  }
-
-  Widget _buildMealPresetBtn(String label, int hour, int minute) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isSelected = _reminders.any((r) => r.hour == hour && r.minute == minute);
-
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      selectedColor: AppColors.secondary,
-      checkmarkColor: Colors.white,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-        fontWeight: FontWeight.w600,
-        fontSize: 12,
-      ),
-      onSelected: (_) => _toggleMealPreset(hour, minute),
     );
   }
 }
