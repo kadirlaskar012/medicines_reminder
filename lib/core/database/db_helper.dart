@@ -23,7 +23,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -52,6 +52,11 @@ class DBHelper {
       } catch (_) {}
       try {
         await db.execute('ALTER TABLE medicines ADD COLUMN photoPath TEXT');
+      } catch (_) {}
+    }
+    if (oldVersion < 4) {
+      try {
+        await db.execute("ALTER TABLE medicines ADD COLUMN unit TEXT DEFAULT ''");
       } catch (_) {}
     }
   }
@@ -88,7 +93,8 @@ class DBHelper {
         startDate TEXT,
         endDate TEXT,
         expiryDate TEXT,
-        photoPath TEXT
+        photoPath TEXT,
+        unit TEXT DEFAULT ''
       )
     ''');
 

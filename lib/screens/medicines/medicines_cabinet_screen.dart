@@ -284,6 +284,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                             instruction: med.instruction,
                                             currentStock: med.currentStock,
                                             refillThreshold: med.refillThreshold,
+                                            unit: med.unit,
                                             notes: med.notes,
                                             reminderTimes: dupRems,
                                           );
@@ -417,7 +418,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                               crossAxisAlignment: CrossAxisAlignment.end,
                                               children: [
                                                 Text(
-                                                  '${med.currentStock} ${s.leftCount}',
+                                                  s.formatStockLeft(med.currentStock, med.displayUnit),
                                                   style: TextStyle(
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w700,
@@ -493,7 +494,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
   }
 
   void _showRefillDialog(BuildContext context, Medicine med, AppStrings s) {
-    final qtyCtrl = TextEditingController(text: '30');
+    final qtyCtrl = TextEditingController(text: '${med.type.defaultStock}');
 
     showDialog(
       context: context,
@@ -512,14 +513,15 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
           children: [
             Text('${s.medicineName}: ${med.name}'),
             const SizedBox(height: 6),
-            Text('${s.currentQuantity}: ${med.currentStock}'),
+            Text('${s.currentQuantity}: ${med.formattedStock}'),
             const SizedBox(height: 16),
             TextField(
               controller: qtyCtrl,
               keyboardType: TextInputType.number,
               autofocus: true,
               decoration: InputDecoration(
-                labelText: s.addedPillsCount,
+                labelText: '${s.addedPillsCount} (${s.unitName(med.displayUnit)})',
+                suffixText: s.unitName(med.displayUnit),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),

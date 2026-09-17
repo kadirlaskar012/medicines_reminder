@@ -7,14 +7,12 @@ import '../../core/constants/app_svg_icons.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/services/cloud_sync_service.dart';
 import '../../core/services/notification_service.dart';
-import '../../core/services/supabase_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/profile_selector_sheet.dart';
-import '../admin/admin_control_panel_screen.dart';
 import '../auth/phone_login_screen.dart';
 import '../family/family_members_screen.dart';
 import '../welcome/user_onboarding_profile_screen.dart';
@@ -33,9 +31,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'batteryOptimization': true,
   };
   bool _isChecking = true;
-  bool _isAdminUnlocked = false;
-  int _buildTapCount = 0;
-  DateTime? _lastBuildTapTime;
 
   // User-facing reminder preferences
   bool _soundEnabled = true;
@@ -278,14 +273,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader('ABOUT'),
           const SizedBox(height: 8),
           _buildAboutCard(context, s, isDark),
-
-          // 9. Admin & Database Control (Unlocked via 5-tap)
-          if (_isAdminUnlocked) ...[
-            const SizedBox(height: 24),
-            _buildSectionHeader('ADMIN & DATABASE CONTROL'),
-            const SizedBox(height: 8),
-            _buildAdminAccessCard(context, isDark, s),
-          ],
         ],
       ),
     );
@@ -1393,41 +1380,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          InkWell(
-            onTap: () => _handleBuildVersionTap(context),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2.0),
-              child: Row(
-                children: [
-                  Text(
-                    '${s.appName} v1.0.1 (Build 2)',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                  if (_isAdminUnlocked) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.amber, width: 0.8),
-                      ),
-                      child: const Text(
-                        'ADMIN UNLOCKED',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.amber,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2.0),
+            child: Text(
+              '${s.appName} v1.0.2',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
               ),
             ),
           ),
@@ -1439,165 +1399,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
               height: 1.4,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _handleBuildVersionTap(BuildContext context) {
-    if (_isAdminUnlocked) return;
-
-    final now = DateTime.now();
-    if (_lastBuildTapTime == null || now.difference(_lastBuildTapTime!) > const Duration(seconds: 2)) {
-      _buildTapCount = 1;
-    } else {
-      _buildTapCount++;
-    }
-    _lastBuildTapTime = now;
-
-    if (_buildTapCount >= 5) {
-      _buildTapCount = 0;
-      _promptAdminPasscode(context);
-    }
-  }
-
-  Widget _buildAdminAccessCard(BuildContext context, bool isDark, AppStrings s) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.amber, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Admin Control Panel',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Manage users, cloud database tables, and PIN resets.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AdminControlPanelScreen()),
-                );
-              },
-              icon: const Icon(Icons.dashboard_customize_rounded, size: 16),
-              label: const Text('Open Admin Dashboard'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0F766E),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                elevation: 0,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _promptAdminPasscode(BuildContext context) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Admin Verification', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Enter 4-digit Master Passcode to open Admin Panel (Default: 2026):',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              obscureText: true,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'Passcode',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.key_rounded),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              final code = controller.text.trim();
-              if (code == SupabaseService.masterAdminPasscode) {
-                Navigator.pop(ctx);
-                setState(() {
-                  _isAdminUnlocked = true;
-                });
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AdminControlPanelScreen()),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('❌ Incorrect passcode!'),
-                    backgroundColor: AppColors.error,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            child: const Text('Unlock'),
           ),
         ],
       ),

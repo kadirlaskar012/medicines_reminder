@@ -30,6 +30,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   final _notesController = TextEditingController();
 
   MedicineType _selectedType = MedicineType.tablet;
+  String _selectedUnit = MedicineType.tablet.defaultUnit;
   int _selectedColorValue = AppColors.pillColors.first.toARGB32();
   FoodInstruction _selectedInstruction = FoodInstruction.afterMeal;
   String? _selectedProfileId;
@@ -59,6 +60,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       _refillThresholdController.text = med.refillThreshold.toString();
       _notesController.text = med.notes;
       _selectedType = med.type;
+      _selectedUnit = med.displayUnit;
       _selectedColorValue = med.colorValue;
       _selectedInstruction = med.instruction;
       _selectedProfileId = med.profileId;
@@ -72,6 +74,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       _reminders.addAll(existingRems);
       _selectedFrequencyPreset = _detectFrequencyPreset();
     } else {
+      _selectedUnit = _selectedType.defaultUnit;
+      _stockController.text = _selectedType.defaultStock.toString();
+      _refillThresholdController.text = _selectedType.defaultThreshold.toString();
+
       // Default: Morning 8:00 AM alarm
       _reminders.add(ReminderTime(
         id: const Uuid().v4(),
@@ -390,6 +396,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         instruction: _selectedInstruction,
         currentStock: stock,
         refillThreshold: threshold,
+        unit: _selectedUnit,
         notes: _notesController.text.trim(),
         profileId: _selectedProfileId ?? widget.medicineToEdit!.profileId,
         durationDays: _durationDays,
@@ -408,6 +415,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         instruction: _selectedInstruction,
         currentStock: stock,
         refillThreshold: threshold,
+        unit: _selectedUnit,
         notes: _notesController.text.trim(),
         reminderTimes: _reminders,
         profileId: _selectedProfileId,
@@ -566,7 +574,16 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   children: MedicineType.values.map((type) {
                     final isSelected = _selectedType == type;
                     return GestureDetector(
-                      onTap: () => setState(() => _selectedType = type),
+                      onTap: () {
+                        setState(() {
+                          _selectedType = type;
+                          _selectedUnit = type.defaultUnit;
+                          if (!isEditing) {
+                            _stockController.text = type.defaultStock.toString();
+                            _refillThresholdController.text = type.defaultThreshold.toString();
+                          }
+                        });
+                      },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         width: itemWidth,
@@ -963,8 +980,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     controller: _stockController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: s.currentQuantity,
-                      hintText: '30',
+                      labelText: '${s.currentQuantity} (${s.unitName(_selectedUnit)})',
+                      hintText: '${_selectedType.defaultStock}',
+                      suffixText: s.unitName(_selectedUnit),
                       prefixIcon: const Icon(Icons.inventory_2_rounded),
                     ),
                   ),
@@ -975,13 +993,48 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     controller: _refillThresholdController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: s.lowAlertLimit,
-                      hintText: '5',
+                      labelText: '${s.lowAlertLimit} (${s.unitName(_selectedUnit)})',
+                      hintText: '${_selectedType.defaultThreshold}',
+                      suffixText: s.unitName(_selectedUnit),
                       prefixIcon: const Icon(Icons.notifications_active_outlined),
                     ),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            // Unit Selection Chips
+            Text(
+              s.measurementUnitLabel,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: _selectedType.availableUnits.map((u) {
+                final isSelected = _selectedUnit.toLowerCase() == u.toLowerCase();
+                return ChoiceChip(
+                  label: Text(s.unitName(u)),
+                  selected: isSelected,
+                  selectedColor: AppColors.primary,
+                  checkmarkColor: Colors.white,
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                  onSelected: (val) {
+                    if (val) {
+                      setState(() => _selectedUnit = u);
+                    }
+                  },
+                );
+              }).toList(),
             ),
             const SizedBox(height: 24),
 

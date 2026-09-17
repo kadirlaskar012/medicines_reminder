@@ -226,6 +226,59 @@ class AppStrings {
     }
   }
 
+  // Measurement Units
+  String unitName(String unit) {
+    switch (unit.toLowerCase()) {
+      case 'tablets':
+      case 'tablet': return code == 'bn' ? 'ট্যাবলেট' : (code == 'hi' ? 'टैबलेट' : 'Tablets');
+      case 'capsules':
+      case 'capsule': return code == 'bn' ? 'ক্যাপসুল' : (code == 'hi' ? 'कैप्सूल' : 'Capsules');
+      case 'pills':
+      case 'pill': return code == 'bn' ? 'পিল' : (code == 'hi' ? 'गोलियां' : 'Pills');
+      case 'strips':
+      case 'strip': return code == 'bn' ? 'স্ট্রিপ (পাতা)' : (code == 'hi' ? 'पत्ता (स्ट्रिप)' : 'Strips');
+      case 'ml': return 'ml';
+      case 'bottles':
+      case 'bottle': return code == 'bn' ? 'বোতল' : (code == 'hi' ? 'बोतल' : 'Bottles');
+      case 'spoons':
+      case 'spoon': return code == 'bn' ? 'চামচ' : (code == 'hi' ? 'चम्मच' : 'Spoons');
+      case 'drops':
+      case 'drop': return code == 'bn' ? 'ড্রপ' : (code == 'hi' ? 'बूंदें' : 'Drops');
+      case 'puffs':
+      case 'puff': return code == 'bn' ? 'পাফ' : (code == 'hi' ? 'पफ' : 'Puffs');
+      case 'canisters':
+      case 'canister': return code == 'bn' ? 'ক্যানিস্টার' : (code == 'hi' ? 'कैनिस्टर' : 'Canisters');
+      case 'vials':
+      case 'vial': return code == 'bn' ? 'ভায়াল' : (code == 'hi' ? 'वायल' : 'Vials');
+      case 'ampoules':
+      case 'ampoule': return code == 'bn' ? 'অ্যাম্পুল' : (code == 'hi' ? 'एम्पूल' : 'Ampoules');
+      case 'tubes':
+      case 'tube': return code == 'bn' ? 'টিউব' : (code == 'hi' ? 'ट्यूब' : 'Tubes');
+      case 'g': return 'g';
+      case 'softgels': return code == 'bn' ? 'সফটজেল' : (code == 'hi' ? 'सॉफ्टजेल' : 'Softgels');
+      case 'gummies': return code == 'bn' ? 'গামিজ' : (code == 'hi' ? 'गमीज़' : 'Gummies');
+      case 'units': return code == 'bn' ? 'ইউনিট' : (code == 'hi' ? 'यूनिट' : 'Units');
+      case 'doses': return code == 'bn' ? 'ডোজ' : (code == 'hi' ? 'खुराक' : 'Doses');
+      case 'packs': return code == 'bn' ? 'প্যাক' : (code == 'hi' ? 'पैक' : 'Packs');
+      default: return unit;
+    }
+  }
+
+  String formatStockLeft(int count, String unit) {
+    final localizedUnit = unitName(unit);
+    if (code == 'bn') {
+      if (unit.toLowerCase() == 'tablets' || unit.toLowerCase() == 'pills' || unit.toLowerCase() == 'capsules' || unit.isEmpty) {
+        return '$countটি বাকি';
+      }
+      return '$count $localizedUnit বাকি';
+    } else if (code == 'hi') {
+      return '$count $localizedUnit बची हैं';
+    }
+    return '$count $localizedUnit left';
+  }
+
+  String get measurementUnitLabel => code == 'bn' ? 'পরিমাপক ইউনিট' : (code == 'hi' ? 'मापक इकाई' : 'Measurement Unit');
+
   // Cabinet & Stock
   String get medicineCabinet => code == 'bn' ? 'মেডিসিন ক্যাবিনেট' : (code == 'hi' ? 'दवाई की पेटी' : 'Medicine Cabinet');
   String get searchMedicines => code == 'bn' ? 'ওষুধ বা প্রোফাইল খুঁজুন...' : (code == 'hi' ? 'दवा या प्रोफाइल खोजें...' : 'Search medicines...');

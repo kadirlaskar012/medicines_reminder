@@ -172,7 +172,7 @@ class MedicineDetailsScreen extends StatelessWidget {
                           : (medicine.notes.isNotEmpty ? medicine.notes : 'After food'),
                       isDark,
                     ),
-                    const SizedBox(width: 60), // Spacer
+                    _buildGridCell('Stock', medicine.formattedStock, isDark),
                   ],
                 ),
               ],
