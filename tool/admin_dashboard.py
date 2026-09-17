@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-MediRemind - Local & Cloud Admin Dashboard
-==========================================
-A lightweight, zero-dependency local admin panel to inspect, search,
-and monitor MediRemind user accounts, medicines, reminders, and intake logs
-directly in your browser.
+MediRemind - Offline & Cloud Admin Dashboard
+============================================
+A lightweight, zero-dependency, ultra-fast admin portal to inspect, search,
+and manage MediRemind user accounts directly in your browser.
 
-Integrates with Supabase Cloud REST API with automatic offline caching,
-plus local SQLite fallback.
+Features:
+- Clean, focused user list with checkbox (tick) multi-select.
+- One-click or bulk user deletion from Supabase Cloud and local cache.
+- Rich, interactive popup modal with complete user details (medicines, reminders, logs, security).
+- 100% responsive, zero external dependencies (pure Python standard library).
 
 Usage:
-    python tool/admin_dashboard.py [--port 8080] [--db path/to/mediremind.db] [--no-browser]
+    python tool/admin_dashboard.py [--port 8080] [--no-browser]
 """
 
 import http.server
@@ -18,7 +20,6 @@ import socketserver
 import json
 import os
 import sys
-import sqlite3
 import webbrowser
 import subprocess
 import argparse
@@ -28,15 +29,10 @@ from urllib.parse import parse_qs, urlparse
 import urllib.request
 import urllib.error
 
-
 # Project paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 CACHE_FILE = os.path.join(SCRIPT_DIR, "mediremind_cache.json")
-DEFAULT_DB_LOCATIONS = [
-    os.path.join(SCRIPT_DIR, "mediremind.db"),
-    os.path.join(PROJECT_DIR, "mediremind.db"),
-]
 
 PACKAGE_NAME = "com.mediremind.app.medicines_reminder"
 
@@ -68,7 +64,7 @@ def fetch_supabase_table(table_name, timeout=8):
         return None, str(e)
 
 def fetch_all_supabase_data():
-    """Fetch all relevant tables from Supabase Cloud."""
+    """Fetch all relevant tables from Supabase Cloud and update local cache."""
     data = {
         "status": "ok",
         "data_source": "supabase_cloud",
@@ -82,7 +78,6 @@ def fetch_all_supabase_data():
         "error": None
     }
 
-    # Fetch app_users
     users, err = fetch_supabase_table("app_users")
     if err and users is None:
         data["status"] = "error"
@@ -90,23 +85,19 @@ def fetch_all_supabase_data():
         return data
     data["users"] = users or []
 
-    # Fetch user_medicines
     meds, _ = fetch_supabase_table("user_medicines")
     data["medicines"] = meds or []
 
-    # Fetch user_reminders
     reminders, _ = fetch_supabase_table("user_reminders")
     data["reminders"] = reminders or []
 
-    # Fetch user_dose_logs
     logs, _ = fetch_supabase_table("user_dose_logs")
     data["dose_logs"] = logs or []
 
-    # Fetch pin_reset_requests
     pin_reqs, _ = fetch_supabase_table("pin_reset_requests")
     data["pin_requests"] = pin_reqs or []
 
-    # Cache locally so offline mode works seamlessly
+    # Cache locally so offline mode functions seamlessly
     try:
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
@@ -115,16 +106,26 @@ def fetch_all_supabase_data():
 
     return data
 
-def delete_user_from_supabase(user_id=None, email=None, phone=None):
-    """
-    Delete a user and all their associated medicines, reminders, dose logs,
-    and PIN requests from Supabase Cloud.
-    """
+def load_cached_data():
+    """Load data from local JSON cache if offline."""
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                data["data_source"] = "supabase_cache"
+                data["status"] = "ok"
+                return data
+        except Exception as e:
+            print(f"[WARN] Failed to read cache: {e}")
+    return None
+
+def delete_single_user(user_id=None, email=None, phone=None):
+    """Delete single user and cascade their medicines, reminders, dose logs from Supabase."""
     filters = []
-    if email and email.strip():
-        filters.append(("email", email.strip().lower()))
-    if phone and phone.strip():
-        filters.append(("phone_number", phone.strip()))
+    if email and str(email).strip():
+        filters.append(("email", str(email).strip().lower()))
+    if phone and str(phone).strip():
+        filters.append(("phone_number", str(phone).strip()))
 
     child_tables = ["user_reminders", "user_dose_logs", "user_medicines", "pin_reset_requests"]
 
@@ -148,10 +149,10 @@ def delete_user_from_supabase(user_id=None, email=None, phone=None):
             except Exception as e:
                 print(f"[WARN] Error deleting from {tbl} where {col}={val}: {e}")
 
-    # 2. Delete from app_users by id and email/phone
-    if user_id and user_id.strip():
+    # 2. Delete from app_users
+    if user_id and str(user_id).strip():
         try:
-            url = f"{SUPABASE_URL}/rest/v1/app_users?id=eq.{urllib.parse.quote(user_id.strip())}"
+            url = f"{SUPABASE_URL}/rest/v1/app_users?id=eq.{urllib.parse.quote(str(user_id).strip())}"
             req = urllib.request.Request(
                 url,
                 headers={
@@ -183,207 +184,44 @@ def delete_user_from_supabase(user_id=None, email=None, phone=None):
         except Exception as e:
             print(f"[WARN] Error deleting from app_users by {col}: {e}")
 
-    # 3. Refresh and update local cache
+def delete_users_from_supabase(user_list):
+    """
+    Delete multiple or single user(s) and their associated records.
+    user_list: list of dicts with keys userId, email, phone.
+    """
+    if not isinstance(user_list, list):
+        user_list = [user_list]
+
+    for u in user_list:
+        delete_single_user(
+            user_id=u.get("userId") or u.get("id"),
+            email=u.get("email"),
+            phone=u.get("phone") or u.get("phone_number")
+        )
+
+    # Re-fetch data and refresh cache
     fetch_all_supabase_data()
-    return True, "User account and all cloud medicines were deleted successfully."
+    return True, f"{len(user_list)} user(s) and their cloud data were permanently deleted."
 
-def load_cached_data():
-
-    """Load data from local JSON cache if offline."""
-    if os.path.exists(CACHE_FILE):
-        try:
-            with open(CACHE_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                data["data_source"] = "supabase_cache"
-                data["status"] = "ok"
-                return data
-        except Exception as e:
-            print(f"[WARN] Failed to read cache: {e}")
-    return None
-
-def find_adb():
-    """Locate adb.exe from PATH or Android SDK default location."""
-    try:
-        res = subprocess.run(["adb", "version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if res.returncode == 0:
-            return "adb"
-    except Exception:
-        pass
-
-    local_app_data = os.environ.get("LOCALAPPDATA", "")
-    if local_app_data:
-        sdk_adb = os.path.join(local_app_data, "Android", "Sdk", "platform-tools", "adb.exe")
-        if os.path.exists(sdk_adb):
-            return sdk_adb
-
-    return None
-
-def pull_database_from_adb(target_path):
-    """Safely pull mediremind.db from connected Android phone via ADB run-as."""
-    adb_bin = find_adb()
-    if not adb_bin:
-        return False, "ADB executable not found. Make sure Android SDK platform-tools is installed."
-
-    try:
-        dev_res = subprocess.run([adb_bin, "devices"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        lines = [l.strip() for l in dev_res.stdout.strip().split("\n")[1:] if l.strip() and not l.startswith("*")]
-        if not lines:
-            return False, "No Android device connected. Please connect your phone via USB with USB Debugging enabled."
-
-        cmd = f'"{adb_bin}" exec-out run-as {PACKAGE_NAME} cat databases/mediremind.db'
-        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        stdout_data = proc.stdout
-
-        if stdout_data.startswith(b"SQLite format 3"):
-            with open(target_path, "wb") as f:
-                f.write(stdout_data)
-            return True, f"Successfully pulled database from device ({len(stdout_data):,} bytes)!"
-        else:
-            err_msg = stdout_data.decode("utf-8", errors="ignore").strip()
-            if "not debuggable" in err_msg:
-                return False, "Phone app is a release build (non-debuggable). Please use the live Cloud Sync button to view your Supabase data!"
-            return False, f"Could not pull SQLite DB from device: {err_msg[:100]}"
-    except Exception as e:
-        return False, f"ADB pull error: {e}"
-
-def get_db_path(custom_path=None):
-    if custom_path and os.path.exists(custom_path):
-        return custom_path
-    for loc in DEFAULT_DB_LOCATIONS:
-        if os.path.exists(loc):
-            return loc
-    return DEFAULT_DB_LOCATIONS[0]
-
-def query_local_sqlite(db_path):
-    """Read tables from local SQLite DB if valid."""
-    data = {
-        "status": "ok",
-        "data_source": "local_sqlite",
-        "db_path": db_path,
-        "db_exists": os.path.exists(db_path),
-        "db_size": os.path.getsize(db_path) if os.path.exists(db_path) else 0,
-        "users": [],
-        "medicines": [],
-        "reminders": [],
-        "dose_logs": [],
-        "profiles": []
-    }
-
-    if not os.path.exists(db_path):
-        return data
-
-    try:
-        # Check SQLite magic header
-        with open(db_path, "rb") as f:
-            header = f.read(16)
-            if not header.startswith(b"SQLite format 3"):
-                data["status"] = "invalid_sqlite"
-                return data
-
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cur = conn.cursor()
-
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = [r[0] for r in cur.fetchall()]
-
-        if "profiles" in tables:
-            cur.execute("SELECT * FROM profiles")
-            data["profiles"] = [dict(r) for r in cur.fetchall()]
-
-        if "medicines" in tables:
-            cur.execute("SELECT * FROM medicines ORDER BY createdAt DESC")
-            raw_meds = [dict(r) for r in cur.fetchall()]
-            # Normalize column names to match Supabase schema
-            for m in raw_meds:
-                data["medicines"].append({
-                    "id": m.get("id"),
-                    "name": m.get("name"),
-                    "dosage": m.get("dosage"),
-                    "type": m.get("type"),
-                    "instruction": m.get("instruction"),
-                    "current_stock": m.get("currentStock"),
-                    "unit": m.get("unit"),
-                    "is_active": bool(m.get("isActive", 1)),
-                    "duration_days": m.get("durationDays", 0),
-                    "start_date": m.get("startDate"),
-                    "end_date": m.get("endDate"),
-                    "expiry_date": m.get("expiryDate"),
-                    "email": m.get("email") or "local_device",
-                    "phone_number": m.get("phoneNumber") or "",
-                    "reminders_json": m.get("remindersJson") or "[]"
-                })
-
-        if "reminder_times" in tables:
-            cur.execute("SELECT * FROM reminder_times ORDER BY hour, minute")
-            data["reminders"] = [dict(r) for r in cur.fetchall()]
-
-        if "intake_records" in tables:
-            cur.execute("SELECT * FROM intake_records ORDER BY recordedAt DESC LIMIT 200")
-            raw_logs = [dict(r) for r in cur.fetchall()]
-            for l in raw_logs:
-                data["dose_logs"].append({
-                    "id": l.get("id"),
-                    "medicine_id": l.get("medicineId"),
-                    "scheduled_time": f"{l.get('scheduledDate')} {l.get('scheduledHour', 0):02d}:{l.get('scheduledMinute', 0):02d}",
-                    "status": l.get("status"),
-                    "taken_at": l.get("recordedAt"),
-                    "email": l.get("email") or "local_device"
-                })
-
-        conn.close()
-    except Exception as e:
-        data["status"] = "error"
-        data["error"] = str(e)
-
-    return data
-
-def get_combined_data(custom_db_path=None, force_cloud=False):
-    """
-    Unified data aggregator:
-    1. Try live Supabase cloud fetch.
-    2. If cloud fails, try cached Supabase JSON.
-    3. If local SQLite exists, merge or fallback.
-    """
-    cloud_data = None
-    if force_cloud or True:
-        cloud_data = fetch_all_supabase_data()
-        if cloud_data.get("status") == "ok":
-            return cloud_data
-
-    # Supabase failed or offline; check cache
-    cached = load_cached_data()
-    if cached:
-        cached["offline_notice"] = "Displaying offline cached data from Supabase (Internet unavailable)."
-        return cached
-
-    # Check local SQLite
-    db_path = get_db_path(custom_db_path)
-    sqlite_data = query_local_sqlite(db_path)
-    if sqlite_data.get("medicines") or sqlite_data.get("profiles"):
-        return sqlite_data
-
-    # Return empty cloud result with error
-    if cloud_data:
+def get_combined_data(force_cloud=False):
+    """Fetch live from Supabase, or fall back to cached snapshot."""
+    cloud_data = fetch_all_supabase_data()
+    if cloud_data.get("status") == "ok":
         return cloud_data
 
-    return {
-        "status": "empty",
-        "data_source": "none",
-        "users": [],
-        "medicines": [],
-        "reminders": [],
-        "dose_logs": [],
-        "pin_requests": [],
-        "error": "No database found and unable to reach Supabase Cloud."
-    }
+    cached = load_cached_data()
+    if cached:
+        cached["offline_notice"] = "Displaying offline cached data (Supabase Cloud is currently unreachable)."
+        return cached
+
+    return cloud_data
 
 HTML_PAGE = """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MediRemind - Cloud & Offline Admin Portal</title>
+<title>MediRemind Admin - User Management</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -391,21 +229,21 @@ HTML_PAGE = """<!DOCTYPE html>
   :root {
     --bg-main: #0B1120;
     --bg-card: #151F32;
-    --bg-card-hover: #1A2740;
+    --bg-card-hover: #1E2B45;
     --bg-inner: #0E1726;
     --border: #24344D;
     --border-light: #334968;
-    --text-main: #F1F5F9;
+    --text-main: #F8FAFC;
     --text-muted: #94A3B8;
     --text-subtle: #64748B;
     --primary: #0EA5E9;
     --primary-glow: rgba(14, 165, 233, 0.25);
     --primary-hover: #0284C7;
     --accent: #10B981;
-    --accent-glow: rgba(16, 185, 129, 0.2);
     --warning: #F59E0B;
     --danger: #EF4444;
-    --danger-glow: rgba(239, 68, 68, 0.2);
+    --danger-hover: #DC2626;
+    --danger-glow: rgba(239, 68, 68, 0.25);
     --purple: #8B5CF6;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -417,14 +255,14 @@ HTML_PAGE = """<!DOCTYPE html>
     padding: 24px;
     min-height: 100vh;
   }
-  .container { max-width: 1400px; margin: 0 auto; }
-  
+  .container { max-width: 1280px; margin: 0 auto; }
+
   /* Header */
   header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 24px;
+    padding-bottom: 20px;
     border-bottom: 1px solid var(--border);
     margin-bottom: 24px;
     flex-wrap: wrap;
@@ -432,28 +270,27 @@ HTML_PAGE = """<!DOCTYPE html>
   }
   .brand { display: flex; align-items: center; gap: 14px; }
   .logo-icon {
-    width: 48px; height: 48px;
+    width: 46px; height: 46px;
     background: linear-gradient(135deg, #0EA5E9 0%, #10B981 100%);
     border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-    box-shadow: 0 4px 20px var(--primary-glow);
+    font-size: 24px;
+    box-shadow: 0 4px 18px var(--primary-glow);
   }
-  h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.6px; }
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
   .status-tag {
     display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; font-weight: 600; padding: 3px 10px;
+    font-size: 12px; font-weight: 600; padding: 2px 10px;
     border-radius: 20px; margin-top: 4px;
   }
   .status-tag.cloud { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
   .status-tag.cached { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
-  .status-tag.offline { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
   .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
 
-  .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
   .btn {
-    padding: 10px 18px;
+    padding: 9px 16px;
     border-radius: 10px;
     font-size: 13px;
     font-weight: 700;
@@ -478,24 +315,23 @@ HTML_PAGE = """<!DOCTYPE html>
   }
   .btn-secondary:hover { background: var(--border); border-color: var(--border-light); }
   .btn-danger {
-    background: rgba(239, 68, 68, 0.15);
+    background: rgba(239, 68, 68, 0.18);
     color: #F87171;
     border: 1px solid rgba(239, 68, 68, 0.35);
   }
   .btn-danger:hover {
-    background: #DC2626;
-    color: #FFF;
-    border-color: #DC2626;
+    background: var(--danger-hover);
+    color: white;
+    box-shadow: 0 4px 14px var(--danger-glow);
   }
   .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
 
-
-  /* Notice Banner */
+  /* Notification Banner */
   .notice-banner {
     border-radius: 12px;
-    padding: 14px 20px;
+    padding: 12px 18px;
     font-size: 13px;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -503,91 +339,52 @@ HTML_PAGE = """<!DOCTYPE html>
     gap: 12px;
   }
 
-  /* Stats Grid */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
-    margin-bottom: 28px;
+  /* Stats summary pills */
+  .stats-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
   }
-  .stat-card {
+  .stat-pill {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 12px;
+    padding: 10px 18px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    transition: border-color 0.2s, transform 0.2s;
-    cursor: pointer;
+    gap: 10px;
+    font-size: 13px;
   }
-  .stat-card:hover {
-    border-color: var(--primary);
-    transform: translateY(-2px);
-  }
-  .stat-val { font-size: 32px; font-weight: 800; color: var(--text-main); line-height: 1.1; }
-  .stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
-  .stat-sub { font-size: 11px; color: var(--text-subtle); margin-top: 2px; }
-  .stat-icon {
-    width: 52px; height: 52px;
+  .stat-pill-val { font-size: 18px; font-weight: 800; color: var(--primary); }
+  .stat-pill-label { color: var(--text-muted); font-weight: 500; }
+
+  /* Selection Toolbar (shows when rows are ticked) */
+  .selection-bar {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.12), rgba(15, 23, 42, 0.8));
+    border: 1px solid rgba(239, 68, 68, 0.35);
     border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-  }
-  .icon-blue { background: rgba(14, 165, 233, 0.12); color: #38BDF8; }
-  .icon-green { background: rgba(16, 185, 129, 0.12); color: #34D399; }
-  .icon-purple { background: rgba(139, 92, 246, 0.12); color: #A78BFA; }
-  .icon-amber { background: rgba(245, 158, 11, 0.12); color: #FBBF24; }
-
-  /* Navigation Tabs */
-  .tabs-nav {
-    display: flex;
-    gap: 8px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 20px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-  .tab-btn {
     padding: 12px 20px;
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    display: flex; align-items: center; gap: 8px;
-    transition: all 0.2s;
-    font-family: inherit;
-    white-space: nowrap;
-  }
-  .tab-btn:hover { color: var(--text-main); }
-  .tab-btn.active {
-    color: var(--primary);
-    border-bottom-color: var(--primary);
-  }
-  .tab-badge {
-    background: var(--bg-inner);
-    border: 1px solid var(--border);
-    padding: 2px 8px;
-    border-radius: 20px;
-    font-size: 11px;
-    color: var(--text-main);
-  }
-  .tab-btn.active .tab-badge {
-    background: var(--primary-glow);
-    border-color: var(--primary);
-    color: var(--primary);
-  }
-
-  /* Search & Filter Bar */
-  .filter-bar {
+    margin-bottom: 16px;
     display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .selection-info { font-weight: 700; color: #FCA5A5; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .selection-actions { display: flex; gap: 10px; align-items: center; }
+
+  /* Search Bar */
+  .search-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
   }
   .search-box {
     flex: 1;
@@ -596,7 +393,7 @@ HTML_PAGE = """<!DOCTYPE html>
   }
   .search-input {
     width: 100%;
-    padding: 11px 16px 11px 40px;
+    padding: 12px 16px 12px 42px;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -604,34 +401,22 @@ HTML_PAGE = """<!DOCTYPE html>
     font-size: 13px;
     outline: none;
     font-family: inherit;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
   }
   .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
   .search-icon {
     position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
     color: var(--text-subtle); font-size: 15px; pointer-events: none;
   }
-  .select-filter {
-    padding: 11px 16px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--text-main);
-    font-size: 13px;
-    font-family: inherit;
-    outline: none;
-    cursor: pointer;
-    min-width: 180px;
-  }
-  .select-filter:focus { border-color: var(--primary); }
+  .user-count-badge { font-size: 12px; color: var(--text-muted); font-weight: 600; }
 
-  /* Table Styling */
+  /* Table styling */
   .table-wrapper {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
     overflow-x: auto;
   }
   table {
@@ -649,20 +434,56 @@ HTML_PAGE = """<!DOCTYPE html>
     font-size: 11px;
     letter-spacing: 0.6px;
     border-bottom: 1px solid var(--border);
+    user-select: none;
   }
   td {
-    padding: 16px 18px;
+    padding: 14px 18px;
     border-bottom: 1px solid rgba(36, 52, 77, 0.6);
     vertical-align: middle;
   }
+  tr.clickable-row {
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  tr.clickable-row:hover {
+    background: var(--bg-card-hover);
+  }
+  tr.selected-row {
+    background: rgba(14, 165, 233, 0.08) !important;
+  }
   tr:last-child td { border-bottom: none; }
-  tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+  /* Checkbox styling */
+  .checkbox-custom {
+    width: 18px; height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+    transform: scale(1.15);
+  }
+
+  /* User chip */
+  .user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .user-avatar {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0EA5E9, #8B5CF6);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; color: white;
+    flex-shrink: 0;
+  }
+  .user-details { display: flex; flex-direction: column; }
+  .user-name { font-weight: 700; color: var(--text-main); font-size: 14px; }
+  .user-email-sub { font-size: 11px; color: var(--text-muted); }
 
   /* Badges */
   .badge {
     display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 10px;
-    border-radius: 8px;
+    padding: 3px 9px;
+    border-radius: 7px;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
@@ -670,82 +491,131 @@ HTML_PAGE = """<!DOCTYPE html>
   }
   .badge-success { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
   .badge-warning { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
-  .badge-danger { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
   .badge-primary { background: rgba(14, 165, 233, 0.15); color: #38BDF8; border: 1px solid rgba(14, 165, 233, 0.3); }
   .badge-purple { background: rgba(139, 92, 246, 0.15); color: #C4B5FD; border: 1px solid rgba(139, 92, 246, 0.3); }
   .badge-muted { background: rgba(100, 116, 139, 0.15); color: #94A3B8; border: 1px solid rgba(100, 116, 139, 0.3); }
 
-  /* User chip */
-  .user-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+  /* Action buttons */
+  .action-icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 6px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    transition: all 0.2s;
   }
-  .user-avatar {
-    width: 34px; height: 34px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #0EA5E9, #8B5CF6);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 13px; color: white;
-  }
-  .user-details { display: flex; flex-direction: column; }
-  .user-name { font-weight: 700; color: var(--text-main); }
-  .user-email { font-size: 11px; color: var(--text-muted); }
-
-  /* Medicine color dot */
-  .med-color {
-    width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px;
-  }
+  .action-icon-btn:hover { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
 
   /* Empty state */
   .empty-state {
     text-align: center;
-    padding: 60px 24px;
+    padding: 56px 20px;
     color: var(--text-muted);
   }
-  .empty-state-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.7; }
-  .empty-state-title { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; }
+  .empty-icon { font-size: 44px; margin-bottom: 10px; opacity: 0.7; }
+  .empty-title { font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
 
-  /* Modal */
+  /* Modal Popup */
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center;
-    z-index: 1000; padding: 20px;
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center;
+    z-index: 2000; padding: 20px;
   }
   .modal-card {
     background: var(--bg-card);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-light);
     border-radius: 20px;
-    max-width: 650px; width: 100%;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-    overflow: hidden;
+    max-width: 780px; width: 100%;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+    display: flex; flex-direction: column;
+    max-height: 85vh;
+    animation: modalSlide 0.2s ease;
   }
+  @keyframes modalSlide { from { opacity: 0; transform: scale(0.97) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   .modal-header {
     padding: 20px 24px;
     border-bottom: 1px solid var(--border);
     display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg-inner);
+    border-radius: 20px 20px 0 0;
   }
-  .modal-title { font-size: 17px; font-weight: 800; }
-  .modal-body { padding: 24px; max-height: 70vh; overflow-y: auto; }
-  .modal-close {
-    background: none; border: none; color: var(--text-muted);
-    font-size: 20px; cursor: pointer; padding: 4px;
+  .modal-header-profile {
+    display: flex; align-items: center; gap: 14px;
   }
-  .modal-close:hover { color: var(--text-main); }
-  .detail-row {
-    display: flex; justify-content: space-between; padding: 10px 0;
-    border-bottom: 1px solid rgba(36, 52, 77, 0.4); font-size: 13px;
+  .modal-avatar {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #0EA5E9, #8B5CF6);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 20px; color: white;
   }
-  .detail-label { color: var(--text-muted); font-weight: 600; }
-  .detail-val { color: var(--text-main); font-weight: 500; text-align: right; word-break: break-all; max-width: 65%; }
+  .modal-title { font-size: 18px; font-weight: 800; color: var(--text-main); }
+  .modal-subtitle { font-size: 12px; color: var(--primary); font-weight: 600; }
+  .modal-close-btn {
+    background: transparent; border: none; color: var(--text-muted);
+    font-size: 24px; cursor: pointer; padding: 4px 8px; border-radius: 8px;
+  }
+  .modal-close-btn:hover { color: var(--text-main); background: var(--border); }
+  
+  .modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .modal-section-title {
+    font-size: 12px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--text-subtle); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .detail-box {
+    background: var(--bg-inner);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+  .detail-box-label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+  .detail-box-val { font-size: 13px; font-weight: 700; color: var(--text-main); word-break: break-word; }
+
+  /* Medicine items inside modal */
+  .med-item-card {
+    background: var(--bg-inner);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .med-item-card:hover { border-color: var(--primary); }
+  .med-title { font-size: 15px; font-weight: 700; color: var(--text-main); }
+  .med-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg-inner);
+    border-radius: 0 0 20px 20px;
+  }
 
   footer {
-    margin-top: 40px;
+    margin-top: 36px;
     text-align: center;
     font-size: 12px;
     color: var(--text-subtle);
     border-top: 1px solid var(--border);
-    padding-top: 24px;
+    padding-top: 20px;
   }
 </style>
 </head>
@@ -758,19 +628,18 @@ HTML_PAGE = """<!DOCTYPE html>
       <div class="logo-icon">💊</div>
       <div>
         <div style="display:flex; align-items:center; gap:10px;">
-          <h1>MediRemind Admin Portal</h1>
+          <h1>MediRemind Users Admin</h1>
           <span class="status-tag cloud" id="statusBadge">
             <span class="status-dot"></span> <span id="statusText">Connecting...</span>
           </span>
         </div>
         <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;" id="statusSub">
-          Inspecting user registrations & medicines across Cloud & Offline storage
+          Click any user to view full profile & medicines. Check the box to delete.
         </div>
       </div>
     </div>
     <div class="header-actions">
       <button class="btn btn-secondary" onclick="exportJSON()">📥 Export JSON</button>
-      <button class="btn btn-secondary" onclick="syncFromADB()" id="syncAdbBtn">📱 Sync ADB</button>
       <button class="btn btn-primary" onclick="loadData(true)" id="refreshBtn">🔄 Sync Cloud (Supabase)</button>
     </div>
   </header>
@@ -778,196 +647,147 @@ HTML_PAGE = """<!DOCTYPE html>
   <!-- Notice Banner -->
   <div class="notice-banner" id="bannerMsg" style="display:none;"></div>
 
-  <!-- Stats Grid -->
-  <div class="stats-grid">
-    <div class="stat-card" onclick="switchTab('users')">
-      <div>
-        <div class="stat-val" id="statUsers">0</div>
-        <div class="stat-label">Registered Accounts</div>
-        <div class="stat-sub" id="statUsersSub">Email & Phone accounts</div>
-      </div>
-      <div class="stat-icon icon-blue">👥</div>
+  <!-- Summary Statistics Bar -->
+  <div class="stats-bar">
+    <div class="stat-pill">
+      <span class="stat-pill-val" id="statUsers">0</span>
+      <span class="stat-pill-label">Registered Users</span>
     </div>
-    <div class="stat-card" onclick="switchTab('medicines')">
-      <div>
-        <div class="stat-val" id="statMeds">0</div>
-        <div class="stat-label">Total Medicines</div>
-        <div class="stat-sub" id="statMedsSub">Added by users</div>
-      </div>
-      <div class="stat-icon icon-green">💊</div>
+    <div class="stat-pill">
+      <span class="stat-pill-val" id="statMeds">0</span>
+      <span class="stat-pill-label">Total Medicines</span>
     </div>
-    <div class="stat-card" onclick="switchTab('reminders')">
-      <div>
-        <div class="stat-val" id="statReminders">0</div>
-        <div class="stat-label">Reminders & Alarms</div>
-        <div class="stat-sub" id="statRemindersSub">Scheduled intake slots</div>
-      </div>
-      <div class="stat-icon icon-purple">⏰</div>
+    <div class="stat-pill">
+      <span class="stat-pill-val" id="statReminders">0</span>
+      <span class="stat-pill-label">Active Reminders</span>
     </div>
-    <div class="stat-card" onclick="switchTab('logs')">
-      <div>
-        <div class="stat-val" id="statLogs">0</div>
-        <div class="stat-label">Dose Intake Logs</div>
-        <div class="stat-sub" id="statLogsSub">Taken / Skipped history</div>
-      </div>
-      <div class="stat-icon icon-amber">📋</div>
+    <div class="stat-pill">
+      <span class="stat-pill-val" id="statLogs">0</span>
+      <span class="stat-pill-label">Dose Logs Recorded</span>
     </div>
   </div>
 
-  <!-- Tabs Nav -->
-  <div class="tabs-nav">
-    <button class="tab-btn active" id="tabBtn-users" onclick="switchTab('users')">
-      👥 User Accounts <span class="tab-badge" id="badgeUsers">0</span>
-    </button>
-    <button class="tab-btn" id="tabBtn-medicines" onclick="switchTab('medicines')">
-      💊 Medicines by User <span class="tab-badge" id="badgeMeds">0</span>
-    </button>
-    <button class="tab-btn" id="tabBtn-reminders" onclick="switchTab('reminders')">
-      ⏰ Reminder Schedules <span class="tab-badge" id="badgeReminders">0</span>
-    </button>
-    <button class="tab-btn" id="tabBtn-logs" onclick="switchTab('logs')">
-      📋 Dose Intake History <span class="tab-badge" id="badgeLogs">0</span>
-    </button>
-    <button class="tab-btn" id="tabBtn-pin" onclick="switchTab('pin')">
-      🔐 Security & PIN Requests <span class="tab-badge" id="badgePin">0</span>
-    </button>
+  <!-- Selection Action Bar (Shown when users are ticked) -->
+  <div class="selection-bar" id="selectionBar" style="display:none;">
+    <div class="selection-info">
+      <span>☑️</span>
+      <span id="selectionCountText">0 users selected</span>
+    </div>
+    <div class="selection-actions">
+      <button class="btn btn-secondary btn-sm" onclick="clearAllSelections()">✕ Cancel</button>
+      <button class="btn btn-danger" onclick="deleteSelectedUsers()">🗑️ Delete Selected Users</button>
+    </div>
   </div>
 
-  <!-- Search & Filter Controls -->
-  <div class="filter-bar">
+  <!-- Search & User Count -->
+  <div class="search-wrapper">
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input type="text" id="filterInput" class="search-input" placeholder="Search by email, user name, medicine name, dosage..." oninput="applyFilter()">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search users by name, email, phone number, or medicines..." oninput="applyFilter()">
     </div>
-    <select id="userDropdownFilter" class="select-filter" onchange="onUserFilterChanged()">
-      <option value="all">All Accounts / Users</option>
-    </select>
-    <select id="statusDropdownFilter" class="select-filter" onchange="applyFilter()">
-      <option value="all">All Statuses</option>
-      <option value="active">Active Only</option>
-      <option value="low_stock">Low Stock (≤ threshold)</option>
-    </select>
+    <div class="user-count-badge" id="displayCountText">Showing 0 users</div>
   </div>
 
-  <!-- Tab 1: Users -->
-  <div id="tab-users" class="tab-content">
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>User / Account</th>
-            <th>Email Address</th>
-            <th>Phone Number</th>
-            <th>Verification</th>
-            <th>Security Setup</th>
-            <th>Medicines Added</th>
-            <th>Created Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyUsers"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Tab 2: Medicines -->
-  <div id="tab-medicines" class="tab-content" style="display:none;">
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Medicine Name & Dosage</th>
-            <th>Assigned User / Email</th>
-            <th>Type</th>
-            <th>Stock & Inventory</th>
-            <th>Instruction</th>
-            <th>Routine / Schedule</th>
-            <th>Course Duration</th>
-            <th>Status</th>
-            <th>Details</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyMeds"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Tab 3: Reminders -->
-  <div id="tab-reminders" class="tab-content" style="display:none;">
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Scheduled Time</th>
-            <th>User / Email</th>
-            <th>Medicine</th>
-            <th>Repeat Frequency</th>
-            <th>Alarm Mode</th>
-            <th>Notification ID</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyReminders"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Tab 4: Intake Logs -->
-  <div id="tab-logs" class="tab-content" style="display:none;">
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Scheduled Time</th>
-            <th>User / Email</th>
-            <th>Medicine</th>
-            <th>Dose Status</th>
-            <th>Recorded / Taken At</th>
-            <th>Cloud Sync Time</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyLogs"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Tab 5: Security / PIN Requests -->
-  <div id="tab-pin" class="tab-content" style="display:none;">
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Requested Date</th>
-            <th>User Name</th>
-            <th>Email / Phone</th>
-            <th>Message</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyPin"></tbody>
-      </table>
-    </div>
+  <!-- Main Users Table -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 44px; text-align: center;">
+            <input type="checkbox" id="selectAllCheckbox" class="checkbox-custom" title="Select All Users" onchange="toggleSelectAll(this)">
+          </th>
+          <th>User Account</th>
+          <th>Email Address</th>
+          <th>Phone Number</th>
+          <th>Status</th>
+          <th>Medicines Added</th>
+          <th>Registered Date</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyUsers"></tbody>
+    </table>
   </div>
 
   <footer>
-    MediRemind Local Cloud Admin Dashboard · Built-in Supabase Sync & Offline Local Cache · Port 8080
+    MediRemind Admin Panel · Ultra-Fast Local Engine · Connected to Supabase Cloud
   </footer>
 </div>
 
-<!-- Medicine Details Modal -->
-<div class="modal-overlay" id="detailModal" onclick="closeDetailModal(event)">
+<!-- Detailed User Profile Modal -->
+<div class="modal-overlay" id="userModal" onclick="closeUserModal(event)">
   <div class="modal-card" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <div class="modal-title" id="modalTitle">Medicine Details</div>
-      <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+      <div class="modal-header-profile">
+        <div class="modal-avatar" id="mAvatar">?</div>
+        <div>
+          <div class="modal-title" id="mName">User Name</div>
+          <div class="modal-subtitle" id="mEmailOrPhone">email@example.com</div>
+        </div>
+      </div>
+      <button class="modal-close-btn" onclick="closeUserModal()">&times;</button>
     </div>
-    <div class="modal-body" id="modalBody"></div>
+    
+    <div class="modal-body">
+      <!-- Section 1: User Profile & Security Details -->
+      <div class="modal-section-title">👤 Account & Security Details</div>
+      <div class="detail-grid">
+        <div class="detail-box">
+          <div class="detail-box-label">User ID (UUID)</div>
+          <div class="detail-box-val"><code id="mUserId" style="font-size:11px;">—</code></div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-box-label">Account Role</div>
+          <div class="detail-box-val" id="mRole">—</div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-box-label">Verification Status</div>
+          <div class="detail-box-val" id="mVerified">—</div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-box-label">Registered / Created At</div>
+          <div class="detail-box-val" id="mCreatedAt">—</div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-box-label">Last Login</div>
+          <div class="detail-box-val" id="mLastLogin">—</div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-box-label">Password / PIN Status</div>
+          <div class="detail-box-val" id="mPinStatus">—</div>
+        </div>
+        <div class="detail-box" style="grid-column: 1 / -1;">
+          <div class="detail-box-label">Security Question & Answer</div>
+          <div class="detail-box-val" id="mSecQA">—</div>
+        </div>
+      </div>
+
+      <!-- Section 2: Medicines Added -->
+      <div class="modal-section-title" id="mMedsHeader">💊 Medicines Added (0)</div>
+      <div id="mMedsList"></div>
+
+      <!-- Section 3: Reminder Schedules -->
+      <div class="modal-section-title" id="mRemindersHeader" style="margin-top:20px;">⏰ Routine & Reminder Alarms (0)</div>
+      <div id="mRemindersList"></div>
+
+      <!-- Section 4: Dose Logs -->
+      <div class="modal-section-title" id="mLogsHeader" style="margin-top:20px;">📋 Dose Intake History (0)</div>
+      <div id="mLogsList"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="mDeleteUserBtn" onclick="deleteUserFromModal()">
+        🗑️ Delete This User
+      </button>
+      <button class="btn btn-secondary" onclick="closeUserModal()">Close</button>
+    </div>
   </div>
 </div>
 
 <script>
 let currentData = null;
-let currentTab = 'users';
-let selectedUserEmailOrPhone = 'all';
+let selectedUserKeys = new Set();
+let activeModalUser = null;
 
 const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -991,21 +811,11 @@ function formatTime(hour, minute) {
   return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-function formatDate(isoStr) {
-  if (!isoStr) return '—';
-  try {
-    const d = new Date(isoStr);
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch(e) {
-    return isoStr.split('T')[0];
-  }
-}
-
 function formatDateTime(isoStr) {
   if (!isoStr) return '—';
   try {
     const d = new Date(isoStr);
-    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   } catch(e) {
     return isoStr.replace('T', ' ').split('.')[0];
   }
@@ -1013,46 +823,20 @@ function formatDateTime(isoStr) {
 
 function getInstructionLabel(inst) {
   const map = {
-    'afterMeal': 'After Meal',
-    'beforeMeal': 'Before Meal',
-    'withMeal': 'With Meal',
-    'emptyStomach': 'Empty Stomach',
+    'afterMeal': 'After Meal (খাওয়ার পর)',
+    'beforeMeal': 'Before Meal (খাওয়ার আগে)',
+    'withMeal': 'With Meal (খাওয়ার সাথে)',
+    'emptyStomach': 'Empty Stomach (খালি পেটে)',
     'anytime': 'Any Time'
   };
   return map[inst] || inst || 'After Meal';
 }
 
-function switchTab(tabId) {
-  currentTab = tabId;
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
-
-  const btn = document.getElementById('tabBtn-' + tabId);
-  if (btn) btn.classList.add('active');
-  const content = document.getElementById('tab-' + tabId);
-  if (content) content.style.display = 'block';
-
-  applyFilter();
-}
-
-function filterByUser(identifier) {
-  selectedUserEmailOrPhone = identifier;
-  const select = document.getElementById('userDropdownFilter');
-  if (select) select.value = identifier;
-  switchTab('medicines');
-}
-
-function onUserFilterChanged() {
-  const select = document.getElementById('userDropdownFilter');
-  selectedUserEmailOrPhone = select.value;
-  applyFilter();
-}
-
 async function loadData(forceCloud = false) {
-  const refreshBtn = document.getElementById('refreshBtn');
-  if (refreshBtn) {
-    refreshBtn.disabled = true;
-    refreshBtn.textContent = '🔄 Syncing...';
+  const btn = document.getElementById('refreshBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '🔄 Syncing...';
   }
 
   try {
@@ -1061,7 +845,6 @@ async function loadData(forceCloud = false) {
     const data = await res.json();
     currentData = data;
 
-    // Update connection status
     const badge = document.getElementById('statusBadge');
     const statusText = document.getElementById('statusText');
     const statusSub = document.getElementById('statusSub');
@@ -1069,398 +852,432 @@ async function loadData(forceCloud = false) {
     if (data.data_source === 'supabase_cloud') {
       badge.className = 'status-tag cloud';
       statusText.textContent = 'Supabase Cloud (Live)';
-      statusSub.textContent = `Connected to cloud · Last synced at ${data.synced_at || 'just now'}`;
-    } else if (data.data_source === 'supabase_cache') {
-      badge.className = 'status-tag cached';
-      statusText.textContent = 'Offline Cached Data';
-      statusSub.textContent = `Displaying cached Supabase data · ${data.synced_at || ''}`;
+      statusSub.textContent = `Live Cloud Sync · Synced at ${data.synced_at || 'just now'}`;
     } else {
-      badge.className = 'status-tag offline';
-      statusText.textContent = 'Local SQLite Database';
-      statusSub.textContent = data.db_path || 'Local storage';
+      badge.className = 'status-tag cached';
+      statusText.textContent = 'Offline Cached Mode';
+      statusSub.textContent = `Displaying saved cache (${data.synced_at || ''})`;
     }
 
     if (data.offline_notice) {
       showNotice(data.offline_notice, false);
     }
 
-    // Populate Counts
+    // Counts
     const users = data.users || [];
     const meds = data.medicines || [];
     const reminders = data.reminders || [];
     const logs = data.dose_logs || [];
-    const pinReqs = data.pin_requests || [];
 
     document.getElementById('statUsers').textContent = users.length;
     document.getElementById('statMeds').textContent = meds.length;
     document.getElementById('statReminders').textContent = reminders.length;
     document.getElementById('statLogs').textContent = logs.length;
 
-    document.getElementById('badgeUsers').textContent = users.length;
-    document.getElementById('badgeMeds').textContent = meds.length;
-    document.getElementById('badgeReminders').textContent = reminders.length;
-    document.getElementById('badgeLogs').textContent = logs.length;
-    document.getElementById('badgePin').textContent = pinReqs.length;
+    // Clear stale selections
+    selectedUserKeys.clear();
+    updateSelectionBar();
 
-    // Populate User Dropdown filter
-    populateUserDropdown(users, meds);
-
-    // Render tables
-    renderUsers(users, meds);
-    renderMedicines(meds, users);
-    renderReminders(reminders, meds);
-    renderLogs(logs, meds);
-    renderPinRequests(pinReqs);
-
-    applyFilter();
+    renderUsersTable(users, meds);
   } catch (err) {
-    showNotice('Failed to connect to local server: ' + err.message, true);
+    showNotice('Failed to fetch data: ' + err.message, true);
   } finally {
-    if (refreshBtn) {
-      refreshBtn.disabled = false;
-      refreshBtn.textContent = '🔄 Sync Cloud (Supabase)';
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🔄 Sync Cloud (Supabase)';
     }
   }
 }
 
-function populateUserDropdown(users, meds) {
-  const select = document.getElementById('userDropdownFilter');
-  const prevVal = select.value;
-  select.innerHTML = '<option value="all">All Accounts / Users</option>';
-
-  // Map users
-  const seen = new Set();
-  users.forEach(u => {
-    const key = u.email || u.phone_number;
-    if (key && !seen.has(key)) {
-      seen.add(key);
-      const opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = `${u.name || 'User'} (${key})`;
-      select.appendChild(opt);
-    }
-  });
-
-  // Also include any orphan emails from medicines
-  meds.forEach(m => {
-    const key = m.email || m.phone_number;
-    if (key && !seen.has(key)) {
-      seen.add(key);
-      const opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = `Account (${key})`;
-      select.appendChild(opt);
-    }
-  });
-
-  if (seen.has(prevVal)) {
-    select.value = prevVal;
-  }
+function getUserIdentifier(u) {
+  return u.email || u.phone_number || u.id;
 }
 
-function renderUsers(users, meds) {
+function getUserMedicines(u, meds) {
+  const uEmail = (u.email || '').toLowerCase().trim();
+  const uPhone = (u.phone_number || '').trim();
+  return (meds || []).filter(m => 
+    (uEmail && (m.email || '').toLowerCase().trim() === uEmail) ||
+    (uPhone && (m.phone_number || '').trim() === uPhone)
+  );
+}
+
+function renderUsersTable(users, meds) {
   const tbody = document.getElementById('tbodyUsers');
+  document.getElementById('displayCountText').textContent = `Showing ${users.length} users`;
+
   if (!users.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-title">No User Accounts Found</div>No registered accounts found in Supabase.</td></tr>';
+    tbody.innerHTML = `<tr>
+      <td colspan="8" class="empty-state">
+        <div class="empty-icon">👥</div>
+        <div class="empty-title">No Users Found</div>
+        <div>No registered users found in Supabase.</div>
+      </td>
+    </tr>`;
     return;
   }
 
   tbody.innerHTML = users.map(u => {
+    const key = getUserIdentifier(u);
+    const isChecked = selectedUserKeys.has(key);
     const uEmail = u.email || '';
     const uPhone = u.phone_number || '';
-    const userMeds = meds.filter(m => (uEmail && m.email === uEmail) || (uPhone && m.phone_number === uPhone));
+    const userMeds = getUserMedicines(u, meds);
     const initial = (u.name || uEmail || uPhone || '?').charAt(0).toUpperCase();
 
-    const verifiedBadge = u.is_verified 
-      ? '<span class="badge badge-success">✓ Verified</span>' 
+    const verifiedBadge = u.is_verified
+      ? '<span class="badge badge-success">✓ Verified</span>'
       : '<span class="badge badge-warning">Unverified</span>';
 
-    const hasPin = u.security_pin ? '✓ PIN set' : '—';
-    const hasSecQ = u.security_question ? '✓ Question set' : '—';
-    const secSummary = `${hasPin} · ${hasSecQ}`;
-
-    const identifier = uEmail || uPhone;
-
-    return `<tr>
+    return `<tr class="clickable-row ${isChecked ? 'selected-row' : ''}" onclick="onRowClick(event, '${escapeHtml(key)}')">
+      <td style="text-align:center;" onclick="event.stopPropagation()">
+        <input type="checkbox" class="checkbox-custom row-checkbox" 
+          value="${escapeHtml(key)}" 
+          ${isChecked ? 'checked' : ''} 
+          onchange="toggleUserSelect('${escapeHtml(key)}', this.checked)">
+      </td>
       <td>
         <div class="user-chip">
           <div class="user-avatar">${escapeHtml(initial)}</div>
           <div class="user-details">
-            <span class="user-name">${escapeHtml(u.name || 'Anonymous User')}</span>
-            <span class="user-email">${u.is_admin ? '<span class="badge badge-purple" style="font-size:9px; padding:1px 5px;">ADMIN</span>' : 'Standard User'}</span>
+            <span class="user-name">${escapeHtml(u.name || 'Anonymous')}</span>
+            <span class="user-email-sub">${u.is_admin ? '<span class="badge badge-purple" style="font-size:9px; padding:1px 5px;">ADMIN</span>' : 'Standard User'}</span>
           </div>
         </div>
       </td>
       <td>
-        ${uEmail ? `<strong>${escapeHtml(uEmail)}</strong>` : '<span style="color:var(--text-subtle)">No email</span>'}
+        ${uEmail ? `<strong>${escapeHtml(uEmail)}</strong>` : '<span style="color:var(--text-subtle)">—</span>'}
       </td>
       <td>
-        ${uPhone ? `<code>${escapeHtml(uPhone)}</code>` : '<span style="color:var(--text-subtle)">No phone</span>'}
+        ${uPhone ? `<code>${escapeHtml(uPhone)}</code>` : '<span style="color:var(--text-subtle)">—</span>'}
       </td>
       <td>${verifiedBadge}</td>
-      <td><span style="font-size:12px; color:var(--text-muted);">${escapeHtml(secSummary)}</span></td>
       <td>
         <span class="badge ${userMeds.length > 0 ? 'badge-primary' : 'badge-muted'}">
           ${userMeds.length} medicine${userMeds.length === 1 ? '' : 's'}
         </span>
       </td>
-      <td><span style="font-size:12px; color:var(--text-muted);">${formatDate(u.created_at)}</span></td>
-      <td>
-        <div style="display:flex; gap:6px; align-items:center;">
-          <button class="btn btn-secondary btn-sm" onclick="filterByUser('${escapeHtml(identifier)}')">
-            💊 View Medicines
+      <td><span style="font-size:12px; color:var(--text-muted);">${formatDateTime(u.created_at)}</span></td>
+      <td style="text-align:right;" onclick="event.stopPropagation()">
+        <div style="display:flex; justify-content:flex-end; gap:6px; align-items:center;">
+          <button class="btn btn-secondary btn-sm" onclick="openUserModalByKey('${escapeHtml(key)}')">
+            ℹ️ Details
           </button>
-          <button class="btn btn-danger btn-sm" onclick="confirmDeleteUser('${escapeHtml(u.id || '')}', '${escapeHtml(uEmail)}', '${escapeHtml(uPhone)}', '${escapeHtml(u.name || 'User')}')">
-            🗑️ Delete
+          <button class="action-icon-btn" title="Delete this user" onclick="quickDeleteUser('${escapeHtml(key)}')">
+            🗑️
           </button>
         </div>
       </td>
     </tr>`;
-
   }).join('');
+
+  // Update master checkbox state
+  const selectAllBox = document.getElementById('selectAllCheckbox');
+  if (selectAllBox) {
+    selectAllBox.checked = users.length > 0 && selectedUserKeys.size === users.length;
+  }
 }
 
-function renderMedicines(meds, users) {
-  const tbody = document.getElementById('tbodyMeds');
-  if (!meds.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><div class="empty-state-icon">💊</div><div class="empty-state-title">No Medicines Found</div>No medicine entries found in database.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = meds.map(m => {
-    const userMatch = (users || []).find(u => 
-      (m.email && u.email === m.email) || 
-      (m.phone_number && u.phone_number === m.phone_number)
-    );
-    const userName = userMatch ? userMatch.name : (m.email || m.phone_number || 'Local User');
-    const userAccount = m.email || m.phone_number || '—';
-
-    const unit = m.unit || (m.type === 'syrup' ? 'ml' : (m.type === 'inhaler' ? 'puffs' : 'tablets'));
-    const stock = m.current_stock !== undefined ? m.current_stock : 0;
-    const threshold = m.refill_threshold !== undefined ? m.refill_threshold : 5;
-    const isLow = stock <= threshold;
-
-    const stockBadge = stock <= 0
-      ? `<span class="badge badge-danger">Out of stock (0 ${escapeHtml(unit)})</span>`
-      : isLow
-        ? `<span class="badge badge-warning">${stock} ${escapeHtml(unit)} (Low)</span>`
-        : `<span class="badge badge-success">${stock} ${escapeHtml(unit)}</span>`;
-
-    const statusBadge = m.is_active 
-      ? '<span class="badge badge-success">Active</span>'
-      : '<span class="badge badge-muted">Paused</span>';
-
-    // Parse reminder slots
-    let reminderTimes = [];
-    try {
-      if (m.reminders_json) {
-        const parsed = JSON.parse(m.reminders_json);
-        reminderTimes = parsed.map(r => formatTime(r.hour, r.minute));
-      }
-    } catch(e) {}
-    const routineStr = reminderTimes.length > 0 
-      ? `⏰ ${reminderTimes.join(', ')}` 
-      : '<span style="color:var(--text-subtle)">No reminder slots</span>';
-
-    const courseStr = m.duration_days > 0 
-      ? `${m.duration_days} days (${formatDate(m.start_date)})` 
-      : 'Ongoing / Chronic';
-
-    return `<tr>
-      <td>
-        <div style="font-weight:700; color:var(--text-main); font-size:14px;">
-          ${escapeHtml(m.name)}
-        </div>
-        <div style="color:var(--text-muted); font-size:12px;">
-          ${escapeHtml(m.dosage || '')} ${escapeHtml(m.unit || '')}
-        </div>
-      </td>
-      <td>
-        <div style="font-weight:600; color:var(--primary); font-size:13px;">${escapeHtml(userAccount)}</div>
-        <div style="color:var(--text-subtle); font-size:11px;">${escapeHtml(userName)}</div>
-      </td>
-      <td><span class="badge badge-primary">${escapeHtml(m.type || 'tablet')}</span></td>
-      <td>${stockBadge}</td>
-      <td><span class="badge badge-purple">${escapeHtml(getInstructionLabel(m.instruction))}</span></td>
-      <td><span style="font-size:12px; font-weight:600;">${routineStr}</span></td>
-      <td><span style="font-size:12px; color:var(--text-muted);">${courseStr}</span></td>
-      <td>${statusBadge}</td>
-      <td>
-        <button class="btn btn-secondary btn-sm" onclick='showMedicineDetail(${JSON.stringify(m).replace(/'/g, "&#39;")})'>
-          Inspect
-        </button>
-      </td>
-    </tr>`;
-  }).join('');
+function onRowClick(event, key) {
+  // If clicked on input or button, stop
+  if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON') return;
+  openUserModalByKey(key);
 }
 
-function renderReminders(reminders, meds) {
-  const tbody = document.getElementById('tbodyReminders');
-  if (!reminders.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-state-icon">⏰</div><div class="empty-state-title">No Reminders Found</div>No reminder schedules found.</td></tr>';
-    return;
+function toggleUserSelect(key, isChecked) {
+  if (isChecked) {
+    selectedUserKeys.add(key);
+  } else {
+    selectedUserKeys.delete(key);
   }
-
-  tbody.innerHTML = reminders.map(r => {
-    const med = (meds || []).find(m => m.id === r.medicine_id);
-    const medName = med ? `${med.name} (${med.dosage || ''})` : (r.medicine_id ? r.medicine_id.substring(0, 8) + '...' : 'Unknown');
-    const timeDisplay = formatTime(r.hour, r.minute);
-    const alarmBadge = r.is_alarm 
-      ? '<span class="badge badge-success">Full Alarm</span>'
-      : '<span class="badge badge-muted">Notification</span>';
-
-    const account = r.email || r.phone_number || (med ? (med.email || med.phone_number) : '—');
-
-    return `<tr>
-      <td><strong style="font-size:15px; color:var(--primary);">${timeDisplay}</strong></td>
-      <td><code>${escapeHtml(account)}</code></td>
-      <td><strong>${escapeHtml(medName)}</strong></td>
-      <td>${formatDays(r.days_of_week)}</td>
-      <td>${alarmBadge}</td>
-      <td><code style="font-size:11px; color:var(--text-subtle);">${r.notification_id || '—'}</code></td>
-    </tr>`;
-  }).join('');
+  updateSelectionBar();
+  applyFilter();
 }
 
-function renderLogs(logs, meds) {
-  const tbody = document.getElementById('tbodyLogs');
-  if (!logs.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No Intake Logs</div>No doses have been recorded yet.</td></tr>';
-    return;
+function toggleSelectAll(masterBox) {
+  if (!currentData) return;
+  const users = getFilteredUsers();
+  if (masterBox.checked) {
+    users.forEach(u => selectedUserKeys.add(getUserIdentifier(u)));
+  } else {
+    selectedUserKeys.clear();
   }
-
-  tbody.innerHTML = logs.map(l => {
-    const med = (meds || []).find(m => m.id === l.medicine_id);
-    const medName = med ? med.name : (l.medicine_id ? l.medicine_id.substring(0, 8) + '...' : '—');
-    const statusClass = l.status === 'taken' ? 'badge-success' : (l.status === 'skipped' ? 'badge-danger' : 'badge-warning');
-    const account = l.email || l.phone_number || (med ? (med.email || med.phone_number) : '—');
-
-    return `<tr>
-      <td><strong>${formatDateTime(l.scheduled_time)}</strong></td>
-      <td><code>${escapeHtml(account)}</code></td>
-      <td><strong>${escapeHtml(medName)}</strong></td>
-      <td><span class="badge ${statusClass}">${escapeHtml(l.status || 'unknown')}</span></td>
-      <td style="color:var(--text-muted); font-size:12px;">${formatDateTime(l.taken_at)}</td>
-      <td style="color:var(--text-subtle); font-size:11px;">${formatDateTime(l.synced_at)}</td>
-    </tr>`;
-  }).join('');
+  updateSelectionBar();
+  applyFilter();
 }
 
-function renderPinRequests(reqs) {
-  const tbody = document.getElementById('tbodyPin');
-  if (!reqs.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="empty-state-icon">🔐</div><div class="empty-state-title">No PIN Reset Requests</div>No pending security requests found.</td></tr>';
-    return;
-  }
+function clearAllSelections() {
+  selectedUserKeys.clear();
+  const masterBox = document.getElementById('selectAllCheckbox');
+  if (masterBox) masterBox.checked = false;
+  updateSelectionBar();
+  applyFilter();
+}
 
-  tbody.innerHTML = reqs.map(p => `<tr>
-    <td>${formatDateTime(p.created_at)}</td>
-    <td><strong>${escapeHtml(p.user_name || 'User')}</strong></td>
-    <td><code>${escapeHtml(p.email || p.phone_number || '—')}</code></td>
-    <td>${escapeHtml(p.message || '—')}</td>
-    <td><span class="badge badge-warning">${escapeHtml(p.status || 'pending')}</span></td>
-  </tr>`).join('');
+function updateSelectionBar() {
+  const bar = document.getElementById('selectionBar');
+  const count = selectedUserKeys.size;
+  if (count > 0) {
+    bar.style.display = 'flex';
+    document.getElementById('selectionCountText').textContent = `${count} user${count === 1 ? '' : 's'} selected (ticked)`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function getFilteredUsers() {
+  if (!currentData) return [];
+  const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  const users = currentData.users || [];
+  const meds = currentData.medicines || [];
+
+  if (!query) return users;
+
+  return users.filter(u => {
+    const nameMatch = (u.name || '').toLowerCase().includes(query);
+    const emailMatch = (u.email || '').toLowerCase().includes(query);
+    const phoneMatch = (u.phone_number || '').toLowerCase().includes(query);
+
+    // Also search by medicines added by this user
+    const userMeds = getUserMedicines(u, meds);
+    const medMatch = userMeds.some(m => (m.name || '').toLowerCase().includes(query) || (m.dosage || '').toLowerCase().includes(query));
+
+    return nameMatch || emailMatch || phoneMatch || medMatch;
+  });
 }
 
 function applyFilter() {
   if (!currentData) return;
-  const query = (document.getElementById('filterInput').value || '').toLowerCase().trim();
-  const selectedUser = selectedUserEmailOrPhone;
-  const statusFilter = document.getElementById('statusDropdownFilter').value;
+  const filtered = getFilteredUsers();
+  renderUsersTable(filtered, currentData.medicines || []);
+}
 
-  const users = currentData.users || [];
+/* ==================== USER DETAILS MODAL ==================== */
+
+function openUserModalByKey(key) {
+  if (!currentData) return;
+  const u = (currentData.users || []).find(user => getUserIdentifier(user) === key);
+  if (!u) return;
+
+  activeModalUser = u;
   const meds = currentData.medicines || [];
   const reminders = currentData.reminders || [];
   const logs = currentData.dose_logs || [];
 
-  if (currentTab === 'users') {
-    const filtered = users.filter(u => 
-      (!query || 
-        (u.name || '').toLowerCase().includes(query) ||
-        (u.email || '').toLowerCase().includes(query) ||
-        (u.phone_number || '').toLowerCase().includes(query)
-      ) &&
-      (selectedUser === 'all' || u.email === selectedUser || u.phone_number === selectedUser)
-    );
-    renderUsers(filtered, meds);
-  } else if (currentTab === 'medicines') {
-    const filtered = meds.filter(m => {
-      const matchUser = selectedUser === 'all' || m.email === selectedUser || m.phone_number === selectedUser;
-      const matchQuery = !query || 
-        (m.name || '').toLowerCase().includes(query) ||
-        (m.dosage || '').toLowerCase().includes(query) ||
-        (m.email || '').toLowerCase().includes(query) ||
-        (m.type || '').toLowerCase().includes(query);
-      
-      let matchStatus = true;
-      if (statusFilter === 'active') matchStatus = m.is_active;
-      if (statusFilter === 'low_stock') matchStatus = (m.current_stock || 0) <= (m.refill_threshold || 5);
+  const uEmail = (u.email || '').toLowerCase().trim();
+  const uPhone = (u.phone_number || '').trim();
 
-      return matchUser && matchQuery && matchStatus;
-    });
-    renderMedicines(filtered, users);
-  } else if (currentTab === 'reminders') {
-    const filtered = reminders.filter(r => {
-      const matchUser = selectedUser === 'all' || r.email === selectedUser || r.phone_number === selectedUser;
-      const matchQuery = !query || (r.email || '').toLowerCase().includes(query);
-      return matchUser && matchQuery;
-    });
-    renderReminders(filtered, meds);
-  } else if (currentTab === 'logs') {
-    const filtered = logs.filter(l => {
-      const matchUser = selectedUser === 'all' || l.email === selectedUser || l.phone_number === selectedUser;
-      const matchQuery = !query || (l.email || '').toLowerCase().includes(query) || (l.status || '').toLowerCase().includes(query);
-      return matchUser && matchQuery;
-    });
-    renderLogs(filtered, meds);
+  // Avatar & Title
+  const initial = (u.name || uEmail || uPhone || '?').charAt(0).toUpperCase();
+  document.getElementById('mAvatar').textContent = initial;
+  document.getElementById('mName').textContent = u.name || 'Anonymous User';
+  document.getElementById('mEmailOrPhone').textContent = uEmail || uPhone || 'No contact provided';
+
+  // Details
+  document.getElementById('mUserId').textContent = u.id || '—';
+  document.getElementById('mRole').innerHTML = u.is_admin ? '<span class="badge badge-purple">Admin</span>' : '<span class="badge badge-muted">Standard User</span>';
+  document.getElementById('mVerified').innerHTML = u.is_verified ? '<span class="badge badge-success">✓ Verified</span>' : '<span class="badge badge-warning">Unverified</span>';
+  document.getElementById('mCreatedAt').textContent = formatDateTime(u.created_at);
+  document.getElementById('mLastLogin').textContent = formatDateTime(u.last_login);
+  
+  const hasPwd = (u.password || u.security_pin) ? true : false;
+  document.getElementById('mPinStatus').innerHTML = hasPwd ? '<span class="badge badge-success">✓ Password/PIN Set</span>' : '<span class="badge badge-muted">None Set</span>';
+
+  const secQ = u.security_question || '—';
+  const secA = u.security_answer ? ` (Answer: "${escapeHtml(u.security_answer)}")` : '';
+  document.getElementById('mSecQA').textContent = secQ + secA;
+
+  // Filter medicines for this user
+  const userMeds = meds.filter(m => 
+    (uEmail && (m.email || '').toLowerCase().trim() === uEmail) ||
+    (uPhone && (m.phone_number || '').trim() === uPhone)
+  );
+  document.getElementById('mMedsHeader').textContent = `💊 Medicines Added (${userMeds.length})`;
+
+  const medsContainer = document.getElementById('mMedsList');
+  if (!userMeds.length) {
+    medsContainer.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:12px; background:var(--bg-inner); border-radius:10px;">No medicines have been added yet by this user.</div>';
+  } else {
+    medsContainer.innerHTML = userMeds.map(m => {
+      const unit = m.unit || 'tablets';
+      const stock = m.current_stock !== undefined ? m.current_stock : 0;
+      const threshold = m.refill_threshold !== undefined ? m.refill_threshold : 5;
+      const isLow = stock <= threshold;
+      const stockBadge = stock <= 0
+        ? `<span class="badge badge-danger">Out of stock (0 ${escapeHtml(unit)})</span>`
+        : isLow
+          ? `<span class="badge badge-warning">${stock} ${escapeHtml(unit)} (Low stock)</span>`
+          : `<span class="badge badge-success">${stock} ${escapeHtml(unit)}</span>`;
+
+      let routineSlots = [];
+      try {
+        if (m.reminders_json) {
+          const parsed = JSON.parse(m.reminders_json);
+          routineSlots = parsed.map(r => formatTime(r.hour, r.minute));
+        }
+      } catch(e) {}
+      const routineStr = routineSlots.length > 0 ? routineSlots.join(', ') : 'No reminder slots';
+
+      const durationStr = m.duration_days > 0 ? `${m.duration_days} days` : 'Ongoing / Chronic';
+
+      return `<div class="med-item-card">
+        <div>
+          <div class="med-title">${escapeHtml(m.name)} <span style="color:var(--primary); font-size:13px;">${escapeHtml(m.dosage || '')}</span></div>
+          <div class="med-meta">
+            <span class="badge badge-primary" style="margin-right:6px;">${escapeHtml(m.type || 'tablet')}</span>
+            <span>🍽️ ${escapeHtml(getInstructionLabel(m.instruction))}</span> · 
+            <span>⏳ ${escapeHtml(durationStr)}</span>
+          </div>
+          <div class="med-meta" style="margin-top:4px;">
+            <span>⏰ Routine: <strong>${escapeHtml(routineStr)}</strong></span>
+          </div>
+        </div>
+        <div>
+          ${stockBadge}
+        </div>
+      </div>`;
+    }).join('');
   }
+
+  // Filter reminders for this user
+  const userReminders = reminders.filter(r => 
+    (uEmail && (r.email || '').toLowerCase().trim() === uEmail) ||
+    (uPhone && (r.phone_number || '').trim() === uPhone)
+  );
+  document.getElementById('mRemindersHeader').textContent = `⏰ Routine & Reminder Alarms (${userReminders.length})`;
+  const remindersContainer = document.getElementById('mRemindersList');
+  if (!userReminders.length) {
+    remindersContainer.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:12px; background:var(--bg-inner); border-radius:10px;">No reminder alarms scheduled.</div>';
+  } else {
+    remindersContainer.innerHTML = userReminders.map(r => {
+      const med = meds.find(m => m.id === r.medicine_id);
+      const medName = med ? med.name : 'Medicine';
+      return `<div class="med-item-card">
+        <div>
+          <strong style="color:var(--primary); font-size:15px;">${formatTime(r.hour, r.minute)}</strong> · 
+          <strong>${escapeHtml(medName)}</strong>
+          <div class="med-meta">Repeat: ${formatDays(r.days_of_week)}</div>
+        </div>
+        <div>
+          <span class="badge ${r.is_alarm ? 'badge-success' : 'badge-muted'}">${r.is_alarm ? 'Full Alarm' : 'Notification'}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Filter dose logs for this user
+  const userLogs = logs.filter(l => 
+    (uEmail && (l.email || '').toLowerCase().trim() === uEmail) ||
+    (uPhone && (l.phone_number || '').trim() === uPhone)
+  );
+  document.getElementById('mLogsHeader').textContent = `📋 Dose Intake History (${userLogs.length})`;
+  const logsContainer = document.getElementById('mLogsList');
+  if (!userLogs.length) {
+    logsContainer.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:12px; background:var(--bg-inner); border-radius:10px;">No dose intake history logged yet.</div>';
+  } else {
+    logsContainer.innerHTML = userLogs.map(l => {
+      const isTaken = l.status === 'taken';
+      const statusBadge = isTaken ? '<span class="badge badge-success">✓ Taken</span>' : '<span class="badge badge-danger">✕ Skipped</span>';
+      return `<div class="med-item-card">
+        <div>
+          <strong>${formatDateTime(l.scheduled_time)}</strong>
+          <div class="med-meta">Recorded: ${formatDateTime(l.taken_at)}</div>
+        </div>
+        <div>${statusBadge}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('userModal').style.display = 'flex';
 }
 
-function showMedicineDetail(m) {
-  document.getElementById('modalTitle').textContent = `${m.name} - Full Details`;
-  const body = document.getElementById('modalBody');
-
-  body.innerHTML = `
-    <div class="detail-row"><span class="detail-label">Medicine ID</span><span class="detail-val"><code>${escapeHtml(m.id)}</code></span></div>
-    <div class="detail-row"><span class="detail-label">Name</span><span class="detail-val"><strong>${escapeHtml(m.name)}</strong></span></div>
-    <div class="detail-row"><span class="detail-label">Dosage</span><span class="detail-val">${escapeHtml(m.dosage || '—')} ${escapeHtml(m.unit || '')}</span></div>
-    <div class="detail-row"><span class="detail-label">Type</span><span class="detail-val"><span class="badge badge-primary">${escapeHtml(m.type || 'tablet')}</span></span></div>
-    <div class="detail-row"><span class="detail-label">User Email</span><span class="detail-val"><code>${escapeHtml(m.email || '—')}</code></span></div>
-    <div class="detail-row"><span class="detail-label">User Phone</span><span class="detail-val"><code>${escapeHtml(m.phone_number || '—')}</code></span></div>
-    <div class="detail-row"><span class="detail-label">Current Stock</span><span class="detail-val">${m.current_stock || 0} ${escapeHtml(m.unit || '')} (Refill alert at ≤ ${m.refill_threshold || 5})</span></div>
-    <div class="detail-row"><span class="detail-label">Instruction</span><span class="detail-val">${escapeHtml(getInstructionLabel(m.instruction))}</span></div>
-    <div class="detail-row"><span class="detail-label">Course Duration</span><span class="detail-val">${m.duration_days > 0 ? m.duration_days + ' days' : 'Ongoing'}</span></div>
-    <div class="detail-row"><span class="detail-label">Start Date</span><span class="detail-val">${formatDateTime(m.start_date)}</span></div>
-    <div class="detail-row"><span class="detail-label">End Date</span><span class="detail-val">${formatDateTime(m.end_date)}</span></div>
-    <div class="detail-row"><span class="detail-label">Reminders Schedule</span><span class="detail-val"><pre style="font-size:11px; text-align:left; background:var(--bg-inner); padding:8px; border-radius:6px; overflow-x:auto;">${escapeHtml(m.reminders_json || '[]')}</pre></span></div>
-    <div class="detail-row"><span class="detail-label">Notes</span><span class="detail-val">${escapeHtml(m.notes || '—')}</span></div>
-    <div class="detail-row"><span class="detail-label">Status</span><span class="detail-val">${m.is_active ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-muted">Paused</span>'}</span></div>
-  `;
-
-  document.getElementById('detailModal').style.display = 'flex';
+function closeUserModal(e) {
+  document.getElementById('userModal').style.display = 'none';
+  activeModalUser = null;
 }
 
-function closeDetailModal(e) {
-  document.getElementById('detailModal').style.display = 'none';
+/* ==================== DELETE HANDLERS ==================== */
+
+async function quickDeleteUser(key) {
+  if (!currentData) return;
+  const u = (currentData.users || []).find(user => getUserIdentifier(user) === key);
+  if (!u) return;
+
+  const label = u.email || u.phone_number || u.name || 'User';
+  const ok = confirm(`Are you sure you want to permanently delete user "${u.name || 'User'}" (${label})?\n\n` +
+    `• Account will be permanently deleted from Supabase Cloud.\n` +
+    `• All associated medicines, reminders, and dose logs will be removed.\n` +
+    `• The user's mobile app will automatically log out silently and reset to Sign In / Sign Up.\n\n` +
+    `Do you want to proceed?`);
+
+  if (!ok) return;
+
+  await executeDeleteUsers([{
+    userId: u.id,
+    email: u.email,
+    phone: u.phone_number
+  }], `Deleted user ${label}`);
 }
 
-async function syncFromADB() {
-  const btn = document.getElementById('syncAdbBtn');
-  btn.disabled = true;
-  btn.textContent = '📱 Checking phone...';
+async function deleteUserFromModal() {
+  if (!activeModalUser) return;
+  const u = activeModalUser;
+  const label = u.email || u.phone_number || u.name || 'User';
 
+  const ok = confirm(`Delete account "${u.name}" (${label}) from Supabase Cloud?\n\n` +
+    `This will immediately erase the account, medicines, and logs.\n` +
+    `Their mobile app will be automatically signed out.\n\nProceed?`);
+
+  if (!ok) return;
+
+  closeUserModal();
+  await executeDeleteUsers([{
+    userId: u.id,
+    email: u.email,
+    phone: u.phone_number
+  }], `Deleted user ${label}`);
+}
+
+async function deleteSelectedUsers() {
+  if (!currentData || selectedUserKeys.size === 0) return;
+
+  const usersToDelete = (currentData.users || []).filter(u => selectedUserKeys.has(getUserIdentifier(u)));
+  const count = usersToDelete.length;
+
+  const ok = confirm(`Are you sure you want to delete ${count} SELECTED USER(S)?\n\n` +
+    usersToDelete.map(u => `• ${u.name || 'User'} (${u.email || u.phone_number})`).join('\n') +
+    `\n\nAll their medicines, alarms, and history will be permanently deleted from Supabase Cloud.\n` +
+    `Proceed with bulk deletion?`);
+
+  if (!ok) return;
+
+  const payload = usersToDelete.map(u => ({
+    userId: u.id,
+    email: u.email,
+    phone: u.phone_number
+  }));
+
+  await executeDeleteUsers(payload, `Successfully deleted ${count} user(s)`);
+}
+
+async function executeDeleteUsers(usersList, successMsg) {
+  showNotice('Deleting user(s) from Supabase Cloud...', false);
   try {
-    const res = await fetch('/api/sync_adb', { method: 'POST' });
+    const res = await fetch('/api/delete_user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ users: usersList })
+    });
     const result = await res.json();
-    showNotice(result.message, !result.success);
     if (result.success) {
-      await loadData();
+      showNotice(`✓ ${successMsg}!`, false);
+      selectedUserKeys.clear();
+      await loadData(true);
+    } else {
+      showNotice(`Failed to delete: ${result.message}`, true);
     }
   } catch (err) {
-    showNotice('ADB sync request failed: ' + err.message, true);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '📱 Sync ADB';
+    showNotice(`Delete request error: ${err.message}`, true);
   }
 }
 
@@ -1469,7 +1286,7 @@ function exportJSON() {
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentData, null, 2));
   const downloadAnchor = document.createElement('a');
   downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", `mediremind_export_${new Date().toISOString().split('T')[0]}.json`);
+  downloadAnchor.setAttribute("download", `mediremind_users_export_${new Date().toISOString().split('T')[0]}.json`);
   document.body.appendChild(downloadAnchor);
   downloadAnchor.click();
   downloadAnchor.remove();
@@ -1489,37 +1306,12 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-async function confirmDeleteUser(userId, email, phone, name) {
-  const accountLabel = email || phone || 'User';
-  const msg = `Are you sure you want to permanently delete user "${name}" (${accountLabel})?\n\n` +
-    `• Account will be completely deleted from Supabase Cloud.\n` +
-    `• All their medicines, routine reminder schedules, and dose logs will be deleted.\n` +
-    `• The user's mobile app will be automatically logged out silently and reset to Sign In / Sign Up.\n\n` +
-    `Do you want to proceed with permanent deletion?`;
-
-  if (!confirm(msg)) return;
-
-  showNotice(`Deleting user ${accountLabel} from Supabase Cloud...`, false);
-  try {
-    const res = await fetch('/api/delete_user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: userId, email: email, phone: phone })
-    });
-    const result = await res.json();
-    if (result.success) {
-      showNotice(`✓ User "${name}" (${accountLabel}) was deleted successfully from Supabase Cloud!`, false);
-      await loadData(true);
-    } else {
-      showNotice(`Failed to delete user: ${result.message}`, true);
-    }
-  } catch (err) {
-    showNotice(`Delete request error: ${err.message}`, true);
-  }
-}
+// Close modal on Escape key
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeUserModal();
+});
 
 window.onload = () => loadData();
-
 </script>
 </body>
 </html>
@@ -1542,7 +1334,7 @@ class AdminDashboardHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(HTML_PAGE.encode("utf-8"))
         elif path == "/api/data":
             force_cloud = "refresh" in query
-            data = get_combined_data(getattr(self.server, "custom_db_path", None), force_cloud=force_cloud)
+            data = get_combined_data(force_cloud=force_cloud)
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
@@ -1555,14 +1347,7 @@ class AdminDashboardHandler(http.server.BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
 
-        if path == "/api/sync_adb":
-            target_path = get_db_path(getattr(self.server, "custom_db_path", None))
-            success, msg = pull_database_from_adb(target_path)
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(json.dumps({"success": success, "message": msg}, ensure_ascii=False).encode("utf-8"))
-        elif path == "/api/delete_user":
+        if path == "/api/delete_user":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length).decode("utf-8")
             try:
@@ -1570,11 +1355,15 @@ class AdminDashboardHandler(http.server.BaseHTTPRequestHandler):
             except Exception:
                 params = {}
 
-            user_id = params.get("userId")
-            email = params.get("email")
-            phone = params.get("phone")
+            # Support either "users" list or single user fields
+            users_to_delete = params.get("users")
+            if not users_to_delete:
+                user_id = params.get("userId") or params.get("id")
+                email = params.get("email")
+                phone = params.get("phone") or params.get("phone_number")
+                users_to_delete = [{"userId": user_id, "email": email, "phone": phone}]
 
-            success, msg = delete_user_from_supabase(user_id=user_id, email=email, phone=phone)
+            success, msg = delete_users_from_supabase(users_to_delete)
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
@@ -1583,23 +1372,20 @@ class AdminDashboardHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
-
 def main():
-    parser = argparse.ArgumentParser(description="MediRemind Local & Cloud Admin Dashboard")
+    parser = argparse.ArgumentParser(description="MediRemind User Management Admin Dashboard")
     parser.add_argument("--port", type=int, default=8080, help="Port to run web server on (default: 8080)")
-    parser.add_argument("--db", type=str, default=None, help="Path to local mediremind.db SQLite file")
     parser.add_argument("--no-browser", action="store_true", help="Do not automatically open browser")
     parser.add_argument("--test", action="store_true", help="Run self-test and exit immediately")
     args = parser.parse_args()
 
     if args.test:
         print("[TEST] Fetching data...")
-        data = get_combined_data(args.db)
+        data = get_combined_data()
         print(f"[TEST] Source: {data.get('data_source')}, Status: {data.get('status')}")
         print(f"[TEST] Users: {len(data.get('users', []))}, Medicines: {len(data.get('medicines', []))}")
         return
 
-    # Start server
     port = args.port
     max_retries = 10
     httpd = None
@@ -1616,26 +1402,22 @@ def main():
         print(f"[ERROR] Could not bind to port {args.port} or next {max_retries} ports.")
         sys.exit(1)
 
-    httpd.custom_db_path = args.db
     url = f"http://localhost:{port}"
 
-    # Initial data prefetch
-    print("Connecting to Supabase Cloud & inspecting databases...")
-    initial_data = get_combined_data(args.db)
+    print("Connecting to Supabase Cloud...")
+    initial_data = get_combined_data()
     u_count = len(initial_data.get("users", []))
     m_count = len(initial_data.get("medicines", []))
-    r_count = len(initial_data.get("reminders", []))
     source = initial_data.get("data_source", "unknown")
 
     print("=" * 68)
-    print("  💊 MediRemind - Cloud & Offline Admin Dashboard")
-    print(f"  🌐 Portal Web URL: {url}")
-    print(f"  ☁️  Data Source:    {source.upper()}")
+    print("  💊 MediRemind - Users Admin Panel")
+    print(f"  🌐 Portal Web URL:   {url}")
+    print(f"  ☁️  Data Source:      {source.upper()}")
     print(f"  👥 Registered Users: {u_count}")
     print(f"  💊 Total Medicines:  {m_count}")
-    print(f"  ⏰ Active Reminders: {r_count}")
     print("=" * 68)
-    print("Opening browser... (Press Ctrl+C to stop server)\n")
+    print("Opening browser... (Press Ctrl+C in terminal to stop server)\n")
 
     if not args.no_browser:
         try:
