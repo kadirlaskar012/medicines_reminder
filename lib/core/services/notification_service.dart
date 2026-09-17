@@ -21,6 +21,14 @@ void notificationTapBackground(NotificationResponse notificationResponse) async 
       final data = jsonDecode(payload) as Map<String, dynamic>;
       final medicineId = data['medicineId'] as String?;
       final reminderId = data['reminderTimeId'] as String?;
+      final medicineName = data['medicineName'] as String? ?? 'Medicine';
+      final dosage = data['dosage'] as String? ?? '';
+      final typeName = data['medicineType'] as String? ?? 'tablet';
+      final type = MedicineType.values.firstWhere(
+        (t) => t.name == typeName,
+        orElse: () => MedicineType.tablet,
+      );
+
       if (medicineId != null && reminderId != null) {
         final now = DateTime.now();
         final dateStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -48,6 +56,14 @@ void notificationTapBackground(NotificationResponse notificationResponse) async 
             recordedAt: now,
           );
           await DBHelper.instance.recordIntake(record);
+        } else if (notificationResponse.actionId == NotificationService.actionSnooze) {
+          await NotificationService.instance.snoozeReminder(
+            medicineName,
+            dosage,
+            payload,
+            minutes: 10,
+            type: type,
+          );
         }
       }
     } catch (e) {
@@ -385,19 +401,19 @@ class NotificationService {
         AndroidNotificationAction(
           actionTaken,
           'TAKE',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
           'SNOOZE 10M',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
           'SKIP',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
       ],
@@ -503,19 +519,19 @@ class NotificationService {
         AndroidNotificationAction(
           actionTaken,
           'TAKE',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
           'SNOOZE 10M',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
           'SKIP',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
       ],
@@ -580,13 +596,13 @@ class NotificationService {
         AndroidNotificationAction(
           actionTaken,
           'TAKE NOW',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
           'SNOOZE 10M',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
       ],
@@ -741,19 +757,19 @@ class NotificationService {
         AndroidNotificationAction(
           actionTaken,
           'TAKE',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
           'SNOOZE 10M',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
           'SKIP',
-          showsUserInterface: true,
+          showsUserInterface: false,
           cancelNotification: true,
         ),
       ],
