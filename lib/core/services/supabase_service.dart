@@ -876,6 +876,40 @@ class SupabaseService {
     return verifyPin(phoneNumber: phoneNumber, enteredPin: enteredCode);
   }
 
+  /// Verify whether the current user is still active in the cloud database (not deleted by admin)
+  Future<bool> isCurrentUserActiveInCloud() async {
+    final c = client;
+    if (c == null) return true; // Offline or no network: maintain offline access
+
+    final email = currentUser?.email;
+    final phone = currentUser?.phoneNumber;
+    final id = currentUser?.id;
+
+    if ((email == null || email.isEmpty) &&
+        (phone == null || phone.isEmpty) &&
+        (id == null || id.isEmpty)) {
+      return false;
+    }
+
+    try {
+      var query = c.from('app_users').select('id');
+      if (email != null && email.isNotEmpty && email.contains('@')) {
+        query = query.eq('email', email.trim().toLowerCase());
+      } else if (phone != null && phone.isNotEmpty) {
+        query = query.eq('phone_number', phone.trim());
+      } else if (id != null && id.isNotEmpty) {
+        query = query.eq('id', id.trim());
+      }
+
+      final List<dynamic> res = await query.limit(1);
+      return res.isNotEmpty;
+    } catch (e) {
+      debugPrint('isCurrentUserActiveInCloud check notice: $e');
+      // If temporary network issue or offline, do not forcefully log out
+      return true;
+    }
+  }
+
   /// Sign out
   Future<void> signOut() async {
     try {
@@ -893,3 +927,4 @@ class SupabaseService {
     _currentUser = null;
   }
 }
+

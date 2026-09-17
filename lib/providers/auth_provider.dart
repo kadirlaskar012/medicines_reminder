@@ -251,6 +251,20 @@ class AuthProvider extends ChangeNotifier {
     return await _supabase.sendPasswordResetEmail(email);
   }
 
+  /// Silently validate user session against cloud database.
+  /// If the account was deleted by Admin, silently sign out and notify listeners without popups.
+  Future<bool> validateSessionWithCloud() async {
+    if (!isSignedIn) return false;
+
+    final isActive = await _supabase.isCurrentUserActiveInCloud();
+    if (!isActive) {
+      debugPrint('AuthProvider: Account was deleted by admin. Silently logging out...');
+      await signOut();
+      return false;
+    }
+    return true;
+  }
+
   /// Sign out
   Future<void> signOut() async {
     _isLoading = true;
@@ -260,6 +274,7 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
 
   // ==================== LEGACY PHONE STUBS ====================
   int get countdownSeconds => 0;

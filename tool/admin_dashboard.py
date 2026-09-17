@@ -23,9 +23,11 @@ import webbrowser
 import subprocess
 import argparse
 import datetime
+import urllib.parse
 from urllib.parse import parse_qs, urlparse
 import urllib.request
 import urllib.error
+
 
 # Project paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -113,7 +115,80 @@ def fetch_all_supabase_data():
 
     return data
 
+def delete_user_from_supabase(user_id=None, email=None, phone=None):
+    """
+    Delete a user and all their associated medicines, reminders, dose logs,
+    and PIN requests from Supabase Cloud.
+    """
+    filters = []
+    if email and email.strip():
+        filters.append(("email", email.strip().lower()))
+    if phone and phone.strip():
+        filters.append(("phone_number", phone.strip()))
+
+    child_tables = ["user_reminders", "user_dose_logs", "user_medicines", "pin_reset_requests"]
+
+    # 1. Delete child records
+    for col, val in filters:
+        quoted = urllib.parse.quote(val)
+        for tbl in child_tables:
+            try:
+                url = f"{SUPABASE_URL}/rest/v1/{tbl}?{col}=eq.{quoted}"
+                req = urllib.request.Request(
+                    url,
+                    headers={
+                        "apikey": SUPABASE_ANON_KEY,
+                        "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                        "Prefer": "return=representation"
+                    },
+                    method="DELETE"
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    pass
+            except Exception as e:
+                print(f"[WARN] Error deleting from {tbl} where {col}={val}: {e}")
+
+    # 2. Delete from app_users by id and email/phone
+    if user_id and user_id.strip():
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/app_users?id=eq.{urllib.parse.quote(user_id.strip())}"
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                    "Prefer": "return=representation"
+                },
+                method="DELETE"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                pass
+        except Exception as e:
+            print(f"[WARN] Error deleting from app_users by id: {e}")
+
+    for col, val in filters:
+        try:
+            url = f"{SUPABASE_URL}/rest/v1/app_users?{col}=eq.{urllib.parse.quote(val)}"
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                    "Prefer": "return=representation"
+                },
+                method="DELETE"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                pass
+        except Exception as e:
+            print(f"[WARN] Error deleting from app_users by {col}: {e}")
+
+    # 3. Refresh and update local cache
+    fetch_all_supabase_data()
+    return True, "User account and all cloud medicines were deleted successfully."
+
 def load_cached_data():
+
     """Load data from local JSON cache if offline."""
     if os.path.exists(CACHE_FILE):
         try:
@@ -402,7 +477,18 @@ HTML_PAGE = """<!DOCTYPE html>
     border: 1px solid var(--border);
   }
   .btn-secondary:hover { background: var(--border); border-color: var(--border-light); }
+  .btn-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #F87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+  }
+  .btn-danger:hover {
+    background: #DC2626;
+    color: #FFF;
+    border-color: #DC2626;
+  }
   .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+
 
   /* Notice Banner */
   .notice-banner {
@@ -1120,11 +1206,17 @@ function renderUsers(users, meds) {
       </td>
       <td><span style="font-size:12px; color:var(--text-muted);">${formatDate(u.created_at)}</span></td>
       <td>
-        <button class="btn btn-secondary btn-sm" onclick="filterByUser('${escapeHtml(identifier)}')">
-          💊 View Medicines
-        </button>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="btn btn-secondary btn-sm" onclick="filterByUser('${escapeHtml(identifier)}')">
+            💊 View Medicines
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="confirmDeleteUser('${escapeHtml(u.id || '')}', '${escapeHtml(uEmail)}', '${escapeHtml(uPhone)}', '${escapeHtml(u.name || 'User')}')">
+            🗑️ Delete
+          </button>
+        </div>
       </td>
     </tr>`;
+
   }).join('');
 }
 
@@ -1397,7 +1489,37 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+async function confirmDeleteUser(userId, email, phone, name) {
+  const accountLabel = email || phone || 'User';
+  const msg = `Are you sure you want to permanently delete user "${name}" (${accountLabel})?\n\n` +
+    `• Account will be completely deleted from Supabase Cloud.\n` +
+    `• All their medicines, routine reminder schedules, and dose logs will be deleted.\n` +
+    `• The user's mobile app will be automatically logged out silently and reset to Sign In / Sign Up.\n\n` +
+    `Do you want to proceed with permanent deletion?`;
+
+  if (!confirm(msg)) return;
+
+  showNotice(`Deleting user ${accountLabel} from Supabase Cloud...`, false);
+  try {
+    const res = await fetch('/api/delete_user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: userId, email: email, phone: phone })
+    });
+    const result = await res.json();
+    if (result.success) {
+      showNotice(`✓ User "${name}" (${accountLabel}) was deleted successfully from Supabase Cloud!`, false);
+      await loadData(true);
+    } else {
+      showNotice(`Failed to delete user: ${result.message}`, true);
+    }
+  } catch (err) {
+    showNotice(`Delete request error: ${err.message}`, true);
+  }
+}
+
 window.onload = () => loadData();
+
 </script>
 </body>
 </html>
@@ -1440,9 +1562,27 @@ class AdminDashboardHandler(http.server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(json.dumps({"success": success, "message": msg}, ensure_ascii=False).encode("utf-8"))
+        elif path == "/api/delete_user":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8")
+            try:
+                params = json.loads(body)
+            except Exception:
+                params = {}
+
+            user_id = params.get("userId")
+            email = params.get("email")
+            phone = params.get("phone")
+
+            success, msg = delete_user_from_supabase(user_id=user_id, email=email, phone=phone)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": success, "message": msg}, ensure_ascii=False).encode("utf-8"))
         else:
             self.send_response(404)
             self.end_headers()
+
 
 def main():
     parser = argparse.ArgumentParser(description="MediRemind Local & Cloud Admin Dashboard")

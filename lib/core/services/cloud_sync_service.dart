@@ -34,6 +34,15 @@ class CloudSyncService {
       return false;
     }
 
+    // Verify account is still active in cloud (not deleted by Admin)
+    final isActive = await _supabase.isCurrentUserActiveInCloud();
+    if (!isActive) {
+      debugPrint('CloudSyncService: User account was deleted by admin. Silently logging out.');
+      await _supabase.signOut();
+      return false;
+    }
+
+
     try {
       // 1. Sync User Profiles
       for (final profile in profiles) {

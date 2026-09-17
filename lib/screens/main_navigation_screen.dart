@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,7 @@ import '../core/services/notification_service.dart';
 import '../core/theme/app_colors.dart';
 import '../models/medicine.dart';
 import '../models/reminder_time.dart';
+import '../providers/auth_provider.dart';
 import '../providers/medicine_provider.dart';
 import 'today/today_screen.dart';
 import 'medicines/medicines_cabinet_screen.dart';
@@ -21,8 +23,9 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
+  Timer? _sessionValidationTimer;
 
   final List<Widget> _screens = const [
     TodayScreen(),
@@ -34,8 +37,39 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _setupNotificationHandler();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkCloudSession();
+      // Periodically check if account was deleted by admin (every 25 seconds while app is in foreground)
+      _sessionValidationTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+        _checkCloudSession();
+      });
+    });
   }
+
+  void _checkCloudSession() {
+    if (!mounted) return;
+    final auth = context.read<AuthProvider>();
+    if (auth.isSignedIn) {
+      auth.validateSessionWithCloud();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkCloudSession();
+    }
+  }
+
+  @override
+  void dispose() {
+    _sessionValidationTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
 
   void _setupNotificationHandler() {
     NotificationService.instance.onNotificationAction = (payload, actionId) {
