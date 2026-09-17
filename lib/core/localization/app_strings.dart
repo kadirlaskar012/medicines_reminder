@@ -180,6 +180,7 @@ class AppStrings {
   }
   String get everyday => code == 'bn' ? 'প্রতিদিন' : (code == 'hi' ? 'हर दिन' : 'Everyday');
   String get weekdays => code == 'bn' ? 'কাজের দিন' : (code == 'hi' ? 'कार्यदिवस' : 'Weekdays');
+  String get today => code == 'bn' ? 'আজ' : (code == 'hi' ? 'आज' : 'Today');
 
   // Food Timing
   String get beforeMeal => code == 'bn' ? 'খাওয়ার আগে' : (code == 'hi' ? 'खाने से पहले' : 'Before Meal');

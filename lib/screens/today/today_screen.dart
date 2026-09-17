@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/theme/app_colors.dart';
@@ -238,50 +239,11 @@ class TodayScreen extends StatelessWidget {
               ),
             ),
 
-            // Calendar Timeline Strip with Today Jump Button
+            // Calendar Timeline Strip
             SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  if (!isViewingToday)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          InkWell(
-                            onTap: () => provider.selectDate(now),
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.today_rounded, size: 14, color: AppColors.primary),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Today',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  CalendarTimelineBar(
-                    selectedDate: provider.selectedDate,
-                    onDateSelected: (date) => provider.selectDate(date),
-                  ),
-                ],
+              child: CalendarTimelineBar(
+                selectedDate: provider.selectedDate,
+                onDateSelected: (date) => provider.selectDate(date),
               ),
             ),
 
@@ -293,7 +255,11 @@ class TodayScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      s.code == 'bn' ? 'আজকের ওষুধ' : 'TODAY\'S MEDICINES',
+                      isViewingToday
+                          ? (s.code == 'bn' ? 'আজকের ওষুধ' : 'TODAY\'S MEDICINES')
+                          : (s.code == 'bn'
+                              ? '${provider.selectedDate.day} ${DateFormat('MMMM').format(provider.selectedDate)}-এর ওষুধ'
+                              : '${DateFormat('MMMM d').format(provider.selectedDate).toUpperCase()}\'S MEDICINES'),
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -301,25 +267,54 @@ class TodayScreen extends StatelessWidget {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const MedicinesCabinetScreen()),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        child: Text(
-                          'View All',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                    Row(
+                      children: [
+                        if (!isViewingToday) ...[
+                          InkWell(
+                            onTap: () => provider.selectDate(now),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.today_rounded, size: 14, color: AppColors.primary),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    s.code == 'bn' ? 'আজকে ফিরুন' : 'Today',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const MedicinesCabinetScreen()),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            child: Text(
+                              s.code == 'bn' ? 'সব দেখুন' : 'View All',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
