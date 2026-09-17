@@ -21,6 +21,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<IntakeRecord> _recentLogs = [];
   bool _isLoadingLogs = true;
   String _selectedFilter = 'all'; // 'all', 'taken', 'missed'
+  DateTime? _selectedDate; // Specific date filter
 
   @override
   void initState() {
@@ -29,11 +30,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _loadLogs() async {
-    final logs = await DBHelper.instance.getAllRecords(limit: 60);
+    final logs = await DBHelper.instance.getAllRecords(limit: 200);
     if (mounted) {
       setState(() {
         _recentLogs = logs;
         _isLoadingLogs = false;
+      });
+    }
+  }
+
+  Future<void> _pickFilterDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
       });
     }
   }
@@ -66,8 +81,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final adherenceScore = _recentLogs.isEmpty ? 0 : ((totalTaken / _recentLogs.length) * 100).toInt();
 
     final filteredLogs = _recentLogs.where((l) {
-      if (_selectedFilter == 'taken') return l.status == IntakeStatus.taken;
-      if (_selectedFilter == 'missed') return l.status == IntakeStatus.skipped;
+      if (_selectedFilter == 'taken' && l.status != IntakeStatus.taken) return false;
+      if (_selectedFilter == 'missed' && l.status != IntakeStatus.skipped) return false;
+      if (_selectedDate != null) {
+        final recDate = l.recordedAt;
+        final isSameRec = recDate.year == _selectedDate!.year &&
+            recDate.month == _selectedDate!.month &&
+            recDate.day == _selectedDate!.day;
+        if (!isSameRec) {
+          final schedParts = l.scheduledDate.split('-');
+          if (schedParts.length == 3) {
+            final sy = int.tryParse(schedParts[0]);
+            final sm = int.tryParse(schedParts[1]);
+            final sd = int.tryParse(schedParts[2]);
+            if (sy != _selectedDate!.year || sm != _selectedDate!.month || sd != _selectedDate!.day) {
+              return false;
+            }
+          } else {
+            return false;
+          }
+        }
+      }
       return true;
     }).toList();
 
@@ -76,6 +110,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
       appBar: AppBar(
         title: Text(s.doseHistory),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Badge(
+              isLabelVisible: _selectedDate != null,
+              backgroundColor: AppColors.error,
+              smallSize: 8,
+              child: Icon(
+                _selectedDate != null ? Icons.event_available_rounded : Icons.calendar_month_rounded,
+                color: _selectedDate != null ? AppColors.primary : null,
+              ),
+            ),
+            tooltip: s.code == 'bn' ? 'তারিখ দিয়ে ফিল্টার করুন' : 'Filter by Date',
+            onPressed: () => _pickFilterDate(context),
+          ),
+          const SizedBox(width: 6),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async => _loadLogs(),
@@ -209,32 +259,47 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 _buildFilterChip('missed', 'Missed', totalSkipped, isDark),
               ],
             ),
-            const SizedBox(height: 16),
 
-            // Month Section Header (Screen 13)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  DateFormat('MMMM yyyy').format(DateTime.now()),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                    letterSpacing: 0.5,
-                  ),
+            if (_selectedDate != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
-                Text(
-                  '${filteredLogs.length} ${s.records}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                  ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.event_available_rounded, size: 20, color: AppColors.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            DateFormat('EEEE, d MMMM yyyy').format(_selectedDate!),
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.primary),
+                          ),
+                          Text(
+                            s.code == 'bn' ? 'শুধুমাত্র এই তারিখের ফিল্টার করা ইতিহাস' : 'Showing history for this date only',
+                            style: TextStyle(fontSize: 11, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.primary),
+                      visualDensity: VisualDensity.compact,
+                      tooltip: s.code == 'bn' ? 'ফিল্টার বাতিল করুন' : 'Clear filter',
+                      onPressed: () => setState(() => _selectedDate = null),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
+              ),
+            ],
+
+            const SizedBox(height: 16),
 
             if (_isLoadingLogs)
               const Center(child: CircularProgressIndicator())
@@ -252,7 +317,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       Icon(Icons.history_rounded, size: 40, color: isDark ? Colors.white30 : Colors.black26),
                       const SizedBox(height: 10),
                       Text(
-                        '${s.noIntakeLogsTitle}\n${s.noIntakeLogsSub}',
+                        _selectedDate != null
+                            ? (s.code == 'bn'
+                                ? 'এই তারিখে কোনো ওষুধ নেওয়ার বা মিস করার রেকর্ড নেই'
+                                : 'No intake or missed logs found for this selected date.')
+                            : '${s.noIntakeLogsTitle}\n${s.noIntakeLogsSub}',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
                       ),
@@ -261,103 +330,200 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               )
             else
-              ...filteredLogs.map((log) {
-                final isTaken = log.status == IntakeStatus.taken;
-                final dateFormatted = DateFormat('hh:mm a • MMM d').format(log.recordedAt);
-                final med = provider.medicines.cast<Medicine?>().firstWhere(
-                      (m) => m?.id == log.medicineId,
-                      orElse: () => null,
-                    );
-                final medName = med?.name ?? 'Medicine';
-                final dosage = med?.dosage ?? '';
+              Builder(
+                builder: (context) {
+                  final now = DateTime.now();
+                  final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+                  final yesterday = now.subtract(const Duration(days: 1));
+                  final yesterdayStr = '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Circular Icon Avatar
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: (isTaken ? AppColors.accentMint : AppColors.error).withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isTaken ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                          color: isTaken ? AppColors.accentMint : AppColors.error,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
+                  final Map<String, List<IntakeRecord>> groupedLogs = {};
+                  for (final log in filteredLogs) {
+                    final d = log.recordedAt;
+                    final key = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+                    groupedLogs.putIfAbsent(key, () => []).add(log);
+                  }
+                  final sortedDateKeys = groupedLogs.keys.toList()..sort((a, b) => b.compareTo(a));
 
-                      // Medicine Name & Timestamp
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              dosage.isNotEmpty ? '$medName $dosage' : medName,
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: sortedDateKeys.map((dateKey) {
+                      final dayLogs = groupedLogs[dateKey]!;
+                      final firstDate = dayLogs.first.recordedAt;
+                      final dayTaken = dayLogs.where((l) => l.status == IntakeStatus.taken).length;
+                      final daySkipped = dayLogs.where((l) => l.status == IntakeStatus.skipped).length;
+
+                      String headerTitle;
+                      if (dateKey == todayStr) {
+                        headerTitle = s.code == 'bn' ? 'আজ (${DateFormat('d MMM yyyy').format(firstDate)})' : 'Today (${DateFormat('d MMM yyyy').format(firstDate)})';
+                      } else if (dateKey == yesterdayStr) {
+                        headerTitle = s.code == 'bn' ? 'গতকাল (${DateFormat('d MMM yyyy').format(firstDate)})' : 'Yesterday (${DateFormat('d MMM yyyy').format(firstDate)})';
+                      } else {
+                        headerTitle = DateFormat('EEEE, d MMMM yyyy').format(firstDate);
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Date Section Header
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10, bottom: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.primary),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      headerTitle,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    if (dayTaken > 0)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.accentMint.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '$dayTaken taken',
+                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.accentMint),
+                                        ),
+                                      ),
+                                    if (dayTaken > 0 && daySkipped > 0) const SizedBox(width: 4),
+                                    if (daySkipped > 0)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.error.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '$daySkipped missed',
+                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.error),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              dateFormatted,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                          ),
+
+                          // Cards for this date
+                          ...dayLogs.map((log) {
+                            final isTaken = log.status == IntakeStatus.taken;
+                            final timeFormatted = DateFormat('hh:mm a').format(log.recordedAt);
+                            final med = provider.medicines.cast<Medicine?>().firstWhere(
+                                  (m) => m?.id == log.medicineId,
+                                  orElse: () => null,
+                                );
+                            final medName = med?.name ?? 'Medicine';
+                            final dosage = med?.dosage ?? '';
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.02),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
+                              child: Row(
+                                children: [
+                                  // Circular Icon Avatar
+                                  Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: (isTaken ? AppColors.accentMint : AppColors.error).withValues(alpha: 0.12),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      isTaken ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                                      color: isTaken ? AppColors.accentMint : AppColors.error,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
 
-                      // Status Badge (Green "Taken" or Red "Missed")
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: (isTaken ? AppColors.accentMint : AppColors.error).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isTaken ? Icons.check_rounded : Icons.close_rounded,
-                              size: 14,
-                              color: isTaken ? AppColors.accentMint : AppColors.error,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              isTaken ? 'Taken' : 'Missed',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: isTaken ? AppColors.accentMint : AppColors.error,
+                                  // Medicine Name & Timestamp
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          dosage.isNotEmpty ? '$medName $dosage' : medName,
+                                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          isTaken ? 'Taken at $timeFormatted' : 'Missed / Skipped at $timeFormatted',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                            color: isTaken ? (isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted) : AppColors.error,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Status Badge (Green "Taken" or Red "Missed")
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: (isTaken ? AppColors.accentMint : AppColors.error).withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          isTaken ? Icons.check_rounded : Icons.close_rounded,
+                                          size: 13,
+                                          color: isTaken ? AppColors.accentMint : AppColors.error,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          isTaken ? 'Taken' : 'Missed',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            color: isTaken ? AppColors.accentMint : AppColors.error,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
+                            );
+                          }),
+                          const SizedBox(height: 6),
+                        ],
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
           ],
         ),
       ),

@@ -150,6 +150,21 @@ class TodayScreen extends StatelessWidget {
                       ),
                     ),
                     IconButton(
+                      icon: const Icon(Icons.calendar_month_rounded, size: 22),
+                      tooltip: s.code == 'bn' ? 'তারিখ বেছে নিন' : 'Select Date',
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: provider.selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2035),
+                        );
+                        if (picked != null) {
+                          provider.selectDate(picked);
+                        }
+                      },
+                    ),
+                    IconButton(
                       icon: Stack(
                         clipBehavior: Clip.none,
                         children: [
