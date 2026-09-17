@@ -475,7 +475,38 @@ class AppStrings {
   String get morningSlot => code == 'bn' ? 'সকাল' : (code == 'hi' ? 'सुबह' : 'Morning');
   String get lunchSlot => code == 'bn' ? 'দুপুর' : (code == 'hi' ? 'दोपहर' : 'Lunch');
   String get afternoonSlot => code == 'bn' ? 'বিকাল' : (code == 'hi' ? 'दोपहर बाद' : 'Afternoon');
+  String get eveningSlot => code == 'bn' ? 'সন্ধ্যা' : (code == 'hi' ? 'शाम' : 'Evening');
   String get nightSlot => code == 'bn' ? 'রাত্রি' : (code == 'hi' ? 'रात' : 'Night');
+
+  String formatNumber(int n) {
+    if (code == 'bn') {
+      const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+      return n.toString().split('').map((c) {
+        final d = int.tryParse(c);
+        return d != null ? bnDigits[d] : c;
+      }).join();
+    } else if (code == 'hi') {
+      const hiDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+      return n.toString().split('').map((c) {
+        final d = int.tryParse(c);
+        return d != null ? hiDigits[d] : c;
+      }).join();
+    }
+    return n.toString();
+  }
+
+  String dailyDoseCount(int count) {
+    final numStr = formatNumber(count);
+    if (code == 'bn') {
+      return 'দিনে $numStr বার';
+    } else if (code == 'hi') {
+      return 'दिन में $numStr बार';
+    }
+    if (count == 1) return 'Once Daily';
+    if (count == 2) return 'Twice Daily';
+    if (count == 3) return '3 Times Daily';
+    return '$count Times Daily';
+  }
   String get breakfast => code == 'bn' ? 'সকালের নাস্তা (Breakfast)' : (code == 'hi' ? 'सुबह का नाश्ता' : 'Breakfast');
   String get lunch => code == 'bn' ? 'দুপুরের খাবার (Lunch)' : (code == 'hi' ? 'दोपहर का भोजन' : 'Lunch');
   String get eveningSnacks => code == 'bn' ? 'বিকেলের নাস্তা (Evening)' : (code == 'hi' ? 'शाम का नाश्ता' : 'Evening Snacks');
