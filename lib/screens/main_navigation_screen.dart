@@ -167,8 +167,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
         notificationId: notifId,
       );
 
+      final dayOfWeek = data['dayOfWeek'] as int? ?? DateTime.now().weekday;
+      final now = DateTime.now();
+      final int daysDiff = (now.weekday - dayOfWeek + 7) % 7;
+      final targetDate = now.subtract(Duration(days: daysDiff));
+
       if (actionId == NotificationService.actionTaken) {
-        await provider.markAsTaken(med, rem, DateTime.now());
+        await provider.markAsTaken(med, rem, targetDate);
         if (!mounted) return;
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -200,7 +205,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
                       ),
                       Text(
-                        '${med.name} ($dosage) recorded in your daily streak.',
+                        '${med.name} ($dosage) recorded successfully.',
                         style: const TextStyle(fontSize: 12, color: Colors.white70),
                       ),
                     ],
@@ -254,7 +259,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
           ),
         );
       } else if (actionId == NotificationService.actionSkip) {
-        await provider.markAsSkipped(med, rem, DateTime.now());
+        await provider.markAsSkipped(med, rem, targetDate);
         if (!mounted) return;
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(

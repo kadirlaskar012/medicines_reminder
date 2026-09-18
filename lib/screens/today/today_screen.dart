@@ -152,7 +152,16 @@ class _TodayScreenState extends State<TodayScreen> {
       }
     }
 
+    final now = DateTime.now();
+    final isViewingToday = DateUtils.isSameDay(provider.selectedDate, now);
+
     pendingDoses.sort((a, b) {
+      if (isViewingToday) {
+        final aActionable = _isDoseActionable(a, isViewingToday);
+        final bActionable = _isDoseActionable(b, isViewingToday);
+        if (aActionable && !bActionable) return -1;
+        if (!aActionable && bActionable) return 1;
+      }
       final compHour = a.reminder.hour.compareTo(b.reminder.hour);
       if (compHour != 0) return compHour;
       return a.reminder.minute.compareTo(b.reminder.minute);
@@ -167,9 +176,6 @@ class _TodayScreenState extends State<TodayScreen> {
     final userName = activeProfile != null
         ? (activeProfile.id == 'default_me' || activeProfile.name.toLowerCase() == 'myself' ? 'Kadir Laskar' : activeProfile.name)
         : 'Kadir Laskar';
-
-    final now = DateTime.now();
-    final isViewingToday = DateUtils.isSameDay(provider.selectedDate, now);
 
     final hasAlerts = provider.dosesForSelectedDate.any(
       (d) => d.isOverdue || (!d.isTaken && !d.isSkipped && d.scheduledDate.isBefore(now)),
