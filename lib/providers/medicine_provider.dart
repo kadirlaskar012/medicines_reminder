@@ -863,7 +863,8 @@ class MedicineProvider extends ChangeNotifier {
           scheduledDate: dateStr,
           scheduledHour: dose.reminder.hour,
           scheduledMinute: dose.reminder.minute,
-          status: IntakeStatus.skipped,
+          status: IntakeStatus.missed,
+          notes: 'auto_missed',
           recordedAt: now,
         );
 
@@ -888,7 +889,7 @@ class MedicineProvider extends ChangeNotifier {
 
     for (int i = 0; i < todayDoses.length; i++) {
       final dose = todayDoses[i];
-      if (dose.isTaken || dose.isSkipped) continue;
+      if (dose.isTaken || dose.isSkipped || dose.isAutoMissed) continue;
 
       final slotEnd = getSlotEndTime(dose.reminder.timeSlot, today);
       bool shouldAutoSkip = now.isAfter(slotEnd);
@@ -925,7 +926,8 @@ class MedicineProvider extends ChangeNotifier {
           scheduledDate: dateStr,
           scheduledHour: dose.reminder.hour,
           scheduledMinute: dose.reminder.minute,
-          status: IntakeStatus.skipped,
+          status: IntakeStatus.missed,
+          notes: 'auto_missed',
           recordedAt: now,
         );
 
@@ -942,5 +944,45 @@ class MedicineProvider extends ChangeNotifier {
     if (changed) {
       notifyListeners();
     }
+  }
+
+  /// Returns all missed doses across the past 7 days and today (elapsed/missed doses)
+  /// that have not been manually taken or skipped.
+  List<ScheduledDose> getMissedDoses({int daysBack = 7}) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final List<ScheduledDose> missed = [];
+
+    // 1. Check today's doses that are missed
+    final todayDoses = getDosesForDate(today);
+    for (final dose in todayDoses) {
+      if (!dose.medicine.isActive) continue;
+      if (dose.isAutoMissed) {
+        missed.add(dose);
+      }
+    }
+
+    // 2. Check past dates (yesterday and earlier up to daysBack)
+    for (int i = 1; i <= daysBack; i++) {
+      final pastDate = today.subtract(Duration(days: i));
+      final pastDoses = getDosesForDate(pastDate);
+      for (final dose in pastDoses) {
+        if (!dose.medicine.isActive) continue;
+        if (dose.isAutoMissed || (dose.record == null && !dose.isTaken && !dose.isSkipped)) {
+          missed.add(dose);
+        }
+      }
+    }
+
+    // Sort: most recent first
+    missed.sort((a, b) {
+      final compDate = b.scheduledDate.compareTo(a.scheduledDate);
+      if (compDate != 0) return compDate;
+      final compHour = b.reminder.hour.compareTo(a.reminder.hour);
+      if (compHour != 0) return compHour;
+      return b.reminder.minute.compareTo(a.reminder.minute);
+    });
+
+    return missed;
   }
 }

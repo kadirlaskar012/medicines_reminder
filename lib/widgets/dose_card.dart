@@ -427,7 +427,7 @@ class DoseCard extends StatelessWidget {
                 const SizedBox(height: 11),
                 Row(
                   children: [
-                    // 1. Take Now Button (Soft Light Soothing Emerald)
+                    // 1. Take Now Button (Glossy Soothing Emerald with Depth)
                     Expanded(
                       flex: 5,
                       child: InkWell(
@@ -436,16 +436,33 @@ class DoseCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8.5),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF064E3B).withValues(alpha: 0.35)
-                                : const Color(0xFFECFDF5),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: isDark
+                                  ? [
+                                      const Color(0xFF064E3B).withValues(alpha: 0.65),
+                                      const Color(0xFF022C22).withValues(alpha: 0.8),
+                                    ]
+                                  : [
+                                      const Color(0xFFE6FBF0),
+                                      const Color(0xFFB7F4D4),
+                                    ],
+                            ),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isDark
-                                  ? const Color(0xFF10B981).withValues(alpha: 0.45)
-                                  : const Color(0xFFA7F3D0),
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.7)
+                                  : const Color(0xFF10B981),
                               width: 1.2,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF059669).withValues(alpha: isDark ? 0.3 : 0.18),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2.5),
+                              ),
+                            ],
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -471,7 +488,7 @@ class DoseCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 7),
 
-                    // 2. Snooze Button (Soft Light Warm Honey / Amber)
+                    // 2. Snooze Button (Glossy Warm Honey Amber with Depth)
                     Expanded(
                       flex: 4,
                       child: InkWell(
@@ -480,23 +497,40 @@ class DoseCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8.5),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF78350F).withValues(alpha: 0.32)
-                                : const Color(0xFFFFFBEB),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: isDark
+                                  ? [
+                                      const Color(0xFF78350F).withValues(alpha: 0.6),
+                                      const Color(0xFF451A03).withValues(alpha: 0.75),
+                                    ]
+                                  : [
+                                      const Color(0xFFFFFBEB),
+                                      const Color(0xFFFDE68A),
+                                    ],
+                            ),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isDark
-                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
-                                  : const Color(0xFFFDE68A),
+                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.7)
+                                  : const Color(0xFFD97706),
                               width: 1.2,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFD97706).withValues(alpha: isDark ? 0.3 : 0.18),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2.5),
+                              ),
+                            ],
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
                                 Icons.snooze_rounded,
-                                color: isDark ? const Color(0xFFFCD34D) : const Color(0xFFB45309),
+                                color: isDark ? const Color(0xFFFCD34D) : const Color(0xFF92400E),
                                 size: 16,
                               ),
                               const SizedBox(width: 5),
@@ -505,7 +539,7 @@ class DoseCard extends StatelessWidget {
                                 style: GoogleFonts.outfit(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? const Color(0xFFFCD34D) : const Color(0xFFB45309),
+                                  color: isDark ? const Color(0xFFFCD34D) : const Color(0xFF92400E),
                                 ),
                               ),
                             ],
@@ -515,7 +549,7 @@ class DoseCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 7),
 
-                    // 3. Skip Button (Soft Light Pleasing Rose / Red)
+                    // 3. Skip Button (Glossy Rich Coral Rose with Depth)
                     Expanded(
                       flex: 3,
                       child: InkWell(
@@ -524,23 +558,40 @@ class DoseCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8.5),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF4C0519).withValues(alpha: 0.32)
-                                : const Color(0xFFFFF1F2),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: isDark
+                                  ? [
+                                      const Color(0xFF4C0519).withValues(alpha: 0.6),
+                                      const Color(0xFF28020D).withValues(alpha: 0.75),
+                                    ]
+                                  : [
+                                      const Color(0xFFFFF1F2),
+                                      const Color(0xFFFECDD3),
+                                    ],
+                            ),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isDark
-                                  ? const Color(0xFFF43F5E).withValues(alpha: 0.45)
-                                  : const Color(0xFFFECDD3),
+                                  ? const Color(0xFFF43F5E).withValues(alpha: 0.7)
+                                  : const Color(0xFFE11D48),
                               width: 1.2,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFE11D48).withValues(alpha: isDark ? 0.3 : 0.18),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2.5),
+                              ),
+                            ],
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
                                 Icons.close_rounded,
-                                color: isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C),
+                                color: isDark ? const Color(0xFFFDA4AF) : const Color(0xFF9F1239),
                                 size: 15,
                               ),
                               const SizedBox(width: 4),
@@ -549,7 +600,7 @@ class DoseCard extends StatelessWidget {
                                 style: GoogleFonts.outfit(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C),
+                                  color: isDark ? const Color(0xFFFDA4AF) : const Color(0xFF9F1239),
                                 ),
                               ),
                             ],

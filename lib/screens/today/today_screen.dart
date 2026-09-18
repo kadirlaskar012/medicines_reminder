@@ -17,6 +17,7 @@ import '../medicines/medicines_cabinet_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../../widgets/profile_selector_sheet.dart';
 import '../../widgets/rotary_time_slot_carousel.dart';
+import '../../widgets/missed_medicines_sheet.dart';
 
 class TodayScreen extends StatefulWidget {
   const TodayScreen({super.key});
@@ -147,10 +148,14 @@ class _TodayScreenState extends State<TodayScreen> {
     for (final d in visibleDoses) {
       if (d.isTaken || d.isSkipped) {
         completedDoses.add(d);
+      } else if (d.isAutoMissed) {
+        // Auto-missed doses appear exclusively in the floating Missed Pop-up pill & sheet
       } else {
         pendingDoses.add(d);
       }
     }
+
+    final missedDoses = provider.getMissedDoses();
 
     final now = DateTime.now();
     final isViewingToday = DateUtils.isSameDay(provider.selectedDate, now);
@@ -183,8 +188,10 @@ class _TodayScreenState extends State<TodayScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
+        child: Stack(
+          children: [
+            CustomScrollView(
+              physics: const BouncingScrollPhysics(),
           slivers: [
             // Top App Bar / Profile Pill & Actions
             SliverToBoxAdapter(
@@ -707,6 +714,88 @@ class _TodayScreenState extends State<TodayScreen> {
 
             const SliverToBoxAdapter(child: SizedBox(height: 90)),
           ],
+        ),
+        if (missedDoses.isNotEmpty)
+          Positioned(
+            bottom: 16,
+            right: 18,
+            child: _buildMissedFloatingPill(context, missedDoses, isDark, s),
+          ),
+      ],
+    ),
+  ),
+);
+  }
+
+  Widget _buildMissedFloatingPill(
+    BuildContext context,
+    List<ScheduledDose> missedDoses,
+    bool isDark,
+    AppStrings s,
+  ) {
+    final count = missedDoses.length;
+    final label = s.code == 'bn'
+        ? 'ছুটে যাওয়া ($count)'
+        : (s.code == 'hi' ? 'छूटी हुई ($count)' : 'Missed ($count)');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => MissedMedicinesSheet.show(context),
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE11D48), Color(0xFFF43F5E)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.35),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFE11D48).withValues(alpha: 0.45),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(Icons.warning_amber_rounded, color: Colors.white, size: 14),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.1,
+                ),
+              ),
+              const SizedBox(width: 5),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white70,
+                size: 11,
+              ),
+            ],
+          ),
         ),
       ),
     );

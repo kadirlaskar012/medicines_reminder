@@ -18,10 +18,11 @@ class ScheduledDose {
   bool get isTaken => record?.status == IntakeStatus.taken;
   bool get isSkipped => record?.status == IntakeStatus.skipped;
   bool get isSnoozed => record?.status == IntakeStatus.snoozed;
+  bool get isAutoMissed => record?.status == IntakeStatus.missed || record?.notes == 'auto_missed';
   bool get isPending => record == null;
 
   bool get isOverdue {
-    if (isTaken || isSkipped) return false;
+    if (isTaken || isSkipped || isAutoMissed) return false;
     final now = DateTime.now();
     final doseTime = DateTime(
       scheduledDate.year,
@@ -35,17 +36,17 @@ class ScheduledDose {
 
   /// Whether the scheduled time has arrived/passed or the dose was already recorded
   bool get isDueOrElapsed {
-    if (isTaken || isSkipped) return true;
+    if (isTaken || isSkipped || isAutoMissed) return true;
     return isOverdue;
   }
 
   /// Whether this dose is considered missed (scheduled time elapsed and not taken)
   bool get isMissed {
-    if (isTaken) return false;
-    if (isSkipped) return true;
+    if (isTaken || isSkipped) return false;
+    if (isAutoMissed) return true;
     return isOverdue;
   }
 
   /// Whether this dose is scheduled for the future and not yet due
-  bool get isUpcoming => !isTaken && !isMissed;
+  bool get isUpcoming => !isTaken && !isMissed && !isSkipped;
 }
