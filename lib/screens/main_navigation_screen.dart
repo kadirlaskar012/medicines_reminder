@@ -60,6 +60,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkCloudSession();
+      // Reload medicine data so any dose recorded in the background is immediately updated in the UI
+      context.read<MedicineProvider>().loadInitialData();
     }
   }
 
@@ -87,6 +89,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       final reminderId = data['reminderTimeId'] as String?;
       final medicineName = data['medicineName'] as String? ?? 'Medicine';
       final dosage = data['dosage'] as String? ?? '';
+      final notifId = data['notificationId'] as int?;
+
+      // Immediately dismiss notification from tray
+      if (notifId != null) {
+        await NotificationService.instance.cancelNotificationId(notifId);
+      }
+      if (!mounted) return;
 
       final provider = context.read<MedicineProvider>();
 
@@ -123,6 +132,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                 daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
                 notificationId: 1001,
               ),
+      );
+
+      // Dismiss any lingering active notification for this reminder
+      await NotificationService.instance.dismissActiveReminderNotification(
+        reminder: rem,
+        notificationId: notifId,
       );
 
       if (actionId == NotificationService.actionTaken) {
@@ -255,6 +270,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
           ),
         );
       } else {
+        if (!mounted) return;
         // Tapped notification card -> Navigate to full Alarm Ringing Screen
         Navigator.push(
           context,

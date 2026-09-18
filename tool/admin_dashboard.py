@@ -1317,6 +1317,10 @@ window.onload = () => loadData();
 </html>
 """
 
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
 class AdminDashboardHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         # Suppress verbose standard HTTP request logging
@@ -1328,19 +1332,26 @@ class AdminDashboardHandler(http.server.BaseHTTPRequestHandler):
         query = parse_qs(parsed.query)
 
         if path == "/" or path == "/index.html":
+            encoded = HTML_PAGE.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(encoded)))
+            self.send_header("Connection", "close")
             self.end_headers()
-            self.wfile.write(HTML_PAGE.encode("utf-8"))
+            self.wfile.write(encoded)
         elif path == "/api/data":
             force_cloud = "refresh" in query
             data = get_combined_data(force_cloud=force_cloud)
+            encoded = json.dumps(data, ensure_ascii=False).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(encoded)))
+            self.send_header("Connection", "close")
             self.end_headers()
-            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+            self.wfile.write(encoded)
         else:
             self.send_response(404)
+            self.send_header("Connection", "close")
             self.end_headers()
 
     def do_POST(self):
@@ -1364,12 +1375,16 @@ class AdminDashboardHandler(http.server.BaseHTTPRequestHandler):
                 users_to_delete = [{"userId": user_id, "email": email, "phone": phone}]
 
             success, msg = delete_users_from_supabase(users_to_delete)
+            encoded = json.dumps({"success": success, "message": msg}, ensure_ascii=False).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(encoded)))
+            self.send_header("Connection", "close")
             self.end_headers()
-            self.wfile.write(json.dumps({"success": success, "message": msg}, ensure_ascii=False).encode("utf-8"))
+            self.wfile.write(encoded)
         else:
             self.send_response(404)
+            self.send_header("Connection", "close")
             self.end_headers()
 
 def main():
@@ -1392,7 +1407,7 @@ def main():
 
     for p in range(port, port + max_retries):
         try:
-            httpd = socketserver.TCPServer(("127.0.0.1", p), AdminDashboardHandler)
+            httpd = ThreadedTCPServer(("127.0.0.1", p), AdminDashboardHandler)
             port = p
             break
         except OSError:

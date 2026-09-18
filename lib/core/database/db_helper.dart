@@ -212,6 +212,15 @@ class DBHelper {
     return res.map((m) => ReminderTime.fromMap(m)).toList();
   }
 
+  Future<ReminderTime?> getReminderById(String id) async {
+    final db = await database;
+    final res = await db.query('reminder_times', where: 'id = ?', whereArgs: [id]);
+    if (res.isNotEmpty) {
+      return ReminderTime.fromMap(res.first);
+    }
+    return null;
+  }
+
   Future<List<ReminderTime>> getAllReminders() async {
     final db = await database;
     final res = await db.query('reminder_times');

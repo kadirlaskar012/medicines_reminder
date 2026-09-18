@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
@@ -193,6 +194,7 @@ class AlarmRingingScreen extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: () {
                             context.read<MedicineProvider>().markAsTaken(medicine, reminder, DateTime.now());
+                            NotificationService.instance.dismissActiveReminderNotification(reminder: reminder);
                             Navigator.pop(context);
                           },
                           style: ElevatedButton.styleFrom(
@@ -232,6 +234,7 @@ class AlarmRingingScreen extends StatelessWidget {
                             child: OutlinedButton.icon(
                               onPressed: () {
                                 context.read<MedicineProvider>().snoozeDose(medicine, reminder, minutes: 10);
+                                NotificationService.instance.dismissActiveReminderNotification(reminder: reminder);
                                 Navigator.pop(context);
                               },
                               icon: const Icon(Icons.snooze_rounded, color: Colors.white, size: 18),
@@ -253,6 +256,7 @@ class AlarmRingingScreen extends StatelessWidget {
                             child: OutlinedButton.icon(
                               onPressed: () {
                                 context.read<MedicineProvider>().markAsSkipped(medicine, reminder, DateTime.now());
+                                NotificationService.instance.dismissActiveReminderNotification(reminder: reminder);
                                 Navigator.pop(context);
                               },
                               icon: const Icon(Icons.cancel_outlined, color: AppColors.error, size: 18),

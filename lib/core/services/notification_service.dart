@@ -14,16 +14,50 @@ import '../database/db_helper.dart';
 // Top-level or static background action handler
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) async {
-  debugPrint('Notification background response: actionId=${notificationResponse.actionId}');
+  WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
+  try {
+    final String currentTimeZone = DateTime.now().timeZoneName;
+    tz.setLocalLocation(tz.getLocation(currentTimeZone));
+  } catch (_) {
+    tz.setLocalLocation(tz.local);
+  }
+
+  debugPrint('Notification background response: actionId=${notificationResponse.actionId}, notifId=${notificationResponse.id}');
   final payload = notificationResponse.payload;
+
+  // 1. Immediately dismiss/cancel the notification from the tray
+  final plugin = FlutterLocalNotificationsPlugin();
+  int? notifId = notificationResponse.id;
+  Map<String, dynamic>? data;
+
   if (payload != null && payload.isNotEmpty) {
     try {
-      final data = jsonDecode(payload) as Map<String, dynamic>;
+      data = jsonDecode(payload) as Map<String, dynamic>;
+      notifId ??= data['notificationId'] as int?;
+    } catch (e) {
+      debugPrint('Error parsing notification payload: $e');
+    }
+  }
+
+  if (notifId != null) {
+    try {
+      await plugin.cancel(id: notifId);
+      debugPrint('Background notification cancelled: id=$notifId');
+    } catch (e) {
+      debugPrint('Error cancelling background notification: $e');
+    }
+  }
+
+  // 2. Process background dose intake
+  if (data != null) {
+    try {
       final medicineId = data['medicineId'] as String?;
       final reminderId = data['reminderTimeId'] as String?;
       final medicineName = data['medicineName'] as String? ?? 'Medicine';
       final dosage = data['dosage'] as String? ?? '';
       final typeName = data['medicineType'] as String? ?? 'tablet';
+      final dayOfWeek = data['dayOfWeek'] as int? ?? DateTime.now().weekday;
       final type = MedicineType.values.firstWhere(
         (t) => t.name == typeName,
         orElse: () => MedicineType.tablet,
@@ -44,6 +78,18 @@ void notificationTapBackground(NotificationResponse notificationResponse) async 
             recordedAt: now,
           );
           await DBHelper.instance.recordIntake(record);
+          debugPrint('Background dose recorded as TAKEN for $medicineName ($medicineId)');
+
+          // Reschedule weekly alarm for next week so recurring reminders remain intact
+          final med = await DBHelper.instance.getMedicineById(medicineId);
+          final rem = await DBHelper.instance.getReminderById(reminderId);
+          if (med != null && rem != null && med.isActive) {
+            await NotificationService.instance.rescheduleSingleDayReminder(
+              medicine: med,
+              reminder: rem,
+              dayOfWeek: dayOfWeek,
+            );
+          }
         } else if (notificationResponse.actionId == NotificationService.actionSkip) {
           final record = IntakeRecord(
             id: 'bg_${DateTime.now().millisecondsSinceEpoch}',
@@ -56,14 +102,27 @@ void notificationTapBackground(NotificationResponse notificationResponse) async 
             recordedAt: now,
           );
           await DBHelper.instance.recordIntake(record);
+          debugPrint('Background dose recorded as SKIPPED for $medicineName ($medicineId)');
+
+          // Reschedule weekly alarm for next week so recurring reminders remain intact
+          final med = await DBHelper.instance.getMedicineById(medicineId);
+          final rem = await DBHelper.instance.getReminderById(reminderId);
+          if (med != null && rem != null && med.isActive) {
+            await NotificationService.instance.rescheduleSingleDayReminder(
+              medicine: med,
+              reminder: rem,
+              dayOfWeek: dayOfWeek,
+            );
+          }
         } else if (notificationResponse.actionId == NotificationService.actionSnooze) {
           await NotificationService.instance.snoozeReminder(
             medicineName,
             dosage,
-            payload,
+            payload!,
             minutes: 10,
             type: type,
           );
+          debugPrint('Background dose SNOOZED for 10 min for $medicineName');
         }
       }
     } catch (e) {
@@ -223,8 +282,20 @@ class NotificationService {
         // 3. Initialize plugin
         await _notificationsPlugin.initialize(
           settings: initSettings,
-          onDidReceiveNotificationResponse: (NotificationResponse response) {
+          onDidReceiveNotificationResponse: (NotificationResponse response) async {
+            if (response.id != null) {
+              try {
+                await _notificationsPlugin.cancel(id: response.id!);
+              } catch (_) {}
+            }
             if (response.payload != null && response.payload!.isNotEmpty) {
+              try {
+                final payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
+                final notifId = payloadData['notificationId'] as int?;
+                if (notifId != null) {
+                  await _notificationsPlugin.cancel(id: notifId);
+                }
+              } catch (_) {}
               if (_onNotificationAction != null) {
                 _onNotificationAction!(response.payload!, response.actionId);
               } else {
@@ -249,7 +320,19 @@ class NotificationService {
       final launchDetails = await _notificationsPlugin.getNotificationAppLaunchDetails();
       if (launchDetails != null && launchDetails.didNotificationLaunchApp && launchDetails.notificationResponse != null) {
         final res = launchDetails.notificationResponse!;
+        if (res.id != null) {
+          try {
+            await _notificationsPlugin.cancel(id: res.id!);
+          } catch (_) {}
+        }
         if (res.payload != null && res.payload!.isNotEmpty) {
+          try {
+            final payloadData = jsonDecode(res.payload!) as Map<String, dynamic>;
+            final notifId = payloadData['notificationId'] as int?;
+            if (notifId != null) {
+              await _notificationsPlugin.cancel(id: notifId);
+            }
+          } catch (_) {}
           if (_onNotificationAction != null) {
             _onNotificationAction!(res.payload!, res.actionId);
           } else {
@@ -380,6 +463,8 @@ class NotificationService {
       channelDescription: reminder.isAlarm ? alarmChannelDesc : gentleChannelDesc,
       importance: Importance.max,
       priority: Priority.max,
+      ongoing: true,
+      autoCancel: false,
       fullScreenIntent: reminder.isAlarm,
       category: reminder.isAlarm ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
       icon: smallIcon,
@@ -421,20 +506,22 @@ class NotificationService {
 
     final notificationDetails = NotificationDetails(android: androidDetails);
 
-    final payload = jsonEncode({
-      'medicineId': medicine.id,
-      'medicineName': medicine.name,
-      'dosage': medicine.dosage,
-      'medicineType': medicine.type.name,
-      'instruction': medicine.instruction.title,
-      'reminderTimeId': reminder.id,
-      'isAlarm': reminder.isAlarm,
-    });
-
     // Schedule for each day in daysOfWeek
     for (final dayOfWeek in reminder.daysOfWeek) {
       final scheduledDate = _nextInstanceOfDayAndTime(dayOfWeek, reminder.hour, reminder.minute);
       final uniqueNotificationId = reminder.notificationId * 10 + dayOfWeek;
+
+      final dayPayload = jsonEncode({
+        'medicineId': medicine.id,
+        'medicineName': medicine.name,
+        'dosage': medicine.dosage,
+        'medicineType': medicine.type.name,
+        'instruction': medicine.instruction.title,
+        'reminderTimeId': reminder.id,
+        'isAlarm': reminder.isAlarm,
+        'notificationId': uniqueNotificationId,
+        'dayOfWeek': dayOfWeek,
+      });
 
       try {
         await _notificationsPlugin.zonedSchedule(
@@ -445,7 +532,7 @@ class NotificationService {
           notificationDetails: notificationDetails,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-          payload: payload,
+          payload: dayPayload,
         );
       } catch (e) {
         debugPrint('Error scheduling exact reminder: $e');
@@ -458,7 +545,7 @@ class NotificationService {
             notificationDetails: notificationDetails,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
             matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-            payload: payload,
+            payload: dayPayload,
           );
         } catch (fallbackError) {
           debugPrint('Fallback scheduling also failed: $fallbackError');
@@ -470,6 +557,121 @@ class NotificationService {
   Future<void> cancelReminder(ReminderTime reminder) async {
     for (int day = 1; day <= 7; day++) {
       await _notificationsPlugin.cancel(id: reminder.notificationId * 10 + day);
+    }
+  }
+
+  Future<void> cancelNotificationId(int notificationId) async {
+    try {
+      await _notificationsPlugin.cancel(id: notificationId);
+    } catch (e) {
+      debugPrint('Error cancelling notification id $notificationId: $e');
+    }
+  }
+
+  Future<void> dismissActiveReminderNotification({
+    required ReminderTime reminder,
+    int? notificationId,
+  }) async {
+    if (notificationId != null) {
+      try {
+        await _notificationsPlugin.cancel(id: notificationId);
+      } catch (_) {}
+    }
+    final todayWeekday = DateTime.now().weekday;
+    try {
+      await _notificationsPlugin.cancel(id: reminder.notificationId * 10 + todayWeekday);
+    } catch (_) {}
+    try {
+      await _notificationsPlugin.cancel(id: 999999); // Snooze ID
+    } catch (_) {}
+  }
+
+  Future<void> rescheduleSingleDayReminder({
+    required Medicine medicine,
+    required ReminderTime reminder,
+    required int dayOfWeek,
+  }) async {
+    final scheduledDate = _nextInstanceOfDayAndTime(dayOfWeek, reminder.hour, reminder.minute);
+    final uniqueNotificationId = reminder.notificationId * 10 + dayOfWeek;
+
+    final channelId = reminder.isAlarm ? alarmChannelId : gentleChannelId;
+    final channelName = reminder.isAlarm ? alarmChannelName : gentleChannelName;
+    final smallIcon = getSmallIconForType(medicine.type);
+    final largeIcon = getLargeIconForType(medicine.type);
+    final emoji = getEmojiForType(medicine.type);
+
+    final androidDetails = AndroidNotificationDetails(
+      channelId,
+      channelName,
+      channelDescription: reminder.isAlarm ? alarmChannelDesc : gentleChannelDesc,
+      importance: Importance.max,
+      priority: Priority.max,
+      ongoing: true,
+      autoCancel: false,
+      fullScreenIntent: reminder.isAlarm,
+      category: reminder.isAlarm ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
+      icon: smallIcon,
+      largeIcon: DrawableResourceAndroidBitmap(largeIcon),
+      color: brandPrimaryColor,
+      subText: '${medicine.type.label} Reminder',
+      ticker: '$emoji Time for ${medicine.name} (${medicine.dosage})',
+      visibility: NotificationVisibility.public,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      styleInformation: BigTextStyleInformation(
+        'Take <b>${medicine.dosage}</b> (${medicine.instruction.title})<br>Medicine Type: <b>${medicine.type.label}</b>. Tap to confirm your dose.',
+        htmlFormatBigText: true,
+        contentTitle: '$emoji <b>Time for ${medicine.name}</b> (${medicine.dosage})',
+        htmlFormatContentTitle: true,
+        summaryText: '${medicine.type.label} Reminder',
+        htmlFormatSummaryText: true,
+      ),
+      actions: const [
+        AndroidNotificationAction(
+          actionTaken,
+          'TAKE',
+          showsUserInterface: false,
+          cancelNotification: true,
+        ),
+        AndroidNotificationAction(
+          actionSnooze,
+          'SNOOZE 10M',
+          showsUserInterface: false,
+          cancelNotification: true,
+        ),
+        AndroidNotificationAction(
+          actionSkip,
+          'SKIP',
+          showsUserInterface: false,
+          cancelNotification: true,
+        ),
+      ],
+    );
+
+    final dayPayload = jsonEncode({
+      'medicineId': medicine.id,
+      'medicineName': medicine.name,
+      'dosage': medicine.dosage,
+      'medicineType': medicine.type.name,
+      'instruction': medicine.instruction.title,
+      'reminderTimeId': reminder.id,
+      'isAlarm': reminder.isAlarm,
+      'notificationId': uniqueNotificationId,
+      'dayOfWeek': dayOfWeek,
+    });
+
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id: uniqueNotificationId,
+        title: '$emoji Time for ${medicine.name} (${medicine.dosage})',
+        body: 'Instruction: ${medicine.instruction.title}. Tap to confirm your dose.',
+        scheduledDate: scheduledDate,
+        notificationDetails: NotificationDetails(android: androidDetails),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        payload: dayPayload,
+      );
+    } catch (e) {
+      debugPrint('Error rescheduling single day reminder: $e');
     }
   }
 
@@ -498,6 +700,8 @@ class NotificationService {
       channelDescription: alarmChannelDesc,
       importance: Importance.max,
       priority: Priority.max,
+      ongoing: true,
+      autoCancel: false,
       fullScreenIntent: true,
       category: AndroidNotificationCategory.alarm,
       icon: smallIcon,
@@ -537,6 +741,12 @@ class NotificationService {
       ],
     );
 
+    Map<String, dynamic> payloadMap = {};
+    try {
+      payloadMap = jsonDecode(payload) as Map<String, dynamic>;
+    } catch (_) {}
+    payloadMap['notificationId'] = snoozeId;
+
     await _notificationsPlugin.zonedSchedule(
       id: snoozeId,
       title: '⏰ $emoji Snoozed: $medicineName ($dosage)',
@@ -544,7 +754,7 @@ class NotificationService {
       scheduledDate: scheduledDate,
       notificationDetails: NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: payload,
+      payload: jsonEncode(payloadMap),
     );
   }
 
@@ -715,6 +925,7 @@ class NotificationService {
 
     final testMedId = 'demo_${type.name}';
     final testRemId = 'demo_rem_${type.name}';
+    final testNotifId = 99990 + type.index;
     final payload = jsonEncode({
       'medicineId': testMedId,
       'medicineName': medName,
@@ -722,6 +933,7 @@ class NotificationService {
       'instruction': instruction,
       'medicineType': type.name,
       'reminderTimeId': testRemId,
+      'notificationId': testNotifId,
       'isAlarm': true,
       'isTest': true,
     });
@@ -736,6 +948,8 @@ class NotificationService {
       channelDescription: alarmChannelDesc,
       importance: Importance.max,
       priority: Priority.max,
+      ongoing: true,
+      autoCancel: false,
       fullScreenIntent: true,
       category: AndroidNotificationCategory.alarm,
       icon: smallIcon,
