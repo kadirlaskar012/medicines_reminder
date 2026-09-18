@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/theme/app_colors.dart';
@@ -8,6 +10,8 @@ import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../widgets/dual_tone_capsule.dart';
 import '../../widgets/empty_medicines_view.dart';
+import '../../widgets/medicine_info_stock_sheet.dart';
+import '../../widgets/stock_meter_bar.dart';
 import 'add_edit_medicine_screen.dart';
 import 'medicine_details_screen.dart';
 
@@ -138,21 +142,21 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                     itemBuilder: (context, idx) {
                       final med = filtered[idx];
                       final reminders = provider.getRemindersForMedicine(med.id);
-                      final timeStr = reminders.isNotEmpty ? '${reminders.first.formattedTime} · ${s.everyday}' : '08:00 AM · ${s.everyday}';
 
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: const EdgeInsets.only(bottom: 14),
                         decoration: BoxDecoration(
                           color: isDark ? AppColors.darkCard : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(22),
                           border: Border.all(
                             color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                            width: 1.2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
@@ -165,17 +169,31 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                               ),
                             );
                           },
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(22),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            padding: const EdgeInsets.all(16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    DualToneCapsule.fromIndex(
-                                      med.colorValue,
-                                      size: 44,
+                                    Container(
+                                      width: 50,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: isDark ? AppColors.darkCardElevated : const Color(0xFFF8FAFC),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: DualToneCapsule.fromIndex(
+                                          med.colorValue,
+                                          size: 40,
+                                        ),
+                                      ),
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
@@ -187,10 +205,11 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                               Flexible(
                                                 child: Text(
                                                   med.name,
-                                                  style: TextStyle(
+                                                  style: GoogleFonts.outfit(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.w700,
                                                     color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                                                    letterSpacing: -0.2,
                                                   ),
                                                   maxLines: 1,
                                                   overflow: TextOverflow.ellipsis,
@@ -206,7 +225,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                                   ),
                                                   child: Text(
                                                     'Paused',
-                                                    style: TextStyle(
+                                                    style: GoogleFonts.outfit(
                                                       fontSize: 10,
                                                       fontWeight: FontWeight.w700,
                                                       color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
@@ -219,34 +238,46 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                           const SizedBox(height: 3),
                                           Text(
                                             '${med.dosage.isNotEmpty ? med.dosage : "500 mg"} · ${s.medicineTypeName(med.type.name)}',
-                                            style: TextStyle(
+                                            style: GoogleFonts.plusJakartaSans(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w500,
                                               color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
                                             ),
                                           ),
-                                          const SizedBox(height: 3),
-                                          Text(
-                                            timeStr,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                                            ),
+                                          const SizedBox(height: 4),
+                                          Wrap(
+                                            spacing: 6,
+                                            children: reminders.map((r) {
+                                              return Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primaryTeal.withValues(alpha: 0.12),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  r.formattedTime,
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: isDark ? AppColors.primaryTealLight : AppColors.primaryTeal,
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
                                           ),
                                         ],
                                       ),
                                     ),
                                     Switch.adaptive(
                                       value: med.isActive,
-                                      activeTrackColor: AppColors.success,
+                                      activeTrackColor: AppColors.accentEmerald,
                                       inactiveTrackColor: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
                                       onChanged: (val) async {
                                         await provider.toggleMedicineActive(med);
                                       },
                                     ),
                                     PopupMenuButton<String>(
-                                      icon: const Icon(Icons.more_horiz_rounded),
+                                      icon: const Icon(Icons.more_vert_rounded),
                                       onSelected: (val) async {
                                         if (val == 'details') {
                                           Navigator.push(
@@ -358,96 +389,100 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 12),
-                                const Divider(height: 1, thickness: 0.8),
+                                const SizedBox(height: 14),
+                                const Divider(height: 1, thickness: 0.6),
                                 const SizedBox(height: 12),
 
-                                // Reminders row & Dynamic Stock status
+                                // Dynamic Stock Meter Bar with 1-Tap Refill
+                                StockMeterBar(
+                                  currentStock: med.currentStock,
+                                  totalCapacity: (med.refillThreshold * 4).clamp(10, 200),
+                                  threshold: med.refillThreshold,
+                                  unit: med.displayUnit,
+                                  onRefillTap: () => _showRefillDialog(context, med, s),
+                                ),
+                                const SizedBox(height: 12),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    // Reminders times badges
-                                    Expanded(
-                                      child: Wrap(
-                                        spacing: 6,
-                                        runSpacing: 4,
-                                        children: reminders.map((r) {
-                                          return Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.primary.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              r.formattedTime,
-                                              style: const TextStyle(
+                                    // Left: Edit badge
+                                    InkWell(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (_) => AddEditMedicineScreen(medicineToEdit: med)),
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.edit_outlined, size: 13, color: AppColors.primaryTealLight),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Edit',
+                                              style: GoogleFonts.outfit(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w700,
-                                                color: AppColors.primary,
+                                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                                               ),
                                             ),
-                                          );
-                                        }).toList(),
+                                          ],
+                                        ),
                                       ),
                                     ),
 
-                                    // Dynamic Stock Info & Calculation
-                                    Builder(
-                                      builder: (context) {
-                                        final dailyDoses = provider.getDailyDoseCount(med.id);
-                                        final daysRemaining = med.estimatedDaysRemaining(dailyDoses);
-                                        final isCritical = med.currentStock <= 2;
-                                        final isLow = med.currentStock <= med.refillThreshold || (daysRemaining > 0 && daysRemaining <= 7);
-
-                                        String stockStatusText;
-                                        Color stockColor;
-                                        if (isCritical) {
-                                          stockStatusText = 'Refill soon';
-                                          stockColor = AppColors.error;
-                                        } else if (isLow) {
-                                          stockStatusText = daysRemaining > 0 ? 'Runs out in $daysRemaining days' : 'Low stock';
-                                          stockColor = AppColors.warning;
-                                        } else {
-                                          stockStatusText = daysRemaining > 0 ? '~$daysRemaining days remaining' : 'Stock healthy';
-                                          stockColor = isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary;
-                                        }
-
-                                        return Row(
+                                    // Right: Info & Stock badge
+                                    InkWell(
+                                      onTap: () => MedicineInfoStockSheet.show(context, med),
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryTeal.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: AppColors.primaryTeal.withValues(alpha: 0.3),
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  s.formatStockLeft(med.currentStock, med.displayUnit),
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: isCritical
-                                                        ? AppColors.error
-                                                        : isLow
-                                                            ? AppColors.warning
-                                                            : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
-                                                  ),
-                                                ),
-                                                Text(
-                                                  stockStatusText,
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: stockColor,
-                                                  ),
-                                                ),
-                                              ],
+                                            const Icon(Icons.inventory_2_outlined, size: 13, color: AppColors.primaryTealLight),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              'Info & Stock',
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: isDark ? AppColors.primaryTealLight : AppColors.primaryTeal,
+                                              ),
                                             ),
-                                            const SizedBox(width: 8),
-                                            IconButton.filledTonal(
-                                              onPressed: () => _showRefillDialog(context, med, s),
-                                              icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-                                              visualDensity: VisualDensity.compact,
-                                            ),
+                                            if (med.isLowStock || med.isOutOfStock) ...[
+                                              const SizedBox(width: 4),
+                                              Container(
+                                                width: 6,
+                                                height: 6,
+                                                decoration: const BoxDecoration(
+                                                  color: AppColors.accentRose,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                            ],
                                           ],
-                                        );
-                                      },
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -455,7 +490,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                             ),
                           ),
                         ),
-                      );
+                      ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.04, end: 0, duration: 250.ms);
                     },
                   ),
           ),

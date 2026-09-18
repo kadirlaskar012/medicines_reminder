@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import '../../models/reminder_time.dart';
 import '../../providers/medicine_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../core/localization/app_strings.dart';
+import '../../widgets/dual_tone_capsule.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final Medicine? medicineToEdit;
@@ -36,7 +38,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   String? _selectedProfileId;
 
   // New Features
-  int _durationDays = 0; // 0 = Ongoing / Chronic
+  int? _durationDays; // null = unselected, 0 = Ongoing / Chronic, >0 = specific days
   DateTime? _startDate;
   DateTime? _endDate;
   DateTime? _expiryDate;
@@ -77,13 +79,22 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       _stockController.text = _selectedType.defaultStock.toString();
       _refillThresholdController.text = _selectedType.defaultThreshold.toString();
 
-      // Unticked by default: start empty so user chooses their routine slots
+      // In Add mode: Course must be chosen by user
+      _durationDays = null;
       _reminders.clear();
     }
+    _nameController.addListener(_onFieldChanged);
+    _dosageController.addListener(_onFieldChanged);
+  }
+
+  void _onFieldChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _nameController.removeListener(_onFieldChanged);
+    _dosageController.removeListener(_onFieldChanged);
     _nameController.dispose();
     _dosageController.dispose();
     _stockController.dispose();
@@ -140,8 +151,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     if (picked != null) {
       setState(() {
         _startDate = picked;
-        if (_durationDays > 0) {
-          _endDate = picked.add(Duration(days: _durationDays));
+        if (_durationDays != null && _durationDays! > 0) {
+          _endDate = picked.add(Duration(days: _durationDays!));
         }
       });
     }
@@ -173,7 +184,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   // --- Custom Course Duration Picker ---
   void _pickCustomCourseDays() async {
     final s = context.read<LanguageProvider>().strings;
-    final textCtrl = TextEditingController(text: _durationDays > 0 ? '$_durationDays' : '15');
+    final textCtrl = TextEditingController(text: (_durationDays != null && _durationDays! > 0) ? '$_durationDays' : '15');
     final result = await showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -276,6 +287,45 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         return totalMinutes >= 1230 || totalMinutes < 300;
       default:
         return false;
+    }
+  }
+
+  ({String key, String label, IconData icon, Color color}) _getSlotInfoForReminder(ReminderTime r, AppStrings s) {
+    if (_matchesSlot(r, 'morning')) {
+      return (
+        key: 'morning',
+        label: s.morningSlot,
+        icon: Icons.wb_sunny_rounded,
+        color: const Color(0xFFF59E0B),
+      );
+    } else if (_matchesSlot(r, 'lunch')) {
+      return (
+        key: 'lunch',
+        label: s.lunchSlot,
+        icon: Icons.lunch_dining_rounded,
+        color: const Color(0xFF3B82F6),
+      );
+    } else if (_matchesSlot(r, 'afternoon')) {
+      return (
+        key: 'afternoon',
+        label: s.afternoonSlot,
+        icon: Icons.coffee_rounded,
+        color: const Color(0xFF10B981),
+      );
+    } else if (_matchesSlot(r, 'evening')) {
+      return (
+        key: 'evening',
+        label: s.eveningSlot,
+        icon: Icons.wb_twilight_rounded,
+        color: const Color(0xFF8B5CF6),
+      );
+    } else {
+      return (
+        key: 'night',
+        label: s.nightSlot,
+        icon: Icons.bedtime_rounded,
+        color: const Color(0xFF6366F1),
+      );
     }
   }
 
@@ -829,6 +879,21 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   }
 
   void _saveMedicine(AppStrings s) async {
+    final bool hasName = _nameController.text.trim().isNotEmpty;
+    final bool hasDosage = _dosageController.text.trim().isNotEmpty;
+    final bool hasCourse = _durationDays != null;
+    final bool hasRoutine = _reminders.isNotEmpty;
+    final bool isFormValid = hasName && hasDosage && hasCourse && hasRoutine;
+
+    if (!isFormValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_getMissingFieldsHelperText(s)),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     if (_reminders.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -838,8 +903,13 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     }
 
     final provider = context.read<MedicineProvider>();
-    final stock = int.tryParse(_stockController.text) ?? 0;
-    final threshold = int.tryParse(_refillThresholdController.text) ?? 5;
+    final stock = _stockController.text.isNotEmpty
+        ? (int.tryParse(_stockController.text) ?? _selectedType.defaultStock)
+        : (widget.medicineToEdit?.currentStock ?? _selectedType.defaultStock);
+    final threshold = _refillThresholdController.text.isNotEmpty
+        ? (int.tryParse(_refillThresholdController.text) ?? _selectedType.defaultThreshold)
+        : (widget.medicineToEdit?.refillThreshold ?? _selectedType.defaultThreshold);
+    final effectiveUnit = _selectedUnit.isNotEmpty ? _selectedUnit : _selectedType.defaultUnit;
 
     if (isEditing) {
       final updatedMed = widget.medicineToEdit!.copyWith(
@@ -850,10 +920,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         instruction: _selectedInstruction,
         currentStock: stock,
         refillThreshold: threshold,
-        unit: _selectedUnit,
+        unit: effectiveUnit,
         notes: _notesController.text.trim(),
         profileId: _selectedProfileId ?? widget.medicineToEdit!.profileId,
-        durationDays: _durationDays,
+        durationDays: _durationDays ?? 0,
         startDate: _startDate,
         endDate: _endDate,
         expiryDate: _expiryDate,
@@ -869,11 +939,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         instruction: _selectedInstruction,
         currentStock: stock,
         refillThreshold: threshold,
-        unit: _selectedUnit,
+        unit: effectiveUnit,
         notes: _notesController.text.trim(),
         reminderTimes: _reminders,
         profileId: _selectedProfileId,
-        durationDays: _durationDays,
+        durationDays: _durationDays ?? 0,
         startDate: _startDate,
         endDate: _endDate,
         expiryDate: _expiryDate,
@@ -893,6 +963,12 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     final profiles = provider.profiles;
     final s = context.watch<LanguageProvider>().strings;
 
+    final bool hasName = _nameController.text.trim().isNotEmpty;
+    final bool hasDosage = _dosageController.text.trim().isNotEmpty;
+    final bool hasCourse = _durationDays != null;
+    final bool hasRoutine = _reminders.isNotEmpty;
+    final bool isFormValid = hasName && hasDosage && hasCourse && hasRoutine;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? s.editMedicine : s.addNewMedicine),
@@ -900,97 +976,60 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: TextButton(
-              onPressed: () => _saveMedicine(s),
+              onPressed: isFormValid ? () => _saveMedicine(s) : null,
               child: Text(
                 s.save,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+                  color: isFormValid
+                      ? AppColors.primary
+                      : (isDark ? Colors.white24 : Colors.grey.shade400),
                 ),
               ),
             ),
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
-          children: [
-            // Profile selector if multiple profiles exist
-            if (profiles.length > 1) ...[
-              _buildSectionHeader(s.assignToFamilyMember),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedProfileId ?? provider.activeProfile?.id ?? profiles.first.id,
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.person_rounded),
-                ),
-                items: profiles.map((p) {
-                  return DropdownMenuItem(
-                    value: p.id,
-                    child: Row(
-                      children: [
-                        AppSvgIcons.render(p.svgAvatar, width: 20, height: 20),
-                        const SizedBox(width: 8),
-                        Text('${(p.id == 'default_me' || p.name.toLowerCase() == 'myself') ? s.myself : p.name} (${s.relationName(p.relation)})'),
-                      ],
+      body: Column(
+        children: [
+          // Static pinned Live 3D Preview Card (Always stays fixed at the top)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
+            child: _buildLivePreviewCard(isDark, s),
+          ),
+          // Scrollable form sections underneath
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
+                children: [
+                  // Profile selector if multiple profiles exist
+                  if (profiles.length > 1) ...[
+                    _buildSectionHeader(s.assignToFamilyMember),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedProfileId ?? provider.activeProfile?.id ?? profiles.first.id,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.person_rounded),
+                      ),
+                      items: profiles.map((p) {
+                        return DropdownMenuItem(
+                          value: p.id,
+                          child: Row(
+                            children: [
+                              AppSvgIcons.render(p.svgAvatar, width: 20, height: 20),
+                              const SizedBox(width: 8),
+                              Text('${(p.id == 'default_me' || p.name.toLowerCase() == 'myself') ? s.myself : p.name} (${s.relationName(p.relation)})'),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) => setState(() => _selectedProfileId = val),
                     ),
-                  );
-                }).toList(),
-                onChanged: (val) => setState(() => _selectedProfileId = val),
-              ),
-              const SizedBox(height: 20),
-            ],
-
-            // Edit Mode Hero Preview (Screen 12)
-            if (isEditing) ...[
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        _selectedType.assetPath,
-                        width: 64,
-                        height: 64,
-                        fit: BoxFit.contain,
-                        errorBuilder: (ctx, err, stack) => AppSvgIcons.render(
-                          _selectedType.svgString,
-                          width: 54,
-                          height: 54,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _nameController.text.isNotEmpty ? _nameController.text : s.medicineDetails,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                      ),
-                      if (_dosageController.text.isNotEmpty)
-                        Text(
-                          _dosageController.text,
-                          style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w700),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
+                    const SizedBox(height: 20),
+                  ],
 
             // 1. Basic Medicine Info
             _buildSectionHeader(s.medicineDetails),
@@ -1101,69 +1140,61 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 );
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // 3. Treatment Course Duration (3d, 7d, 10d, 2w, 21d, 1m, custom, ongoing)
-            _buildSectionHeader(s.treatmentCourse),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildCourseChip(3, s.threeDays),
-                _buildCourseChip(7, s.sevenDays),
-                _buildCourseChip(10, s.tenDays),
-                _buildCourseChip(14, s.twoWeeks),
-                _buildCourseChip(21, s.twentyOneDays),
-                _buildCourseChip(30, s.oneMonth),
-                _buildCourseChip(0, s.courseOngoing),
-                ActionChip(
-                  avatar: const Icon(Icons.edit_calendar_rounded, size: 16),
-                  label: Text(
-                    _durationDays > 0 && ![3, 7, 10, 14, 21, 30].contains(_durationDays)
-                        ? s.courseDaysLabel(_durationDays)
-                        : s.customCourse,
-                  ),
-                  backgroundColor: _durationDays > 0 && ![3, 7, 10, 14, 21, 30].contains(_durationDays)
-                      ? AppColors.primary
-                      : null,
-                  labelStyle: TextStyle(
-                    color: _durationDays > 0 && ![3, 7, 10, 14, 21, 30].contains(_durationDays)
-                        ? Colors.white
-                        : null,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-                  onPressed: _pickCustomCourseDays,
-                ),
-              ],
-            ),
-            if (_durationDays > 0 && _endDate != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.event_available_rounded, size: 18, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${s.courseEndsOn}: ${DateFormat('dd MMMM, yyyy').format(_endDate!)} (${s.courseDaysLabel(_durationDays)})',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+            // Capsule Color Theme Swatches (6 Dual-Tone Pairs)
+            _buildSectionHeader(s.code == 'bn' ? 'ক্যাপসুলের কালার থিম' : 'Pill Color Theme'),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 54,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: AppColors.dualCapsuleColors.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, i) {
+                  final pair = AppColors.dualCapsuleColors[i];
+                  final isSelected = _selectedColorValue == i;
+
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedColorValue = i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCard : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? pair[0]
+                              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                          width: isSelected ? 2.2 : 1,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: pair[0].withValues(alpha: 0.45),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: DualToneCapsule(
+                          size: 34,
+                          primaryColor: pair[0],
+                          secondaryColor: pair[1],
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
-            ],
-            const SizedBox(height: 18),
+            ),
+            const SizedBox(height: 24),
 
-            // Start Date Picker
+            // 3. Start Date Picker (First)
             _buildSectionHeader(s.code == 'bn' ? 'শুরুর তারিখ (Start Date)' : 'Start Date'),
             const SizedBox(height: 8),
             InkWell(
@@ -1193,13 +1224,111 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 18),
+
+            // 4. Treatment Course Duration (3d, 7d, 10d, 2w, 21d, 1m, custom, ongoing)
+            _buildSectionHeader(s.treatmentCourse, isRequired: true),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildCourseChip(3, s.threeDays),
+                _buildCourseChip(7, s.sevenDays),
+                _buildCourseChip(10, s.tenDays),
+                _buildCourseChip(14, s.twoWeeks),
+                _buildCourseChip(21, s.twentyOneDays),
+                _buildCourseChip(30, s.oneMonth),
+                _buildCourseChip(0, s.courseOngoing),
+                ActionChip(
+                  avatar: const Icon(Icons.edit_calendar_rounded, size: 16),
+                  label: Text(
+                    _durationDays != null && _durationDays! > 0 && ![3, 7, 10, 14, 21, 30].contains(_durationDays!)
+                        ? s.courseDaysLabel(_durationDays!)
+                        : s.customCourse,
+                  ),
+                  backgroundColor: _durationDays != null && _durationDays! > 0 && ![3, 7, 10, 14, 21, 30].contains(_durationDays!)
+                      ? AppColors.primary
+                      : null,
+                  labelStyle: TextStyle(
+                    color: _durationDays != null && _durationDays! > 0 && ![3, 7, 10, 14, 21, 30].contains(_durationDays!)
+                        ? Colors.white
+                        : null,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                  onPressed: _pickCustomCourseDays,
+                ),
+              ],
+            ),
+            if (_durationDays != null && _durationDays! > 0 && _endDate != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.event_available_rounded, size: 18, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${s.courseEndsOn}: ${DateFormat('dd MMMM, yyyy').format(_endDate!)} (${s.courseDaysLabel(_durationDays!)})',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (_durationDays == 0) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryTeal.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primaryTeal.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.all_inclusive_rounded, size: 18, color: AppColors.primaryTeal),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        s.code == 'bn' ? 'চলমান চিকিৎসা (কোর্সের নির্দিষ্ট মেয়াদ নেই)' : 'Ongoing treatment (No end date)',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryTeal),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (_durationDays == null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.accentAmber),
+                  const SizedBox(width: 6),
+                  Text(
+                    s.code == 'bn' ? 'যেকোনো একটি কোর্স বা চলমান অপশন বাছুন *' : 'Please select a course or ongoing *',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 24),
 
             // 4. Taking Time & Routine (Morning, Lunch, Afternoon, Night Slots with Before/After meal popup)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildSectionHeader(s.routineMealSlot),
+                _buildSectionHeader(s.routineMealSlot, isRequired: true),
                 TextButton.icon(
                   onPressed: _addCustomReminderTime,
                   icon: const Icon(Icons.add_alarm_rounded, size: 16),
@@ -1256,16 +1385,30 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ..._reminders.asMap().entries.map((entry) {
               final idx = entry.key;
               final rem = entry.value;
+              final slotInfo = _getSlotInfoForReminder(rem, s);
+              final slotColor = slotInfo.color;
+              final slotIcon = slotInfo.icon;
+              final slotLabel = slotInfo.label;
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkCard : Colors.white,
+                  color: isDark
+                      ? Color.alphaBlend(slotColor.withValues(alpha: 0.12), AppColors.darkCard)
+                      : Color.alphaBlend(slotColor.withValues(alpha: 0.06), Colors.white),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    color: slotColor.withValues(alpha: isDark ? 0.38 : 0.28),
+                    width: 1.2,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: slotColor.withValues(alpha: isDark ? 0.10 : 0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1273,69 +1416,137 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.12),
+                            color: slotColor.withValues(alpha: isDark ? 0.22 : 0.14),
                             borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            rem.formattedTime,
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
+                            border: Border.all(
+                              color: slotColor.withValues(alpha: 0.35),
+                              width: 1,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
+                              Icon(slotIcon, size: 16, color: slotColor),
+                              const SizedBox(width: 6),
                               Text(
-                                rem.isAlarm ? s.loudAlarm : s.gentleNotification,
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                              ),
-                              Text(
-                                rem.recurrenceSummaryLocalized(s),
+                                rem.formattedTime,
                                 style: TextStyle(
-                                  fontSize: 11,
-                                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: slotColor,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Switch(
-                          value: rem.isAlarm,
-                          activeTrackColor: AppColors.primary,
-                          onChanged: (val) {
-                            setState(() {
-                              _reminders[idx] = ReminderTime(
-                                id: rem.id,
-                                medicineId: rem.medicineId,
-                                hour: rem.hour,
-                                minute: rem.minute,
-                                daysOfWeek: rem.daysOfWeek,
-                                isAlarm: val,
-                                notificationId: rem.notificationId,
-                              );
-                            });
-                          },
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: slotColor.withValues(alpha: 0.16),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      slotLabel,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: slotColor,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      rem.recurrenceSummaryLocalized(s),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Icon(
+                                    rem.isAlarm ? Icons.alarm_rounded : Icons.notifications_none_rounded,
+                                    size: 13,
+                                    color: rem.isAlarm ? slotColor : (isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      rem.isAlarm ? s.loudAlarm : s.gentleNotification,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? Colors.white70 : Colors.black87,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
-                          onPressed: () {
+                        Transform.scale(
+                          scale: 0.88,
+                          child: Switch(
+                            value: rem.isAlarm,
+                            activeTrackColor: slotColor,
+                            activeThumbColor: Colors.white,
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            onChanged: (val) {
+                              setState(() {
+                                _reminders[idx] = ReminderTime(
+                                  id: rem.id,
+                                  medicineId: rem.medicineId,
+                                  hour: rem.hour,
+                                  minute: rem.minute,
+                                  daysOfWeek: rem.daysOfWeek,
+                                  isAlarm: val,
+                                  notificationId: rem.notificationId,
+                                );
+                              });
+                            },
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () {
                             setState(() {
                               _reminders.removeAt(idx);
                             });
                           },
+                          borderRadius: BorderRadius.circular(10),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
+                          ),
                         ),
                       ],
                     ),
 
                     const SizedBox(height: 10),
-                    const Divider(height: 1),
+                    Divider(
+                      height: 1,
+                      color: slotColor.withValues(alpha: 0.22),
+                    ),
                     const SizedBox(height: 8),
 
                     // Specific Days of the week row for this reminder
@@ -1351,14 +1562,23 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.primary
+                                  ? slotColor
                                   : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: isSelected
-                                    ? AppColors.primary
+                                    ? slotColor
                                     : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                               ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: slotColor.withValues(alpha: 0.35),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1.5),
+                                      ),
+                                    ]
+                                  : null,
                             ),
                             child: Text(
                               s.weekdayShort(day),
@@ -1381,220 +1601,278 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             const SizedBox(height: 20),
           ],
 
-            // 9. Stock & Refill Tracker
-            _buildSectionHeader(s.stockInventory),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _stockController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '${s.currentQuantity} (${s.unitName(_selectedUnit)})',
-                      hintText: '${_selectedType.defaultStock}',
-                      suffixText: s.unitName(_selectedUnit),
-                      prefixIcon: const Icon(Icons.inventory_2_rounded),
+            if (!isEditing) ...[
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryTeal.withValues(alpha: isDark ? 0.12 : 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primaryTeal.withValues(alpha: isDark ? 0.3 : 0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryTeal.withValues(alpha: 0.16),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.inventory_2_outlined,
+                        color: AppColors.primaryTealLight,
+                        size: 20,
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: TextFormField(
-                    controller: _refillThresholdController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '${s.lowAlertLimit} (${s.unitName(_selectedUnit)})',
-                      hintText: '${_selectedType.defaultThreshold}',
-                      suffixText: s.unitName(_selectedUnit),
-                      prefixIcon: const Icon(Icons.notifications_active_outlined),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Unit Selection Chips
-            Text(
-              s.measurementUnitLabel,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: _selectedType.availableUnits.map((u) {
-                final isSelected = _selectedUnit.toLowerCase() == u.toLowerCase();
-                return ChoiceChip(
-                  label: Text(s.unitName(u)),
-                  selected: isSelected,
-                  selectedColor: AppColors.primary,
-                  checkmarkColor: Colors.white,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 12,
-                  ),
-                  onSelected: (val) {
-                    if (val) {
-                      setState(() => _selectedUnit = u);
-                    }
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
-
-            // 10. Medicine Strip / Box Photo (Attachment)
-            _buildSectionHeader(s.medicinePhoto),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkCard : Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                ),
-              ),
-              child: _photoPath != null && File(_photoPath!).existsSync()
-                  ? Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            File(_photoPath!),
-                            width: 72,
-                            height: 72,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                s.medicinePhoto,
-                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                              ),
-                              const SizedBox(height: 4),
-                              TextButton.icon(
-                                onPressed: () => setState(() => _photoPath = null),
-                                icon: const Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.error),
-                                label: Text(s.removePhoto, style: const TextStyle(color: AppColors.error, fontSize: 12)),
-                                style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _pickPhoto(ImageSource.camera),
-                            icon: const Icon(Icons.camera_alt_rounded, size: 18),
-                            label: Text(s.takePhoto),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s.code == 'bn' ? '⚡ সুপার-ফাস্ট ওষুধ যোগ' : '⚡ Quick Add Mode',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.primaryTealLight : AppColors.primaryDark,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _pickPhoto(ImageSource.gallery),
-                            icon: const Icon(Icons.photo_library_rounded, size: 18),
-                            label: Text(s.chooseFromGallery),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          const SizedBox(height: 2),
+                          Text(
+                            s.code == 'bn'
+                                ? 'স্টক সংখ্যা, ওষুধের ছবি, এক্সপায়ারি ডেট ও নোট যেকোনো সময় কার্ডের "Info & Stock" অপশন থেকে আপডেট করতে পারবেন।'
+                                : 'Stock count, packaging photo, expiry date, and notes can be updated anytime via the "Info & Stock" badge on the medicine card.',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                              height: 1.35,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-            ),
-            const SizedBox(height: 24),
-
-            // 11. Expiry Date Tracker
-            _buildSectionHeader(s.expiryDateTitle),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkCard : Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  ],
                 ),
               ),
-              child: Row(
+              const SizedBox(height: 16),
+            ] else ...[
+              // 9. Stock & Refill Tracker
+              _buildSectionHeader(s.stockInventory),
+              const SizedBox(height: 10),
+              Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+                  Expanded(
+                    child: TextFormField(
+                      controller: _stockController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: '${s.currentQuantity} (${s.unitName(_selectedUnit)})',
+                        hintText: '${_selectedType.defaultStock}',
+                        suffixText: s.unitName(_selectedUnit),
+                        prefixIcon: const Icon(Icons.inventory_2_rounded),
+                      ),
                     ),
-                    child: const Icon(Icons.event_available_rounded, color: AppColors.primary, size: 20),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _expiryDate != null
-                              ? '${s.expiresOn} ${DateFormat('MMMM yyyy').format(_expiryDate!)}'
-                              : s.selectExpiryDate,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: _expiryDate != null && DateTime.now().isAfter(_expiryDate!)
-                                ? AppColors.error
-                                : (isDark ? Colors.white : Colors.black87),
-                          ),
-                        ),
-                      ],
+                    child: TextFormField(
+                      controller: _refillThresholdController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: '${s.lowAlertLimit} (${s.unitName(_selectedUnit)})',
+                        hintText: '${_selectedType.defaultThreshold}',
+                        suffixText: s.unitName(_selectedUnit),
+                        prefixIcon: const Icon(Icons.notifications_active_outlined),
+                      ),
                     ),
-                  ),
-                  if (_expiryDate != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear_rounded, size: 18),
-                      onPressed: () => setState(() => _expiryDate = null),
-                    ),
-                  ElevatedButton(
-                    onPressed: _pickExpiryDate,
-                    style: ElevatedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    ),
-                    child: Text(s.change),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
-
-            // 12. Doctor Notes & Tips
-            _buildSectionHeader(s.doctorNotesOptional),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _notesController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: s.notesHint,
+              const SizedBox(height: 12),
+              // Unit Selection Chips
+              Text(
+                s.measurementUnitLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: _selectedType.availableUnits.map((u) {
+                  final isSelected = _selectedUnit.toLowerCase() == u.toLowerCase();
+                  return ChoiceChip(
+                    label: Text(s.unitName(u)),
+                    selected: isSelected,
+                    selectedColor: AppColors.primary,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 12,
+                    ),
+                    onSelected: (val) {
+                      if (val) {
+                        setState(() => _selectedUnit = u);
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+
+              // 10. Medicine Strip / Box Photo (Attachment)
+              _buildSectionHeader(s.medicinePhoto),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCard : Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  ),
+                ),
+                child: _photoPath != null && File(_photoPath!).existsSync()
+                    ? Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(_photoPath!),
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  s.medicinePhoto,
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                ),
+                                const SizedBox(height: 4),
+                                TextButton.icon(
+                                  onPressed: () => setState(() => _photoPath = null),
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.error),
+                                  label: Text(s.removePhoto, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+                                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _pickPhoto(ImageSource.camera),
+                              icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                              label: Text(s.takePhoto),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _pickPhoto(ImageSource.gallery),
+                              icon: const Icon(Icons.photo_library_rounded, size: 18),
+                              label: Text(s.chooseFromGallery),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 24),
+
+              // 11. Expiry Date Tracker
+              _buildSectionHeader(s.expiryDateTitle),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCard : Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.event_available_rounded, color: AppColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _expiryDate != null
+                                ? '${s.expiresOn} ${DateFormat('MMMM yyyy').format(_expiryDate!)}'
+                                : s.selectExpiryDate,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _expiryDate != null && DateTime.now().isAfter(_expiryDate!)
+                                  ? AppColors.error
+                                  : (isDark ? Colors.white : Colors.black87),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_expiryDate != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 18),
+                        onPressed: () => setState(() => _expiryDate = null),
+                      ),
+                    ElevatedButton(
+                      onPressed: _pickExpiryDate,
+                      style: ElevatedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      ),
+                      child: Text(s.change),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // 12. Doctor Notes & Tips
+              _buildSectionHeader(s.doctorNotesOptional),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _notesController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: s.notesHint,
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
 
 
             // 14. Delete Medicine Button (Screen 12)
@@ -1626,6 +1904,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           ],
         ),
       ),
+    ),
+  ],
+),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
         decoration: BoxDecoration(
@@ -1640,15 +1921,73 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           ],
         ),
         child: SafeArea(
-          child: SizedBox(
-            height: 50,
-            child: ElevatedButton(
-              onPressed: () => _saveMedicine(s),
-              child: Text(
-                isEditing ? s.updateMedicineBtn : s.saveAndSetReminders,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isFormValid) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.accentAmber),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _getMissingFieldsHelperText(s),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              SizedBox(
+                height: 50,
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isFormValid ? () => _saveMedicine(s) : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isFormValid
+                        ? AppColors.primary
+                        : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                    foregroundColor: isFormValid
+                        ? Colors.white
+                        : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
+                    elevation: isFormValid ? 2 : 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isEditing ? Icons.check_circle_rounded : Icons.alarm_add_rounded,
+                        size: 20,
+                        color: isFormValid
+                            ? Colors.white
+                            : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isEditing ? s.updateMedicineBtn : s.saveAndSetReminders,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: isFormValid
+                              ? Colors.white
+                              : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -1701,21 +2040,37 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, {bool isRequired = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
-        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextPrimary,
-        letterSpacing: 0.2,
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextPrimary,
+            letterSpacing: 0.2,
+          ),
+        ),
+        if (isRequired) ...[
+          const SizedBox(width: 4),
+          const Text(
+            '*',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: AppColors.error,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
   Widget _buildCourseChip(int days, String label) {
-    final isSelected = _durationDays == days;
+    final isSelected = _durationDays != null && _durationDays == days;
     return ChoiceChip(
       selected: isSelected,
       label: Text(label),
@@ -1726,18 +2081,194 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         fontSize: 12,
       ),
       onSelected: (val) {
-        if (val) {
-          setState(() {
+        setState(() {
+          if (val) {
             _durationDays = days;
             if (days > 0) {
               _endDate = (_startDate ?? DateTime.now()).add(Duration(days: days));
             } else {
               _endDate = null;
             }
-          });
-        }
+          } else {
+            _durationDays = null;
+            _endDate = null;
+          }
+        });
       },
     );
+  }
+
+  Widget _buildLivePreviewCard(bool isDark, AppStrings s) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [
+                  AppColors.primaryTeal.withValues(alpha: 0.16),
+                  AppColors.accentCyan.withValues(alpha: 0.08),
+                  AppColors.darkCard,
+                ]
+              : [
+                  AppColors.primaryTeal.withValues(alpha: 0.08),
+                  AppColors.accentCyan.withValues(alpha: 0.04),
+                  Colors.white,
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: AppColors.primaryTeal.withValues(alpha: isDark ? 0.3 : 0.2),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryTeal.withValues(alpha: isDark ? 0.15 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkCardElevated : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+              ),
+            ),
+            child: Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(opacity: animation, child: child),
+                ),
+                child: KeyedSubtree(
+                  key: ValueKey('${_selectedType.name}_${_selectedColorValue}_$_photoPath'),
+                  child: _buildLivePreviewIcon(isDark),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryTeal.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Text(
+                    'LIVE 3D PREVIEW',
+                    style: GoogleFonts.outfit(
+                      fontSize: 9.0,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? AppColors.primaryTealLight : AppColors.primaryDark,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _nameController.text.trim().isNotEmpty
+                      ? _nameController.text.trim()
+                      : (s.code == 'bn' ? 'ওষুধের নাম লিখুন' : 'New Medicine'),
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    letterSpacing: -0.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${_dosageController.text.trim().isNotEmpty ? _dosageController.text.trim() : (s.code == 'bn' ? "ডোজ উল্লেখ করুন" : "Dose")} · ${s.medicineTypeName(_selectedType.name)}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLivePreviewIcon(bool isDark) {
+    if (_photoPath != null && File(_photoPath!).existsSync()) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.file(
+          File(_photoPath!),
+          width: 42,
+          height: 42,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    if (_selectedType == MedicineType.capsule) {
+      return DualToneCapsule.fromIndex(
+        _selectedColorValue,
+        size: 40,
+        hasGlow: true,
+      );
+    }
+
+    return Image.asset(
+      _selectedType.assetPath,
+      width: 40,
+      height: 40,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => AppSvgIcons.render(
+        _selectedType.svgString,
+        width: 32,
+        height: 32,
+        color: AppColors.primaryTeal,
+      ),
+    );
+  }
+
+  String _getMissingFieldsHelperText(AppStrings s) {
+    final missing = <String>[];
+    if (_nameController.text.trim().isEmpty) {
+      missing.add(s.code == 'bn' ? 'ওষুধের নাম' : 'Medicine name');
+    }
+    if (_dosageController.text.trim().isEmpty) {
+      missing.add(s.code == 'bn' ? 'ডোজ' : 'Dosage');
+    }
+    if (_durationDays == null) {
+      missing.add(s.code == 'bn' ? 'চিকিৎসার মেয়াদ/কোর্স' : 'Treatment course');
+    }
+    if (_reminders.isEmpty) {
+      missing.add(s.code == 'bn' ? 'খাওয়ার সময়/রুটিন' : 'Taking routine');
+    }
+
+    if (missing.isEmpty) return '';
+    if (s.code == 'bn') {
+      return 'প্রয়োজনীয় ৪টি তথ্য পূরণ করুন: ${missing.join(', ')}';
+    } else {
+      return 'Required: please set ${missing.join(', ')}';
+    }
   }
 
   Widget _buildSlotCard(
@@ -2042,30 +2573,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             spacing: 6,
             runSpacing: 6,
             children: _reminders.map((r) {
-              String slotLabel = '';
-              Color slotColor = AppColors.primary;
-              IconData slotIco = Icons.alarm;
-              if (_matchesSlot(r, 'morning')) {
-                slotLabel = s.morningSlot;
-                slotColor = const Color(0xFFF59E0B);
-                slotIco = Icons.wb_sunny_rounded;
-              } else if (_matchesSlot(r, 'lunch')) {
-                slotLabel = s.lunchSlot;
-                slotColor = const Color(0xFF3B82F6);
-                slotIco = Icons.lunch_dining_rounded;
-              } else if (_matchesSlot(r, 'afternoon')) {
-                slotLabel = s.afternoonSlot;
-                slotColor = const Color(0xFF10B981);
-                slotIco = Icons.coffee_rounded;
-              } else if (_matchesSlot(r, 'evening')) {
-                slotLabel = s.eveningSlot;
-                slotColor = const Color(0xFF8B5CF6);
-                slotIco = Icons.wb_twilight_rounded;
-              } else {
-                slotLabel = s.nightSlot;
-                slotColor = const Color(0xFF6366F1);
-                slotIco = Icons.bedtime_rounded;
-              }
+              final slotInfo = _getSlotInfoForReminder(r, s);
+              final slotLabel = slotInfo.label;
+              final slotColor = slotInfo.color;
+              final slotIco = slotInfo.icon;
 
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

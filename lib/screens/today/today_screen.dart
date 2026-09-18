@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/localization/app_strings.dart';
@@ -7,23 +8,38 @@ import '../../models/reminder_time.dart';
 import '../../models/scheduled_dose.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
-import '../../widgets/calendar_timeline_bar.dart';
+import '../../widgets/adherence_ring.dart';
 import '../../widgets/dose_card.dart';
 import '../../widgets/empty_medicines_view.dart';
 import '../medicines/add_edit_medicine_screen.dart';
 import '../medicines/medicines_cabinet_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../../widgets/profile_selector_sheet.dart';
+import '../../widgets/rotary_time_slot_carousel.dart';
 
-class TodayScreen extends StatelessWidget {
+class TodayScreen extends StatefulWidget {
   const TodayScreen({super.key});
 
-  static const List<String> _wellnessQuotes = [
-    'Small reminders. Better routines.',
-    'Stay on track with your medicines.',
-    'Take care today for a healthier tomorrow.',
-    'Consistency is key to feeling your best.',
-  ];
+  @override
+  State<TodayScreen> createState() => _TodayScreenState();
+}
+
+class _TodayScreenState extends State<TodayScreen> {
+  TimeSlot? _selectedSlotFilter; // null = All
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = context.read<MedicineProvider>();
+        final now = DateTime.now();
+        if (!DateUtils.isSameDay(provider.selectedDate, now)) {
+          provider.selectDate(now);
+        }
+      }
+    });
+  }
 
   String _getTimeSlotTitle(TimeSlot slot, AppStrings s) {
     switch (slot) {
@@ -68,203 +84,305 @@ class TodayScreen extends StatelessWidget {
     final nightDoses = provider.nightDoses;
     final totalDoses = provider.dosesForSelectedDate.length;
 
+    // Filter doses by selected time slot (or all doses by default)
+    final allDosesForDate = provider.dosesForSelectedDate;
+    final visibleDoses = _selectedSlotFilter == null
+        ? allDosesForDate
+        : allDosesForDate.where((d) => d.reminder.timeSlot == _selectedSlotFilter).toList();
+
+    // Smart Priority Sorting:
+    // 1. Pending doses (overdue / due now / upcoming next) come at the very top.
+    // 2. Earliest upcoming/due medicine is index 0.
+    // 3. As each medicine is marked taken, it moves down and the next upcoming moves up!
+    // 4. Completed doses (taken / skipped) move beneath pending doses.
+    final List<ScheduledDose> pendingDoses = [];
+    final List<ScheduledDose> completedDoses = [];
+
+    for (final d in visibleDoses) {
+      if (d.isTaken || d.isSkipped) {
+        completedDoses.add(d);
+      } else {
+        pendingDoses.add(d);
+      }
+    }
+
+    pendingDoses.sort((a, b) {
+      final compHour = a.reminder.hour.compareTo(b.reminder.hour);
+      if (compHour != 0) return compHour;
+      return a.reminder.minute.compareTo(b.reminder.minute);
+    });
+
+    completedDoses.sort((a, b) {
+      final compHour = a.reminder.hour.compareTo(b.reminder.hour);
+      if (compHour != 0) return compHour;
+      return a.reminder.minute.compareTo(b.reminder.minute);
+    });
+
     final userName = activeProfile != null
-        ? (activeProfile.id == 'default_me' || activeProfile.name.toLowerCase() == 'myself' ? 'Kadir' : activeProfile.name)
-        : 'Kadir';
+        ? (activeProfile.id == 'default_me' || activeProfile.name.toLowerCase() == 'myself' ? 'Kadir Laskar' : activeProfile.name)
+        : 'Kadir Laskar';
 
     final now = DateTime.now();
     final isViewingToday = DateUtils.isSameDay(provider.selectedDate, now);
 
-    // Rotating daily wellness quote
-    final quoteIndex = now.day % _wellnessQuotes.length;
-    final dailyQuote = _wellnessQuotes[quoteIndex];
-
-    // Check if any medicines are overdue/missed to show bell indicator
-    final hasAlerts = provider.dosesForSelectedDate.any((d) => d.isOverdue || (!d.isTaken && !d.isSkipped && d.scheduledDate.isBefore(now)));
+    final hasAlerts = provider.dosesForSelectedDate.any(
+      (d) => d.isOverdue || (!d.isTaken && !d.isSkipped && d.scheduledDate.isBefore(now)),
+    );
 
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // Top App Bar / Profile Header with Profile Switcher Dropdown
+            // Top App Bar / Profile Pill & Actions
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 16, 6),
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Profile Pill
                     InkWell(
                       onTap: () => ProfileSelectorSheet.show(context),
-                      borderRadius: BorderRadius.circular(24),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkCard : Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              width: 44,
-                              height: 44,
+                              width: 36,
+                              height: 36,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.12),
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF0EA5E9), Color(0xFF0D9488)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primaryTeal.withValues(alpha: 0.35),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: const Center(
-                                child: Icon(Icons.person_rounded, color: AppColors.primary, size: 24),
+                                child: Text('👤', style: TextStyle(fontSize: 18)),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 10),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _getTimeBasedGreeting(s),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.lightTextSecondary,
+                                  userName,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                                   ),
                                 ),
                                 Row(
-                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      userName,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                                        letterSpacing: -0.3,
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.accentEmerald,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.accentEmerald.withValues(alpha: 0.8),
+                                            blurRadius: 4,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.arrow_drop_down_rounded,
-                                      size: 20,
-                                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+                                    Text(
+                                      _getTimeBasedGreeting(s),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.accentEmerald,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ],
                             ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 18,
+                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                            ),
                           ],
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.calendar_month_rounded, size: 22),
-                      tooltip: s.code == 'bn' ? 'তারিখ বেছে নিন' : 'Select Date',
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: provider.selectedDate,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2035),
-                        );
-                        if (picked != null) {
-                          provider.selectDate(picked);
-                        }
-                      },
-                    ),
-                    IconButton(
-                      icon: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Icon(Icons.notifications_outlined, size: 24),
-                          if (hasAlerts)
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                width: 7,
-                                height: 7,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.error,
-                                  shape: BoxShape.circle,
-                                ),
+
+                    // Right Actions (Date Picker + Bell)
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: provider.selectedDate,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2035),
+                            );
+                            if (picked != null) {
+                              provider.selectDate(picked);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkCard : Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                width: 1,
                               ),
                             ),
-                        ],
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-                        );
-                      },
+                            child: Icon(
+                              Icons.calendar_month_rounded,
+                              size: 20,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkCard : Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                width: 1,
+                              ),
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Icon(
+                                  Icons.notifications_none_rounded,
+                                  size: 21,
+                                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                ),
+                                if (hasAlerts)
+                                  Positioned(
+                                    top: 10,
+                                    right: 11,
+                                    child: Container(
+                                      width: 7,
+                                      height: 7,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.accentRose,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isDark ? AppColors.darkCard : Colors.white,
+                                          width: 1.2,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.accentRose.withValues(alpha: 0.8),
+                                            blurRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
 
-            // Health Motivation Banner (~25% shorter, calm and lightweight)
+            // Hero Adherence Card
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0F291E) : const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? const Color(0xFF134E39) : const Color(0xFFBBF7D0),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.eco_rounded, color: AppColors.success, size: 18),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          dailyQuote,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF065F46),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                child: AdherenceRing(
+                  rate: provider.todayAdherenceRate,
+                  takenCount: provider.todayTakenCount,
+                  totalCount: provider.todayTotalCount,
+                  streakDays: provider.currentStreakDays,
                 ),
               ),
             ),
 
-            // Calendar Timeline Strip
+            // Rotary Time Slot Carousel & All Doses Master Filter
             SliverToBoxAdapter(
-              child: CalendarTimelineBar(
-                selectedDate: provider.selectedDate,
-                onDateSelected: (date) => provider.selectDate(date),
+              child: RotaryTimeSlotCarousel(
+                selectedSlot: _selectedSlotFilter,
+                totalDosesCount: totalDoses,
+                doseCounts: {
+                  TimeSlot.morning: morningDoses.length,
+                  TimeSlot.afternoon: afternoonDoses.length,
+                  TimeSlot.evening: eveningDoses.length,
+                  TimeSlot.night: nightDoses.length,
+                },
+                onSlotChanged: (slot) {
+                  setState(() => _selectedSlotFilter = slot);
+                },
               ),
             ),
 
-            // Today's Medicines Header + View All
+            // Section Header: Date status + View All
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       isViewingToday
-                          ? (s.code == 'bn' ? 'আজকের ওষুধ' : 'TODAY\'S MEDICINES')
+                          ? (s.code == 'bn' ? 'আজকের ওষুধ' : 'TODAY\'S DOSES')
                           : (s.code == 'bn'
                               ? '${provider.selectedDate.day} ${DateFormat('MMMM').format(provider.selectedDate)}-এর ওষুধ'
-                              : '${DateFormat('MMMM d').format(provider.selectedDate).toUpperCase()}\'S MEDICINES'),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                              : '${DateFormat('MMMM d').format(provider.selectedDate).toUpperCase()}\'S DOSES'),
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
                         color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.8,
                       ),
                     ),
                     Row(
@@ -278,14 +396,14 @@ class TodayScreen extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.today_rounded, size: 14, color: AppColors.primary),
+                                  const Icon(Icons.today_rounded, size: 14, color: AppColors.primaryTeal),
                                   const SizedBox(width: 4),
                                   Text(
                                     s.code == 'bn' ? 'আজকে ফিরুন' : 'Today',
-                                    style: const TextStyle(
+                                    style: GoogleFonts.outfit(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
+                                      color: AppColors.primaryTeal,
                                     ),
                                   ),
                                 ],
@@ -305,11 +423,11 @@ class TodayScreen extends StatelessWidget {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             child: Text(
-                              s.code == 'bn' ? 'সব দেখুন' : 'View All',
-                              style: TextStyle(
+                              s.code == 'bn' ? 'ক্যাবিনেট' : 'Cabinet →',
+                              style: GoogleFonts.outfit(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                                color: isDark ? AppColors.primaryTealLight : AppColors.primaryTeal,
                               ),
                             ),
                           ),
@@ -321,7 +439,7 @@ class TodayScreen extends StatelessWidget {
               ),
             ),
 
-            // If empty, show friendly EmptyMedicinesView
+            // Empty State
             if (totalDoses == 0)
               SliverToBoxAdapter(
                 child: EmptyMedicinesView(
@@ -334,33 +452,107 @@ class TodayScreen extends StatelessWidget {
                 ),
               ),
 
-            // Time Slots
-            if (morningDoses.isNotEmpty)
-              ..._buildTimeSlotSection(context, TimeSlot.morning, morningDoses, s),
 
-            if (afternoonDoses.isNotEmpty)
-              ..._buildTimeSlotSection(context, TimeSlot.afternoon, afternoonDoses, s),
+            // Dose Lists: Smart Priority Rendering
+            if (_selectedSlotFilter == null) ...[
+              // Master "All Doses" View:
+              // 1. Upcoming & Due Now Doses (urgency sorted, topmost)
+              if (pendingDoses.isNotEmpty)
+                ..._buildDoseSection(
+                  context,
+                  title: s.code == 'bn' ? 'আসন্ন ও প্রয়োজনীয় ওষুধ' : 'Upcoming & Due Doses',
+                  icon: Icons.access_time_filled_rounded,
+                  color: AppColors.primaryTeal,
+                  doses: pendingDoses,
+                  s: s,
+                ),
 
-            if (eveningDoses.isNotEmpty)
-              ..._buildTimeSlotSection(context, TimeSlot.evening, eveningDoses, s),
+              // 2. Completed Doses (taken / skipped)
+              if (completedDoses.isNotEmpty)
+                ..._buildDoseSection(
+                  context,
+                  title: s.code == 'bn' ? 'আজকের সম্পন্ন ওষুধ' : 'Completed Today',
+                  icon: Icons.check_circle_rounded,
+                  color: AppColors.accentEmerald,
+                  doses: completedDoses,
+                  s: s,
+                  isCompletedSection: true,
+                ),
+            ] else ...[
+              // Slot Filtered View:
+              if (pendingDoses.isNotEmpty)
+                ..._buildDoseSection(
+                  context,
+                  title: s.code == 'bn'
+                      ? '${_getTimeSlotTitle(_selectedSlotFilter!, s)} - আসন্ন ও করণীয়'
+                      : '${_getTimeSlotTitle(_selectedSlotFilter!, s)} - Upcoming',
+                  icon: _selectedSlotFilter!.icon,
+                  color: _selectedSlotFilter!.color,
+                  doses: pendingDoses,
+                  s: s,
+                ),
 
-            if (nightDoses.isNotEmpty)
-              ..._buildTimeSlotSection(context, TimeSlot.night, nightDoses, s),
+              if (completedDoses.isNotEmpty)
+                ..._buildDoseSection(
+                  context,
+                  title: s.code == 'bn'
+                      ? '${_getTimeSlotTitle(_selectedSlotFilter!, s)} - সম্পন্ন'
+                      : '${_getTimeSlotTitle(_selectedSlotFilter!, s)} - Completed',
+                  icon: Icons.check_circle_outline_rounded,
+                  color: AppColors.accentEmerald,
+                  doses: completedDoses,
+                  s: s,
+                  isCompletedSection: true,
+                ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+              if (pendingDoses.isEmpty && completedDoses.isEmpty && totalDoses > 0)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            _selectedSlotFilter!.icon,
+                            size: 44,
+                            color: _selectedSlotFilter!.color.withValues(alpha: 0.4),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            s.code == 'bn'
+                                ? '${_getTimeSlotTitle(_selectedSlotFilter!, s)}-এ কোনো ওষুধ নির্ধারিত নেই'
+                                : 'No medicines scheduled for ${_getTimeSlotTitle(_selectedSlotFilter!, s)}',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+
+            const SliverToBoxAdapter(child: SizedBox(height: 90)),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildTimeSlotSection(
-    BuildContext context,
-    TimeSlot slot,
-    List<ScheduledDose> doses,
-    AppStrings s,
-  ) {
+  List<Widget> _buildDoseSection(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required List<ScheduledDose> doses,
+    required AppStrings s,
+    bool isCompletedSection = false,
+  }) {
     final provider = context.read<MedicineProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final countLabel = doses.length == 1
         ? (s.code == 'bn' ? '১টি ওষুধ' : '1 medicine')
         : (s.code == 'bn' ? '${doses.length}টি ওষুধ' : '${doses.length} medicines');
@@ -372,22 +564,37 @@ class TodayScreen extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(5),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: slot.color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  color: color.withValues(alpha: isDark ? 0.2 : 0.12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(slot.icon, size: 14, color: slot.color),
+                child: Icon(icon, size: 15, color: color),
               ),
               const SizedBox(width: 8),
               Text(
-                _getTimeSlotTitle(slot, s),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                title,
+                style: GoogleFonts.outfit(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                ),
               ),
-              const SizedBox(width: 6),
-              Text(
-                '· $countLabel',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.lightTextMuted),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: isDark ? 0.2 : 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  countLabel,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
               ),
             ],
           ),
@@ -426,3 +633,4 @@ class TodayScreen extends StatelessWidget {
     ];
   }
 }
+

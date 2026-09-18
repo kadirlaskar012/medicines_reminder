@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
@@ -135,6 +136,8 @@ class _UserOnboardingProfileScreenState extends State<UserOnboardingProfileScree
       );
       nav.pop();
     } else {
+      await NotificationService.instance.requestPermissions();
+      if (!mounted) return;
       _navigateToMain();
     }
   }

@@ -32,4 +32,20 @@ class ScheduledDose {
     );
     return now.isAfter(doseTime);
   }
+
+  /// Whether the scheduled time has arrived/passed or the dose was already recorded
+  bool get isDueOrElapsed {
+    if (isTaken || isSkipped) return true;
+    return isOverdue;
+  }
+
+  /// Whether this dose is considered missed (scheduled time elapsed and not taken)
+  bool get isMissed {
+    if (isTaken) return false;
+    if (isSkipped) return true;
+    return isOverdue;
+  }
+
+  /// Whether this dose is scheduled for the future and not yet due
+  bool get isUpcoming => !isTaken && !isMissed;
 }

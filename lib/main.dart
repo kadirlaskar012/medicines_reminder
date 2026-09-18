@@ -48,9 +48,6 @@ void main() async {
   // Initialize notification service and channels
   await NotificationService.instance.initialize();
 
-  // Request Android 13+ Notification & Exact Alarm permissions
-  await NotificationService.instance.requestPermissions();
-
   final prefs = await SharedPreferences.getInstance();
   final hasSeenWelcome = prefs.getBool(WelcomeScreen.prefKeySeenWelcome) ?? false;
 

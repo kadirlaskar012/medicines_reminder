@@ -1,45 +1,55 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Brand Colors (Medical Blue)
-  static const Color primary = Color(0xFF2563EB); // Primary Action Blue
-  static const Color primaryDark = Color(0xFF1D4ED8); // Deep Royal Blue (pressed/strong)
-  static const Color primaryLight = Color(0xFFDBEAFE); // Soft Blue Tint
-  static const Color primaryContainer = Color(0xFFEFF6FF); // Clean Blue Container
+  // Jewel-Tone Palette from Master Design Blueprint
+  static const Color primaryTeal = Color(0xFF0D9488); // Deep Medical Teal
+  static const Color primaryTealLight = Color(0xFF14B8A6); // Bright Cyan-Teal
+  static const Color accentEmerald = Color(0xFF10B981); // Emerald Mint (Active/Taken)
+  static const Color accentCyan = Color(0xFF06B6D4); // Electric Cyan
+  static const Color accentPurple = Color(0xFF8B5CF6); // Royal Amethyst
+  static const Color accentAmber = Color(0xFFF59E0B); // Radiant Amber Flame
+  static const Color accentRose = Color(0xFFF43F5E); // Crimson Coral (Alerts/Overdue)
+  static const Color accentBlue = Color(0xFF3B82F6); // Electric Blue
+
+  // Core Brand Colors (Teal Dominant)
+  static const Color primary = Color(0xFF0D9488); // Master Primary Teal
+  static const Color primaryDark = Color(0xFF0F766E); // Deep Teal
+  static const Color primaryLight = Color(0xFFCCFBF1); // Soft Teal Mist
+  static const Color primaryContainer = Color(0xFFF0FDFA); // Clean Teal Tint
 
   // Semantic Status Colors
-  static const Color success = Color(0xFF10B981); // Success Green (taken/active/healthy)
+  static const Color success = Color(0xFF10B981); // Emerald Green
   static const Color successLight = Color(0xFFD1FAE5);
-  static const Color warning = Color(0xFFF59E0B); // Warning Amber (low stock/refill/streak)
+  static const Color warning = Color(0xFFF59E0B); // Amber Flame
   static const Color warningLight = Color(0xFFFEF3C7);
-  static const Color error = Color(0xFFEF4444); // Error Red (missed/errors/destructive)
-  static const Color errorLight = Color(0xFFFEE2E2);
+  static const Color error = Color(0xFFF43F5E); // Crimson Rose
+  static const Color errorLight = Color(0xFFFFE4E6);
 
-  static const Color secondary = Color(0xFF10B981); // Vibrant Mint Green Alias
+  static const Color secondary = Color(0xFF10B981);
   static const Color accentMint = Color(0xFF10B981);
   static const Color brandMint = Color(0xFF10B981);
   static const Color secondaryDark = Color(0xFF059669);
   static const Color secondaryLight = Color(0xFFD1FAE5);
   static const Color secondaryContainer = Color(0xFFECFDF5);
 
-  static const Color tertiary = Color(0xFF06B6D4); // Cyan Accent
+  static const Color tertiary = Color(0xFF06B6D4);
   static const Color tertiaryLight = Color(0xFFCFFAFE);
-  static const Color info = Color(0xFF2563EB); // Action Blue
-  static const Color infoLight = Color(0xFFEFF6FF);
+  static const Color info = Color(0xFF0D9488);
+  static const Color infoLight = Color(0xFFF0FDFA);
 
   // Alarm Screen Colors
-  static const Color alarmBackground = Color(0xFF0B132B); // Midnight Navy
-  static const Color alarmSurface = Color(0xFF1C2541); // Elevated Deep Navy
-  static const Color alarmGlow = Color(0xFF3B82F6); // Blue Glow
+  static const Color alarmBackground = Color(0xFF080D1A);
+  static const Color alarmSurface = Color(0xFF151F32);
+  static const Color alarmGlow = Color(0xFF0D9488);
 
-  // Light Mode (Clean Slate & High Contrast Text)
-  static const Color lightBackground = Color(0xFFF8FAFC);
+  // Light Mode (Crisp Porcelain & Soft Slate)
+  static const Color lightBackground = Color(0xFFF1F5F9);
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightCard = Color(0xFFFFFFFF);
   static const Color lightCardElevated = Color(0xFFF8FAFC);
   static const Color lightBorder = Color(0xFFE2E8F0);
   static const Color lightTextPrimary = Color(0xFF0F172A);
-  static const Color lightTextSecondary = Color(0xFF64748B);
+  static const Color lightTextSecondary = Color(0xFF475569);
   static const Color lightTextMuted = Color(0xFF94A3B8);
   static const Color lightDisabled = Color(0xFFCBD5E1);
 
@@ -52,39 +62,87 @@ class AppColors {
   static const Color textSecondary = lightTextSecondary;
   static const Color textMuted = lightTextMuted;
 
-  // Dark Mode (#0F172A Background, #1E293B Surface, #60A5FA Primary)
-  static const Color darkBackground = Color(0xFF0F172A);
-  static const Color darkSurface = Color(0xFF1E293B);
-  static const Color darkCard = Color(0xFF1E293B);
-  static const Color darkCardElevated = Color(0xFF27354A);
-  static const Color darkBorder = Color(0xFF334155);
-  static const Color darkPrimary = Color(0xFF60A5FA);
+  // Dark Mode (Midnight Obsidian #0B1120, Card #151F32, Inner Pill #1E2B42)
+  static const Color darkBackground = Color(0xFF0B1120);
+  static const Color darkSurface = Color(0xFF151F32);
+  static const Color darkCard = Color(0xFF151F32);
+  static const Color darkCardElevated = Color(0xFF1E2B42);
+  static const Color darkBorder = Color(0xFF26334A);
+  static const Color darkPrimary = Color(0xFF14B8A6);
   static const Color darkTextPrimary = Color(0xFFF8FAFC);
-  static const Color darkTextSecondary = Color(0xFFCBD5E1);
-  static const Color darkTextMuted = Color(0xFF94A3B8);
-  static const Color darkSuccess = Color(0xFF34D399);
-  static const Color darkWarning = Color(0xFFFBBF24);
-  static const Color darkError = Color(0xFFF87171);
+  static const Color darkTextSecondary = Color(0xFF94A3B8);
+  static const Color darkTextMuted = Color(0xFF64748B);
+  static const Color darkSuccess = Color(0xFF10B981);
+  static const Color darkWarning = Color(0xFFF59E0B);
+  static const Color darkError = Color(0xFFF43F5E);
 
-  // Curated 8 Muted Distinguishable Pill Tag Colors
+  // Rich Gradients
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient emeraldGradient = LinearGradient(
+    colors: [Color(0xFF34D399), Color(0xFF10B981)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient cyanGradient = LinearGradient(
+    colors: [Color(0xFF22D3EE), Color(0xFF0891B2)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient purpleGradient = LinearGradient(
+    colors: [Color(0xFFA78BFA), Color(0xFF7C3AED)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient amberGradient = LinearGradient(
+    colors: [Color(0xFFFBBF24), Color(0xFFD97706)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient roseGradient = LinearGradient(
+    colors: [Color(0xFFFB7185), Color(0xFFE11D48)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // Ambient Glow BoxShadow Helper
+  static List<BoxShadow> glowShadow(Color color, {double opacity = 0.28, double blurRadius = 18, Offset offset = const Offset(0, 6)}) {
+    return [
+      BoxShadow(
+        color: color.withValues(alpha: opacity),
+        blurRadius: blurRadius,
+        offset: offset,
+      ),
+    ];
+  }
+
+  // Curated Distinguishable Pill Tag Colors
   static const List<Color> pillColors = [
-    Color(0xFF2563EB), // Medical Blue
-    Color(0xFF10B981), // Mint Green
+    Color(0xFF0D9488), // Medical Teal
+    Color(0xFF10B981), // Emerald Mint
     Color(0xFFF59E0B), // Warm Amber
-    Color(0xFF8B5CF6), // Soft Violet
-    Color(0xFF06B6D4), // Muted Cyan
-    Color(0xFFEC4899), // Soft Rose
-    Color(0xFF14B8A6), // Deep Teal
-    Color(0xFF64748B), // Neutral Slate
+    Color(0xFF8B5CF6), // Royal Violet
+    Color(0xFF06B6D4), // Electric Cyan
+    Color(0xFFF43F5E), // Crimson Rose
+    Color(0xFF3B82F6), // Ocean Blue
+    Color(0xFFEC4899), // Hot Pink
   ];
 
   // Dual-Tone Capsule Colors matching the Reference UI
   static const List<List<Color>> dualCapsuleColors = [
-    [Color(0xFFEF4444), Color(0xFF06B6D4)], // Red & Cyan
+    [Color(0xFFF43F5E), Color(0xFF06B6D4)], // Crimson & Cyan
     [Color(0xFFF59E0B), Color(0xFFFEF08A)], // Amber & Soft Yellow
-    [Color(0xFFEF4444), Color(0xFFFFFFFF)], // Red & White
+    [Color(0xFF0D9488), Color(0xFFCCFBF1)], // Teal & Ice
     [Color(0xFF10B981), Color(0xFF67E8F9)], // Mint & Sky
-    [Color(0xFF2563EB), Color(0xFF93C5FD)], // Blue & Soft Blue
+    [Color(0xFF3B82F6), Color(0xFF93C5FD)], // Blue & Soft Blue
     [Color(0xFF8B5CF6), Color(0xFFF472B6)], // Violet & Rose
   ];
 

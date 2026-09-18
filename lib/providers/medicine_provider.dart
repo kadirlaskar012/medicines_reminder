@@ -13,6 +13,14 @@ import '../models/reminder_time.dart';
 import '../models/intake_record.dart';
 import '../models/scheduled_dose.dart';
 
+enum DateComplianceStatus {
+  allTaken,      // 🟢 All scheduled medicines taken on this date
+  partialTaken,  // 🟡 At least 1 taken, some remaining/pending
+  hasMissed,     // 🔴 Any dose skipped or unrecorded in the past
+  noneScheduled, // No medicines scheduled on this weekday
+  futurePending, // Future date with pending doses
+}
+
 class MedicineProvider extends ChangeNotifier {
   final DBHelper _db = DBHelper.instance;
   final NotificationService _notifications = NotificationService.instance;
@@ -48,13 +56,27 @@ class MedicineProvider extends ChangeNotifier {
     return _medicines.where((m) => m.isLowStock || m.isOutOfStock).toList();
   }
 
+  /// Checks whether a medicine is active and within its start/end treatment window on [date]
+  bool isMedicineActiveOnDate(Medicine med, DateTime date) {
+    if (!med.isActive) return false;
+    final target = DateTime(date.year, date.month, date.day);
+    final startDt = med.startDate ?? med.createdAt;
+    final start = DateTime(startDt.year, startDt.month, startDt.day);
+    if (target.isBefore(start)) return false;
+    if (med.endDate != null) {
+      final end = DateTime(med.endDate!.year, med.endDate!.month, med.endDate!.day);
+      if (target.isAfter(end)) return false;
+    }
+    return true;
+  }
+
   // Doses for selected date
   List<ScheduledDose> get dosesForSelectedDate {
     final weekday = _selectedDate.weekday; // 1 = Mon .. 7 = Sun
     final List<ScheduledDose> list = [];
 
     for (final med in filteredMedicines) {
-      if (!med.isActive) continue;
+      if (!isMedicineActiveOnDate(med, _selectedDate)) continue;
       final reminders = _remindersByMedicine[med.id] ?? [];
       for (final rem in reminders) {
         if (rem.daysOfWeek.contains(weekday)) {
@@ -111,7 +133,7 @@ class MedicineProvider extends ChangeNotifier {
     final List<ScheduledDose> list = [];
 
     for (final med in filteredMedicines) {
-      if (!med.isActive) continue;
+      if (!isMedicineActiveOnDate(med, date)) continue;
       final reminders = _remindersByMedicine[med.id] ?? [];
       for (final rem in reminders) {
         if (rem.daysOfWeek.contains(weekday)) {
@@ -126,6 +148,13 @@ class MedicineProvider extends ChangeNotifier {
         }
       }
     }
+
+    list.sort((a, b) {
+      final compHour = a.reminder.hour.compareTo(b.reminder.hour);
+      if (compHour != 0) return compHour;
+      return a.reminder.minute.compareTo(b.reminder.minute);
+    });
+
     return list;
   }
 
@@ -137,11 +166,84 @@ class MedicineProvider extends ChangeNotifier {
     return taken / doses.length;
   }
 
+  /// Compliance status indicator for calendar timeline dot
+  DateComplianceStatus getDateComplianceStatus(DateTime date) {
+    final doses = getDosesForDate(date);
+    if (doses.isEmpty) {
+      return DateComplianceStatus.noneScheduled;
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDate = DateTime(date.year, date.month, date.day);
+    final isTargetToday = targetDate.isAtSameMomentAs(today);
+    final isTargetPast = targetDate.isBefore(today);
+
+    final takenCount = doses.where((d) => d.isTaken).length;
+    final skippedCount = doses.where((d) => d.isSkipped).length;
+    final totalCount = doses.length;
+
+    // 1. All scheduled doses taken -> Green
+    if (takenCount == totalCount) {
+      return DateComplianceStatus.allTaken;
+    }
+
+    // 2. Explicitly skipped dose -> Red
+    if (skippedCount > 0) {
+      return DateComplianceStatus.hasMissed;
+    }
+
+    // 3. Past dates: if some taken -> Yellow (Partial), if none taken -> Red (Missed)
+    if (isTargetPast) {
+      if (takenCount > 0) {
+        return DateComplianceStatus.partialTaken;
+      } else {
+        return DateComplianceStatus.hasMissed;
+      }
+    }
+
+    // 4. Today: if some taken -> Yellow (Partial)
+    if (isTargetToday) {
+      if (takenCount > 0) {
+        return DateComplianceStatus.partialTaken;
+      }
+      // Any dose whose scheduled time has passed and not taken -> Red
+      final hasOverdue = doses.any((d) => d.isOverdue);
+      if (hasOverdue) {
+        return DateComplianceStatus.hasMissed;
+      }
+      return DateComplianceStatus.futurePending;
+    }
+
+    // 5. Future dates
+    if (takenCount > 0) {
+      return DateComplianceStatus.partialTaken;
+    }
+    return DateComplianceStatus.futurePending;
+  }
+
+  /// Earliest start or creation date among all medicines
+  DateTime? get _earliestMedicineDate {
+    if (_medicines.isEmpty) return null;
+    DateTime? earliest;
+    for (final med in _medicines) {
+      final d = med.startDate ?? med.createdAt;
+      if (earliest == null || d.isBefore(earliest)) {
+        earliest = d;
+      }
+    }
+    return earliest != null ? DateTime(earliest.year, earliest.month, earliest.day) : null;
+  }
+
   /// Real consecutive adherence streak (in days) based on real intake records
   int get currentStreakDays {
     if (_medicines.isEmpty) return 0;
+    final earliest = _earliestMedicineDate;
+    if (earliest == null) return 0;
+
     int streak = 0;
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
     final todayDoses = getDosesForDate(now);
     if (todayDoses.isNotEmpty && todayDoses.every((d) => d.isTaken)) {
@@ -149,7 +251,10 @@ class MedicineProvider extends ChangeNotifier {
     }
 
     for (int i = 1; i <= 365; i++) {
-      final prevDate = now.subtract(Duration(days: i));
+      final prevDate = today.subtract(Duration(days: i));
+      if (prevDate.isBefore(earliest)) {
+        break;
+      }
       final prevDoses = getDosesForDate(prevDate);
       if (prevDoses.isEmpty) {
         continue;
@@ -166,12 +271,18 @@ class MedicineProvider extends ChangeNotifier {
   /// Best consecutive adherence streak (in days) based on real intake records
   int get bestStreakDays {
     if (_medicines.isEmpty) return 0;
+    final earliest = _earliestMedicineDate;
+    if (earliest == null) return 0;
+
     int best = 0;
     int current = 0;
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final totalDays = today.difference(earliest).inDays;
+    if (totalDays < 0) return currentStreakDays;
 
-    for (int i = 365; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i));
+    for (int i = totalDays; i >= 0; i--) {
+      final date = today.subtract(Duration(days: i));
       final doses = getDosesForDate(date);
       if (doses.isEmpty) continue;
       if (doses.every((d) => d.isTaken)) {
@@ -251,7 +362,7 @@ class MedicineProvider extends ChangeNotifier {
   }
 
   Future<void> _refreshRecords() async {
-    final records = await _db.getRecordsForDate(selectedDateStr);
+    final records = await _db.getAllRecords(limit: 5000);
     _recordsByDoseKey.clear();
     for (final r in records) {
       final key = '${r.medicineId}_${r.reminderTimeId}_${r.scheduledDate}';

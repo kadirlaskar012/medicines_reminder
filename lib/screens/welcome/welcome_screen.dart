@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/language_provider.dart';
 import '../auth/phone_login_screen.dart';
@@ -29,6 +30,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     if (widget.isFromSettings) {
       Navigator.pop(context);
     } else {
+      // Prompt for permissions after onboarding pages have been viewed
+      await NotificationService.instance.requestPermissions();
+      if (!context.mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const UserOnboardingProfileScreen()),
@@ -328,14 +332,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: 0.15),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  'assets/icons/app_brand_logo.png',
+                  width: 36,
+                  height: 36,
+                  fit: BoxFit.cover,
                 ),
-                child: const Icon(Icons.favorite_rounded, color: AppColors.primary, size: 18),
               ),
               const SizedBox(width: 8),
               Text(

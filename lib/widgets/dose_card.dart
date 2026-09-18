@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../models/scheduled_dose.dart';
 import '../providers/language_provider.dart';
+import '../screens/medicines/add_edit_medicine_screen.dart';
 import '../screens/medicines/medicine_details_screen.dart';
 import 'dual_tone_capsule.dart';
+import 'medicine_info_stock_sheet.dart';
 
 class DoseCard extends StatelessWidget {
   final ScheduledDose dose;
@@ -40,17 +44,7 @@ class DoseCard extends StatelessWidget {
 
     final isPastGracePeriod = diff.inMinutes < -180; // More than 3 hours late
     final isOverdue = !dose.isTaken && !dose.isSkipped && diff.inMinutes < -15 && !isPastGracePeriod;
-    final isDueNow = !dose.isTaken && !dose.isSkipped && diff.inMinutes >= -15 && diff.inMinutes <= 30;
     final isMissed = !dose.isTaken && !dose.isSkipped && isPastGracePeriod;
-
-    String upcomingText = 'Upcoming';
-    if (diff.inHours > 0) {
-      upcomingText = 'in ${diff.inHours}h ${diff.inMinutes % 60}m';
-    } else if (diff.inMinutes > 0) {
-      upcomingText = 'in ${diff.inMinutes}m';
-    }
-
-    final overdueMin = (-diff.inMinutes);
 
     return InkWell(
       onTap: () {
@@ -61,104 +55,192 @@ class DoseCard extends StatelessWidget {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(22),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: dose.isTaken
-              ? (isDark ? const Color(0xFF0F291E) : const Color(0xFFF0FDF4))
+              ? (isDark ? const Color(0xFF0D251D) : const Color(0xFFF0FDF4))
               : (isDark ? AppColors.darkCard : Colors.white),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: dose.isTaken
-                ? AppColors.success.withValues(alpha: 0.35)
+                ? AppColors.accentEmerald.withValues(alpha: 0.4)
                 : isMissed
-                    ? AppColors.error.withValues(alpha: 0.3)
+                    ? AppColors.accentRose.withValues(alpha: 0.35)
                     : isOverdue
-                        ? AppColors.warning.withValues(alpha: 0.4)
+                        ? AppColors.accentAmber.withValues(alpha: 0.4)
                         : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-            width: 1,
+            width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: dose.isTaken
+                  ? AppColors.accentEmerald.withValues(alpha: isDark ? 0.12 : 0.08)
+                  : isOverdue
+                      ? AppColors.accentAmber.withValues(alpha: isDark ? 0.12 : 0.08)
+                      : Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Left: 3D Dual-Tone Capsule
-            DualToneCapsule.fromIndex(
-              med.colorValue,
-              size: 44,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+            // Left: Dual-Tone 3D Capsule in Squircle Shell
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCardElevated : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  width: 1,
+                ),
+              ),
+              child: Center(
+                child: DualToneCapsule.fromIndex(
+                  med.colorValue,
+                  size: 40,
+                ),
+              ),
             ),
             const SizedBox(width: 14),
 
-            // Middle: Medicine Info & Neutral Timing
+            // Middle: Medicine Info & Timing Badges
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    med.name,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          med.name,
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                            letterSpacing: -0.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (med.dosage.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)).withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            med.dosage,
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${med.dosage.isNotEmpty ? med.dosage : "500 mg"} · ${s.medicineTypeName(med.type.name)}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${rem.formattedTime} · ${s.foodInstructionName(med.instruction.name)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                    ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      // Time pill badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryTeal.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.primaryTeal.withValues(alpha: 0.25),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.schedule_rounded, size: 11, color: AppColors.primaryTealLight),
+                            const SizedBox(width: 4),
+                            Text(
+                              rem.formattedTime,
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? AppColors.primaryTealLight : AppColors.primaryTeal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Food instruction badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentAmber.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.accentAmber.withValues(alpha: 0.25),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          s.foodInstructionName(med.instruction.name),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.accentAmber,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
 
-            // Right: Status / Action
+            // Right: Interactive Status / Actions
             if (dose.isTaken)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.12),
+                  color: AppColors.accentEmerald.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.accentEmerald.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Row(
+                    Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_circle_rounded, color: AppColors.success, size: 15),
-                        SizedBox(width: 4),
+                        const Icon(Icons.check_circle_rounded, color: AppColors.accentEmerald, size: 14),
+                        const SizedBox(width: 4),
                         Text(
                           'Taken',
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.success,
+                            color: AppColors.accentEmerald,
                           ),
                         ),
                       ],
@@ -166,10 +248,10 @@ class DoseCard extends StatelessWidget {
                     if (dose.record?.recordedAt != null)
                       Text(
                         DateFormat('h:mm a').format(dose.record!.recordedAt),
-                        style: TextStyle(
-                          fontSize: 11,
+                        style: GoogleFonts.outfit(
+                          fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.success.withValues(alpha: 0.9),
+                          color: AppColors.accentEmerald.withValues(alpha: 0.85),
                         ),
                       ),
                   ],
@@ -177,15 +259,19 @@ class DoseCard extends StatelessWidget {
               )
             else if (dose.isSkipped)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
+                  color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    width: 1,
+                  ),
                 ),
                 child: Text(
                   'Skipped',
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                   ),
@@ -197,144 +283,226 @@ class DoseCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.accentRose.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.accentRose.withValues(alpha: 0.3),
+                        width: 0.8,
+                      ),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.error_outline_rounded, color: AppColors.error, size: 14),
-                        SizedBox(width: 4),
-                        Text(
-                          'Missed',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Missed',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accentRose,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
                   InkWell(
                     onTap: onTake,
                     borderRadius: BorderRadius.circular(8),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       child: Text(
-                        'Mark as Taken',
-                        style: TextStyle(
+                        'Take Now',
+                        style: GoogleFonts.outfit(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                          color: AppColors.primaryTealLight,
                         ),
                       ),
                     ),
                   ),
                 ],
               )
-            else if (isOverdue)
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'Overdue by ${overdueMin}m',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.warning,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  ElevatedButton(
-                    onPressed: onTake,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      minimumSize: const Size(82, 34),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Take Now',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
-              )
-            else if (isDueNow)
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    'Due now',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.success,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  ElevatedButton(
-                    onPressed: onTake,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      minimumSize: const Size(82, 34),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Take Now',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
-              )
             else
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Upcoming',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+              // Active / Due Now / Overdue / Upcoming Actions
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Take Now Button
+                  GestureDetector(
+                    onTap: onTake,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.emeraldGradient,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.accentEmerald.withValues(alpha: 0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_rounded, color: Colors.white, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            isOverdue ? 'Take' : 'Take',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      upcomingText,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Snooze Icon Button
+                  InkWell(
+                    onTap: onSnooze,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.snooze_rounded,
+                        size: 15,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+
+                  // Skip Icon Button
+                  InkWell(
+                    onTap: onSkip,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 15,
                         color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
           ],
         ),
+            const SizedBox(height: 10),
+            Container(
+              height: 1,
+              color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.6),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Left: Edit badge button
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AddEditMedicineScreen(medicineToEdit: med)),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.edit_outlined, size: 13, color: AppColors.primaryTealLight),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Edit',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Right: Info & Stock badge button
+                InkWell(
+                  onTap: () => MedicineInfoStockSheet.show(context, med),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryTeal.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.primaryTeal.withValues(alpha: 0.3),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.inventory_2_outlined, size: 13, color: AppColors.primaryTealLight),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Info & Stock',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.primaryTealLight : AppColors.primaryTeal,
+                          ),
+                        ),
+                        if (med.isLowStock || med.isOutOfStock) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: AppColors.accentRose,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    );
+    ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.05, end: 0, duration: 250.ms);
   }
 }
+

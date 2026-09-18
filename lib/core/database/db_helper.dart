@@ -234,7 +234,7 @@ class DBHelper {
     return res.map((m) => IntakeRecord.fromMap(m)).toList();
   }
 
-  Future<List<IntakeRecord>> getAllRecords({int limit = 100}) async {
+  Future<List<IntakeRecord>> getAllRecords({int limit = 5000}) async {
     final db = await database;
     final res = await db.query('intake_records', orderBy: 'recordedAt DESC', limit: limit);
     return res.map((m) => IntakeRecord.fromMap(m)).toList();

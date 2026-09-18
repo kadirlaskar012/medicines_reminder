@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -24,7 +25,7 @@ class AlarmRingingScreen extends StatelessWidget {
     final s = context.watch<LanguageProvider>().strings;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B132B),
+      backgroundColor: const Color(0xFF070D18),
       body: SafeArea(
         child: Stack(
           children: [
@@ -68,15 +69,15 @@ class AlarmRingingScreen extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.notifications_active_rounded, color: AppColors.accentMint, size: 16),
+                        const Icon(Icons.notifications_active_rounded, color: AppColors.accentEmerald, size: 16),
                         const SizedBox(width: 8),
                         Text(
                           s.medicineReminderTag.toUpperCase(),
-                          style: const TextStyle(
-                            color: AppColors.accentMint,
+                          style: GoogleFonts.outfit(
+                            color: AppColors.accentEmerald,
                             fontWeight: FontWeight.w800,
                             fontSize: 12,
-                            letterSpacing: 1.2,
+                            letterSpacing: 1.5,
                           ),
                         ),
                       ],
@@ -101,15 +102,15 @@ class AlarmRingingScreen extends StatelessWidget {
 
                       // Scheduled Alarm Time Pill
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E293B),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(22),
                           border: Border.all(color: const Color(0xFF334155), width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              blurRadius: 12,
+                              color: Colors.black.withValues(alpha: 0.4),
+                              blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
                           ],
@@ -117,12 +118,12 @@ class AlarmRingingScreen extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.alarm_rounded, color: Colors.white, size: 22),
+                            const Icon(Icons.alarm_rounded, color: AppColors.primaryTealLight, size: 24),
                             const SizedBox(width: 10),
                             Text(
                               reminder.formattedTime,
-                              style: const TextStyle(
-                                fontSize: 26,
+                              style: GoogleFonts.outfit(
+                                fontSize: 28,
                                 fontWeight: FontWeight.w900,
                                 color: Colors.white,
                                 letterSpacing: 1.5,
@@ -137,7 +138,7 @@ class AlarmRingingScreen extends StatelessWidget {
                       // "Time to take your [Medicine]"
                       Text(
                         'Time to take your medicine',
-                        style: TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           color: Colors.white.withValues(alpha: 0.7),
                           fontWeight: FontWeight.w600,
@@ -148,8 +149,8 @@ class AlarmRingingScreen extends StatelessWidget {
                       Text(
                         medicine.name,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 32,
+                        style: GoogleFonts.outfit(
+                          fontSize: 34,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                           letterSpacing: -0.5,
@@ -159,25 +160,26 @@ class AlarmRingingScreen extends StatelessWidget {
 
                       Text(
                         '${medicine.dosage} • ${s.foodInstructionName(medicine.instruction.name)}',
-                        style: const TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.accentMint,
+                          color: AppColors.primaryTealLight,
                         ),
                       ),
 
                       if (medicine.notes.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                           ),
                           child: Text(
                             medicine.notes,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white60, fontSize: 12),
+                            style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 13),
                           ),
                         ),
                       ],
@@ -187,39 +189,46 @@ class AlarmRingingScreen extends StatelessWidget {
                   // Bottom 3 Action Buttons (Screen 10 Layout)
                   Column(
                     children: [
-                      // 1. Mark as Taken (Vibrant Mint Green)
-                      SizedBox(
+                      // 1. Mark as Taken (Vibrant Emerald Gradient)
+                      Container(
                         width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            context.read<MedicineProvider>().markAsTaken(medicine, reminder, DateTime.now());
-                            NotificationService.instance.dismissActiveReminderNotification(reminder: reminder);
-                            Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.accentMint,
-                            foregroundColor: Colors.white,
-                            elevation: 8,
-                            shadowColor: AppColors.accentMint.withValues(alpha: 0.4),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
+                        height: 58,
+                        decoration: BoxDecoration(
+                          gradient: AppColors.emeraldGradient,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.accentEmerald.withValues(alpha: 0.4),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.check_circle_rounded, size: 22),
-                              const SizedBox(width: 8),
-                              Text(
-                                s.iTookMyMedicine,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.3,
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              context.read<MedicineProvider>().markAsTaken(medicine, reminder, DateTime.now());
+                              NotificationService.instance.dismissActiveReminderNotification(reminder: reminder);
+                              Navigator.pop(context);
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 24),
+                                const SizedBox(width: 10),
+                                Text(
+                                  s.iTookMyMedicine,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ).animate(onPlay: (c) => c.repeat(reverse: true))
@@ -240,7 +249,7 @@ class AlarmRingingScreen extends StatelessWidget {
                               icon: const Icon(Icons.snooze_rounded, color: Colors.white, size: 18),
                               label: Text(
                                 s.snooze10m,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w700),
                               ),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -259,14 +268,14 @@ class AlarmRingingScreen extends StatelessWidget {
                                 NotificationService.instance.dismissActiveReminderNotification(reminder: reminder);
                                 Navigator.pop(context);
                               },
-                              icon: const Icon(Icons.cancel_outlined, color: AppColors.error, size: 18),
+                              icon: const Icon(Icons.cancel_outlined, color: AppColors.accentRose, size: 18),
                               label: Text(
                                 s.skipDose,
-                                style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w700),
+                                style: GoogleFonts.outfit(color: AppColors.accentRose, fontWeight: FontWeight.w700),
                               ),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
-                                side: BorderSide(color: AppColors.error.withValues(alpha: 0.4), width: 1.5),
+                                side: BorderSide(color: AppColors.accentRose.withValues(alpha: 0.4), width: 1.5),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),

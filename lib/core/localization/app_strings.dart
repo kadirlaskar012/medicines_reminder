@@ -38,6 +38,11 @@ class AppStrings {
   String get delete => code == 'bn' ? 'মুছে ফেলুন' : (code == 'hi' ? 'हटाएं' : 'Delete');
 
   // Today / Daily Schedule
+  String get todayDate => code == 'bn' ? 'আজকের তারিখ' : (code == 'hi' ? 'आज की तारीख' : 'Today');
+  String get resetToToday => code == 'bn' ? 'আজকের তারিখ' : (code == 'hi' ? 'आज की तारीख' : 'Today');
+  String get allTakenStatus => code == 'bn' ? 'সব ওষুধ নেওয়া হয়েছে' : (code == 'hi' ? 'सभी दवाएं ली गईं' : 'All Taken');
+  String get partialStatus => code == 'bn' ? 'আংশিক নেওয়া হয়েছে' : (code == 'hi' ? 'आंशिक खुराक' : 'Partially Taken');
+  String get missedStatus => code == 'bn' ? 'ওষুধ বাদ/মিস হয়েছে' : (code == 'hi' ? 'दवा छूट गई' : 'Missed / Skipped');
   String get dailySchedule => code == 'bn' ? 'আজকের শিডিউল' : (code == 'hi' ? 'दैनिक अनुसूची' : 'Daily Schedule');
   String get allDoneToday => code == 'bn' ? 'আজকের সব ওষুধ নেওয়া সম্পন্ন!' : (code == 'hi' ? 'आज की सभी दवाएं पूरी हुईं!' : 'All Done for Today!');
   String get allDoneSub => code == 'bn' ? 'আপনার স্বাস্থ্যের যত্ন নেওয়ার জন্য চমৎকার কাজ।' : (code == 'hi' ? 'अपने स्वास्थ्य का ध्यान रखने के लिए बहुत बढ़िया।' : 'Great job staying on track with your health.');
