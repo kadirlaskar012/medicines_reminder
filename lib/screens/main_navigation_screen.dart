@@ -328,6 +328,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                       icon: Icons.calendar_today_outlined,
                       activeIcon: Icons.calendar_today_rounded,
                       label: s.todayTab,
+                      activeColor: isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
                       isDark: isDark,
                     ),
                     _buildNavItem(
@@ -335,6 +336,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                       icon: Icons.medication_outlined,
                       activeIcon: Icons.medication_rounded,
                       label: s.medicinesTab,
+                      activeColor: isDark ? const Color(0xFF34D399) : const Color(0xFF0D9488),
                       isDark: isDark,
                     ),
                     _buildCenterFab(isDark),
@@ -343,6 +345,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                       icon: Icons.bar_chart_outlined,
                       activeIcon: Icons.bar_chart_rounded,
                       label: s.code == 'bn' ? 'রিপোর্ট' : (s.code == 'hi' ? 'रिपोर्ट' : 'Reports'),
+                      activeColor: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
                       isDark: isDark,
                     ),
                     _buildNavItem(
@@ -350,6 +353,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                       icon: Icons.settings_outlined,
                       activeIcon: Icons.settings_rounded,
                       label: s.settingsTab,
+                      activeColor: isDark ? const Color(0xFFFB923C) : const Color(0xFFEA580C),
                       isDark: isDark,
                     ),
                   ],
@@ -367,10 +371,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     required IconData icon,
     required IconData activeIcon,
     required String label,
+    required Color activeColor,
     required bool isDark,
   }) {
     final isSelected = _currentIndex == index;
-    final activeColor = isDark ? AppColors.primaryTealLight : AppColors.primaryTeal;
     final inactiveColor = isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary;
 
     return Expanded(
@@ -383,14 +387,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? activeColor.withValues(alpha: isDark ? 0.2 : 0.12)
+                    ? activeColor.withValues(alpha: isDark ? 0.22 : 0.12)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
+                border: isSelected
+                    ? Border.all(
+                        color: activeColor.withValues(alpha: isDark ? 0.35 : 0.2),
+                        width: 1,
+                      )
+                    : null,
               ),
               child: Icon(
                 isSelected ? activeIcon : icon,
@@ -410,6 +420,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            const SizedBox(height: 2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              width: isSelected ? 5 : 0,
+              height: isSelected ? 5 : 0,
+              decoration: BoxDecoration(
+                color: isSelected ? activeColor : Colors.transparent,
+                shape: BoxShape.circle,
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: activeColor.withValues(alpha: 0.6),
+                          blurRadius: 4,
+                          spreadRadius: 0.5,
+                        ),
+                      ]
+                    : null,
+              ),
+            ),
           ],
         ),
       ),
@@ -428,18 +458,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
               MaterialPageRoute(builder: (_) => const AddEditMedicineScreen()),
             );
           },
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(32),
           child: Container(
-            width: 54,
-            height: 54,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF0D9488), // Rich Teal
+                  Color(0xFF06B6D4), // Vibrant Cyan
+                  Color(0xFF3B82F6), // Electric Sky Blue
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 2,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryTeal.withValues(alpha: 0.45),
-                  blurRadius: 16,
+                  color: const Color(0xFF06B6D4).withValues(alpha: 0.45),
+                  blurRadius: 18,
                   offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF0D9488).withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),

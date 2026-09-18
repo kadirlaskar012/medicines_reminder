@@ -73,74 +73,99 @@ class ProfileSelectorSheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             // Option to show "All Members"
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              leading: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(Icons.people_alt_rounded, size: 22, color: AppColors.secondary),
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: active == null
+                    ? (isDark ? const Color(0xFF1A2644) : const Color(0xFFE6FFFA))
+                    : (isDark ? const Color(0xFF131D36) : const Color(0xFFF8FAFC)),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: active == null
+                      ? const Color(0xFF10B981)
+                      : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                  width: active == null ? 1.6 : 1.0,
                 ),
               ),
-              title: Text(s.allFamilyMembersTitle, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(s.allCombinedReminders),
-              trailing: active == null
-                  ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
-                  : null,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              tileColor: active == null
-                  ? (isDark ? AppColors.darkCard : AppColors.primaryLight.withValues(alpha: 0.3))
-                  : null,
-              onTap: () {
-                provider.switchProfile(null);
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(height: 20),
-            ...profiles.map((p) {
-              final isSelected = active?.id == p.id;
-              final pColor = Color(p.colorValue);
-
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 leading: Container(
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: pColor.withValues(alpha: 0.18),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: pColor, width: 2),
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Center(
-                    child: (p.avatarEmoji.isNotEmpty && p.avatarEmoji != '👤')
-                        ? Text(p.avatarEmoji, style: const TextStyle(fontSize: 22))
-                        : AppSvgIcons.render(p.svgAvatar, width: 24, height: 24),
+                  child: const Center(
+                    child: Icon(Icons.people_alt_rounded, size: 22, color: Color(0xFF0D9488)),
                   ),
                 ),
-                title: Text(
-                  p.name.toLowerCase() == 'myself' ? s.myself : p.name,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  p.age != null && p.age! > 0
-                      ? '${p.age} ${s.ageYears} • ${s.relationName(p.relation)}'
-                      : s.relationName(p.relation),
-                ),
-                trailing: isSelected
-                    ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
+                title: Text(s.allFamilyMembersTitle, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+                subtitle: Text(s.allCombinedReminders, style: const TextStyle(fontSize: 12)),
+                trailing: active == null
+                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 22)
                     : null,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                tileColor: isSelected
-                    ? (isDark ? AppColors.darkCard : AppColors.primaryLight.withValues(alpha: 0.3))
-                    : null,
                 onTap: () {
-                  provider.switchProfile(p);
+                  provider.switchProfile(null);
                   Navigator.pop(context);
                 },
+              ),
+            ),
+            const SizedBox(height: 4),
+            ...profiles.map((p) {
+              final isSelected = active?.id == p.id;
+              final pColor = Color(p.colorValue);
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (isDark ? const Color(0xFF1A2644) : const Color(0xFFE6FFFA))
+                      : (isDark ? const Color(0xFF131D36) : const Color(0xFFF8FAFC)),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? pColor
+                        : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                    width: isSelected ? 1.6 : 1.0,
+                  ),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: pColor.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: pColor, width: 1.5),
+                    ),
+                    child: Center(
+                      child: (p.avatarEmoji.isNotEmpty && p.avatarEmoji != '👤')
+                          ? Text(p.avatarEmoji, style: const TextStyle(fontSize: 22))
+                          : AppSvgIcons.render(p.svgAvatar, width: 24, height: 24),
+                    ),
+                  ),
+                  title: Text(
+                    p.name.toLowerCase() == 'myself' ? s.myself : p.name,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                  ),
+                  subtitle: Text(
+                    p.age != null && p.age! > 0
+                        ? '${p.age} ${s.ageYears} • ${s.relationName(p.relation)}'
+                        : s.relationName(p.relation),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  trailing: isSelected
+                      ? Icon(Icons.check_circle_rounded, color: pColor, size: 22)
+                      : null,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  onTap: () {
+                    provider.switchProfile(p);
+                    Navigator.pop(context);
+                  },
+                ),
               );
             }),
           ],

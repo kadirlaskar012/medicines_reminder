@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -88,40 +89,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.battery_alert_rounded, color: AppColors.warning, size: 24),
+            _buildSquircleIcon(
+              icon: Icons.battery_alert_rounded,
+              gradientColors: const [Color(0xFFF59E0B), Color(0xFFFB923C)],
+              size: 44,
+              iconSize: 22,
             ),
-            const SizedBox(width: 12),
-            const Expanded(
+            const SizedBox(width: 14),
+            Expanded(
               child: Text(
-                'Keep MediRemind Reliable',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                'Reliable Alarms',
+                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700),
               ),
             ),
           ],
         ),
-        content: const Text(
-          'Some Android devices delay or silence scheduled medicine reminders when battery saver or optimization is enabled.\n\nTo make sure your doses ring accurately on time, allow MediRemind background activity.',
-          style: TextStyle(fontSize: 13, height: 1.4),
+        content: Text(
+          'Android battery saver can sometimes delay background alarms.\n\nTo ensure your medicine reminders ring on time, allow MediRemind background activity.',
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.45),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Later'),
+            child: Text('Later', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: const Color(0xFF0D9488),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -130,7 +130,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
               } catch (_) {}
               _checkPermissions();
             },
-            child: const Text('Allow Background Activity'),
+            child: Text('Allow Background Activity', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= HELPER WIDGETS =================
+  Widget _buildSquircleIcon({
+    required IconData icon,
+    required List<Color> gradientColors,
+    double size = 40,
+    double iconSize = 20,
+  }) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: gradientColors.first.withValues(alpha: 0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Icon(icon, color: Colors.white, size: iconSize),
+      ),
+    );
+  }
+
+  Widget _buildCardContainer({
+    required Widget child,
+    required bool isDark,
+    EdgeInsetsGeometry padding = const EdgeInsets.all(16),
+    Color? accentGlow,
+  }) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF131D36) : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : (accentGlow != null ? accentGlow.withValues(alpha: 0.14) : const Color(0xFFE2E8F0)),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (accentGlow ?? Colors.black).withValues(alpha: isDark ? 0.25 : 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildSectionHeader(
+    String title, {
+    IconData? icon,
+    Color? accentColor,
+    bool isDark = false,
+  }) {
+    final color = accentColor ?? (isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488));
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 2),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [color.withValues(alpha: 0.25), color.withValues(alpha: 0.1)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Icon(icon, size: 14, color: color),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            title,
+            style: GoogleFonts.outfit(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            ),
           ),
         ],
       ),
@@ -152,35 +253,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final hasMissingPermission = !isNotifGranted || !isAlarmGranted || !isBatteryGranted;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           s.settingsAndDiagnostics,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          style: GoogleFonts.outfit(fontSize: 19, fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 90),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
         children: [
           // 1. ACCOUNT & CLOUD SYNC
-          _buildSectionHeader('ACCOUNT & CLOUD SYNC'),
+          _buildSectionHeader(
+            'ACCOUNT & CLOUD SYNC',
+            icon: Icons.cloud_sync_rounded,
+            accentColor: const Color(0xFF0284C7),
+            isDark: isDark,
+          ),
           const SizedBox(height: 8),
           _buildAccountCard(context, auth, provider, s, isDark),
 
           const SizedBox(height: 24),
 
           // 2. FAMILY & PROFILES
-          _buildSectionHeader('FAMILY & PROFILES'),
+          _buildSectionHeader(
+            'FAMILY & PROFILES',
+            icon: Icons.badge_rounded,
+            accentColor: const Color(0xFF10B981),
+            isDark: isDark,
+          ),
           const SizedBox(height: 8),
           _buildFamilyCard(context, provider, s, isDark),
 
           const SizedBox(height: 24),
 
           // 3. REMINDERS (Sound, Vibration, Snooze, Behavior)
-          _buildSectionHeader('REMINDERS'),
+          _buildSectionHeader(
+            'REMINDERS & ALARMS',
+            icon: Icons.alarm_rounded,
+            accentColor: const Color(0xFF8B5CF6),
+            isDark: isDark,
+          ),
           const SizedBox(height: 8),
           _buildReminderControlsCard(isDark),
 
@@ -190,11 +306,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildSectionHeader('SYSTEM PERMISSIONS'),
+              _buildSectionHeader(
+                'SYSTEM PERMISSIONS',
+                icon: Icons.security_rounded,
+                accentColor: const Color(0xFFF59E0B),
+                isDark: isDark,
+              ),
               if (_isChecking)
                 const SizedBox(
-                  width: 14,
-                  height: 14,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else
@@ -216,6 +337,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildPermissionTile(
             title: 'Notification Permission',
             description: 'Allows MediRemind to show medicine reminder alerts.',
+            icon: Icons.notifications_active_rounded,
+            gradientColors: const [Color(0xFF4F46E5), Color(0xFF6366F1)],
             isGranted: isNotifGranted,
             isDark: isDark,
             onAction: () async {
@@ -223,11 +346,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _checkPermissions();
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
           _buildPermissionTile(
             title: 'Exact Alarm Permission',
             description: 'Ensures scheduled dose alarms trigger on the exact minute.',
+            icon: Icons.alarm_on_rounded,
+            gradientColors: const [Color(0xFFEA580C), Color(0xFFF97316)],
             isGranted: isAlarmGranted,
             isDark: isDark,
             onAction: () async {
@@ -237,11 +362,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _checkPermissions();
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
           _buildPermissionTile(
             title: 'Battery Optimization',
             description: 'Prevents Android system from delaying background dose alarms.',
+            icon: Icons.battery_charging_full_rounded,
+            gradientColors: const [Color(0xFF059669), Color(0xFF10B981)],
             isGranted: isBatteryGranted,
             isDark: isDark,
             onAction: _showBatteryOptimizationDialog,
@@ -250,43 +377,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
 
           // 5. APPEARANCE
-          _buildSectionHeader('APPEARANCE'),
+          _buildSectionHeader(
+            'APPEARANCE',
+            icon: Icons.palette_rounded,
+            accentColor: const Color(0xFF6366F1),
+            isDark: isDark,
+          ),
           const SizedBox(height: 8),
           _buildThemeSelector(context, themeProvider, s, isDark),
 
           const SizedBox(height: 24),
 
           // 6. LANGUAGE
-          _buildSectionHeader('LANGUAGE'),
+          _buildSectionHeader(
+            'LANGUAGE',
+            icon: Icons.translate_rounded,
+            accentColor: const Color(0xFF0D9488),
+            isDark: isDark,
+          ),
           const SizedBox(height: 8),
           _buildLanguageSelector(context, lang, s, isDark),
 
           const SizedBox(height: 24),
 
           // 7. DATA & PRIVACY
-          _buildSectionHeader('DATA & PRIVACY'),
+          _buildSectionHeader(
+            'DATA & PRIVACY',
+            icon: Icons.shield_outlined,
+            accentColor: const Color(0xFFE11D48),
+            isDark: isDark,
+          ),
           const SizedBox(height: 8),
           _buildDataAndPrivacyCard(context, provider, isDark),
 
           const SizedBox(height: 24),
 
           // 8. ABOUT & MEDICAL TRUST
-          _buildSectionHeader('ABOUT'),
+          _buildSectionHeader(
+            'ABOUT & TRUST',
+            icon: Icons.info_outline_rounded,
+            accentColor: const Color(0xFF0EA5E9),
+            isDark: isDark,
+          ),
           const SizedBox(height: 8),
           _buildAboutCard(context, s, isDark),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.8,
-        color: AppColors.textSecondary,
       ),
     );
   }
@@ -301,78 +436,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) {
     if (auth.isSignedIn) {
       final displayName = auth.displayName ?? auth.email ?? auth.phoneNumber ?? 'User';
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-        ),
+      return _buildCardContainer(
+        isDark: isDark,
+        accentGlow: const Color(0xFF0284C7),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 if (auth.photoUrl != null)
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundImage: NetworkImage(auth.photoUrl!),
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF10B981), width: 2),
+                    ),
+                    child: CircleAvatar(
+                      radius: 22,
+                      backgroundImage: NetworkImage(auth.photoUrl!),
+                    ),
                   )
                 else
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.person_rounded, color: AppColors.primary, size: 24),
+                  _buildSquircleIcon(
+                    icon: Icons.person_rounded,
+                    gradientColors: const [Color(0xFF0284C7), Color(0xFF38BDF8)],
+                    size: 46,
+                    iconSize: 24,
                   ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         displayName,
-                        style: TextStyle(
+                        style: GoogleFonts.outfit(
                           fontWeight: FontWeight.w700,
-                          fontSize: 15,
+                          fontSize: 16,
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
                       ),
                       if (auth.email != null)
                         Text(
                           auth.email!,
-                          style: TextStyle(
+                          style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                           ),
                         ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
                           Container(
-                            width: 7,
-                            height: 7,
+                            width: 8,
+                            height: 8,
                             decoration: const BoxDecoration(
-                              color: AppColors.success,
+                              color: Color(0xFF10B981),
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 5),
-                          const Text(
+                          const SizedBox(width: 6),
+                          Text(
                             'Cloud Sync Active',
-                            style: TextStyle(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.success,
+                              color: const Color(0xFF10B981),
                             ),
                           ),
                           if (_lastBackupFormatted != null) ...[
                             Text(
                               ' · $_lastBackupFormatted',
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10,
                                 color: isDark ? AppColors.darkTextMuted : AppColors.textMuted,
                               ),
@@ -385,35 +519,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 OutlinedButton.icon(
                   onPressed: () => _confirmSignOut(context, auth, s),
-                  icon: const Icon(Icons.logout_rounded, size: 16, color: AppColors.error),
+                  icon: const Icon(Icons.logout_rounded, size: 15, color: AppColors.error),
                   label: Text(
                     s.signOutBtn,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.error),
+                    style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.error),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.error, width: 1.2),
                     foregroundColor: AppColors.error,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _performBackup(context, provider, s),
                     icon: const Icon(Icons.cloud_upload_rounded, size: 16),
-                    label: const Text('Backup Now'),
+                    label: Text('Backup Now', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: const Color(0xFF0284C7),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 3,
                     ),
                   ),
                 ),
@@ -421,13 +555,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _confirmRestore(context, auth, provider, s),
-                    icon: const Icon(Icons.cloud_download_rounded, size: 16, color: AppColors.primary),
-                    label: const Text('Restore'),
+                    icon: const Icon(Icons.cloud_download_rounded, size: 16, color: Color(0xFF0284C7)),
+                    label: Text('Restore', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13)),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary),
-                      foregroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      side: const BorderSide(color: Color(0xFF0284C7), width: 1.2),
+                      foregroundColor: const Color(0xFF0284C7),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
                 ),
@@ -439,44 +573,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     // Guest / Offline Mode Card
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-      ),
+    return _buildCardContainer(
+      isDark: isDark,
+      accentGlow: const Color(0xFF0284C7),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.cloud_off_rounded, color: AppColors.textSecondary, size: 22),
+              _buildSquircleIcon(
+                icon: Icons.cloud_sync_rounded,
+                gradientColors: const [Color(0xFF0284C7), Color(0xFF38BDF8)],
+                size: 46,
+                iconSize: 24,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Cloud Sync Offline',
-                      style: TextStyle(
+                      'Cloud Backup & Sync',
+                      style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700,
-                        fontSize: 14,
+                        fontSize: 15,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Sign in to automatically sync and protect your medicines in the cloud.',
-                      style: TextStyle(
+                      'Safeguard your medicines, schedules, and history across devices.',
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                         height: 1.3,
@@ -487,9 +614,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
+            height: 48,
             child: ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
@@ -497,14 +625,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   MaterialPageRoute(builder: (_) => const PhoneLoginScreen(isModal: true)),
                 );
               },
-              icon: const Icon(Icons.login_rounded, size: 16),
-              label: Text(s.signInOrLoginTitle),
+              icon: const Icon(Icons.login_rounded, size: 18),
+              label: Text(
+                s.signInOrLoginTitle,
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: const Color(0xFF0284C7),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 3,
+                shadowColor: const Color(0xFF0284C7).withValues(alpha: 0.4),
               ),
             ),
           ),
@@ -556,22 +687,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Restore Backup?', style: TextStyle(fontWeight: FontWeight.w700)),
-        content: const Text(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Restore Backup?', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+        content: Text(
           'Your current medication data and schedules will be merged with your saved cloud backup.\n\nDo you want to proceed?',
-          style: TextStyle(fontSize: 13, height: 1.4),
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.45),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: const Color(0xFF0284C7),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -581,14 +712,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('🔄 Successfully restored $count medicines from backup.'),
-                    backgroundColor: AppColors.primary,
+                    content: Text('✅ Successfully restored $count medicines from cloud.'),
+                    backgroundColor: AppColors.success,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
-            child: const Text('Continue Restore'),
+            child: Text('Restore Now', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -599,13 +730,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(s.signOutConfirmTitle),
-        content: Text(s.signOutConfirmMessage),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(s.signOutConfirmTitle, style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+        content: Text(s.signOutConfirmMessage, style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.45)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(s.cancel),
+            child: Text(s.cancel, style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -629,9 +760,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            child: Text(s.signOutBtn),
+            child: Text(s.signOutBtn, style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -645,87 +776,160 @@ class _SettingsScreenState extends State<SettingsScreen> {
     AppStrings s,
     bool isDark,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-      ),
+    return _buildCardContainer(
+      isDark: isDark,
+      accentGlow: const Color(0xFF10B981),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       child: Column(
         children: [
-          ...provider.profiles.map((p) => ListTile(
-                leading: (p.avatarEmoji.isNotEmpty && p.avatarEmoji != '👤')
-                    ? Container(
-                        width: 36,
-                        height: 36,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(p.colorValue).withValues(alpha: 0.15),
-                        ),
-                        child: Text(p.avatarEmoji, style: const TextStyle(fontSize: 20)),
-                      )
-                    : (p.svgAvatar.isNotEmpty
-                        ? AppSvgIcons.render(p.svgAvatar, width: 36, height: 36)
-                        : const Icon(Icons.person, color: AppColors.primary)),
-                title: Text(
-                  p.name.toLowerCase() == 'myself' ? s.myself : p.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          ...provider.profiles.map((p) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1A2644) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ),
-                subtitle: Text(
-                  p.age != null && p.age! > 0
-                      ? '${p.age} ${s.ageYears} · ${p.relation.toLowerCase() == 'myself' ? s.relationName('myself') : s.relationName(p.relation)}'
-                      : (p.relation.toLowerCase() == 'myself' ? s.relationName('myself') : s.relationName(p.relation)),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                  ),
-                ),
-                trailing: p.id == 'default_me'
-                    ? IconButton(
-                        icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
-                        tooltip: s.editMyProfile,
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const UserOnboardingProfileScreen(isEditMode: true),
+                  child: Row(
+                    children: [
+                      (p.avatarEmoji.isNotEmpty && p.avatarEmoji != '👤')
+                          ? Container(
+                              width: 42,
+                              height: 42,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(p.colorValue).withValues(alpha: 0.18),
+                              ),
+                              child: Text(p.avatarEmoji, style: const TextStyle(fontSize: 22)),
+                            )
+                          : (p.svgAvatar.isNotEmpty
+                              ? AppSvgIcons.render(p.svgAvatar, width: 42, height: 42)
+                              : _buildSquircleIcon(
+                                  icon: Icons.person,
+                                  gradientColors: const [Color(0xFF0D9488), Color(0xFF10B981)],
+                                  size: 42,
+                                  iconSize: 22,
+                                )),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              p.name.toLowerCase() == 'myself' ? s.myself : p.name,
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                              ),
                             ),
-                          );
-                        },
-                      )
-                    : null,
+                            const SizedBox(height: 3),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                p.age != null && p.age! > 0
+                                    ? '${p.age} ${s.ageYears} · ${p.relation.toLowerCase() == 'myself' ? s.relationName('myself') : s.relationName(p.relation)}'
+                                    : (p.relation.toLowerCase() == 'myself' ? s.relationName('myself') : s.relationName(p.relation)),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (p.id == 'default_me')
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF10B981)),
+                          tooltip: s.editMyProfile,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const UserOnboardingProfileScreen(isEditMode: true),
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
               )),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.people_outline_rounded, color: AppColors.primary, size: 22),
-            title: Text(
-              'Manage Family Members',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+          const SizedBox(height: 6),
+          InkWell(
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const FamilyMembersScreen()),
               );
             },
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary, size: 22),
-            title: Text(
-              s.addFamilyMemberTitle,
-              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700, fontSize: 14),
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              child: Row(
+                children: [
+                  _buildSquircleIcon(
+                    icon: Icons.groups_rounded,
+                    gradientColors: const [Color(0xFF0D9488), Color(0xFF14B8A6)],
+                    size: 36,
+                    iconSize: 18,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Manage Family Members',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                  ),
+                ],
+              ),
             ),
+          ),
+          const SizedBox(height: 4),
+          InkWell(
             onTap: () => ProfileSelectorSheet.show(context),
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              child: Row(
+                children: [
+                  _buildSquircleIcon(
+                    icon: Icons.person_add_rounded,
+                    gradientColors: const [Color(0xFF059669), Color(0xFF10B981)],
+                    size: 36,
+                    iconSize: 18,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      s.addFamilyMemberTitle,
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF10B981),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.add_rounded, size: 20, color: Color(0xFF10B981)),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -734,182 +938,324 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ================= 3. REMINDERS =================
   Widget _buildReminderControlsCard(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-      ),
+    final snoozeOptions = [5, 10, 15, 30];
+
+    return _buildCardContainer(
+      isDark: isDark,
+      accentGlow: const Color(0xFF8B5CF6),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Sound toggle
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              'Reminder Sound',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          Row(
+            children: [
+              _buildSquircleIcon(
+                icon: Icons.volume_up_rounded,
+                gradientColors: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
               ),
-            ),
-            subtitle: Text(
-              'Play auditory alert during scheduled dose reminders',
-              style: TextStyle(
-                fontSize: 12,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reminder Sound',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.5,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Play auditory alert during scheduled dose reminders',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            value: _soundEnabled,
-            activeThumbColor: Colors.white,
-            activeTrackColor: AppColors.success,
-            onChanged: (val) {
-              setState(() => _soundEnabled = val);
-              _savePreference('reminder_sound_enabled', val);
-            },
+              Switch.adaptive(
+                value: _soundEnabled,
+                activeThumbColor: const Color(0xFF8B5CF6),
+                activeTrackColor: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                onChanged: (val) {
+                  setState(() => _soundEnabled = val);
+                  _savePreference('reminder_sound_enabled', val);
+                },
+              ),
+            ],
           ),
-          const Divider(height: 16),
+          const SizedBox(height: 16),
+          Divider(color: isDark ? Colors.white10 : const Color(0xFFF1F5F9), height: 1),
+          const SizedBox(height: 16),
 
           // Vibration toggle
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              'Vibration',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
-            ),
-            subtitle: Text(
-              'Vibrate phone when a medication alarm rings',
-              style: TextStyle(
-                fontSize: 12,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              ),
-            ),
-            value: _vibrationEnabled,
-            activeThumbColor: Colors.white,
-            activeTrackColor: AppColors.success,
-            onChanged: (val) {
-              setState(() => _vibrationEnabled = val);
-              _savePreference('reminder_vibration_enabled', val);
-            },
-          ),
-          const Divider(height: 16),
-
-          // Snooze duration selector
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Default Snooze',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    'Interval when tapping Snooze',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+              _buildSquircleIcon(
+                icon: Icons.vibration_rounded,
+                gradientColors: const [Color(0xFFF59E0B), Color(0xFFFB923C)],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
-                  ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vibration',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.5,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Vibrate phone when a medication alarm rings',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    value: _snoozeMinutes,
-                    dropdownColor: isDark ? AppColors.darkCard : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    items: const [
-                      DropdownMenuItem(value: 5, child: Text('5 min', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 10, child: Text('10 min', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 15, child: Text('15 min', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 30, child: Text('30 min', style: TextStyle(fontSize: 13))),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() => _snoozeMinutes = val);
-                        _savePreference('reminder_snooze_minutes', val);
-                      }
-                    },
-                  ),
+              ),
+              Switch.adaptive(
+                value: _vibrationEnabled,
+                activeThumbColor: const Color(0xFFFB923C),
+                activeTrackColor: const Color(0xFFFB923C).withValues(alpha: 0.35),
+                onChanged: (val) {
+                  setState(() => _vibrationEnabled = val);
+                  _savePreference('reminder_vibration_enabled', val);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Divider(color: isDark ? Colors.white10 : const Color(0xFFF1F5F9), height: 1),
+          const SizedBox(height: 16),
+
+          // Default Snooze
+          Row(
+            children: [
+              _buildSquircleIcon(
+                icon: Icons.snooze_rounded,
+                gradientColors: const [Color(0xFF0284C7), Color(0xFF38BDF8)],
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Default Snooze',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.5,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Interval when tapping Snooze',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const Divider(height: 16),
-
-          // Reminder behavior
+          const SizedBox(height: 12),
+          // Snooze chips row
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Reminder Style',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            children: snoozeOptions.map((min) {
+              final isSelected = _snoozeMinutes == min;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() => _snoozeMinutes = min);
+                      _savePreference('reminder_snooze_minutes', min);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF0284C7)
+                            : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.35),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '$min min',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12.5,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          color: isSelected
+                              ? Colors.white
+                              : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                        ),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Persistent alarm or standard alert',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
                   ),
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _reminderBehavior,
-                    dropdownColor: isDark ? AppColors.darkCard : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'persistent',
-                        child: Text('Persistent Alarm', style: TextStyle(fontSize: 13)),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 16),
+          Divider(color: isDark ? Colors.white10 : const Color(0xFFF1F5F9), height: 1),
+          const SizedBox(height: 16),
+
+          // Reminder Style
+          Row(
+            children: [
+              _buildSquircleIcon(
+                icon: Icons.alarm_on_rounded,
+                gradientColors: const [Color(0xFFE11D48), Color(0xFFF43F5E)],
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reminder Style',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.5,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
-                      DropdownMenuItem(
-                        value: 'normal',
-                        child: Text('Standard Alert', style: TextStyle(fontSize: 13)),
+                    ),
+                    Text(
+                      'Persistent full alarm or standard notification alert',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                       ),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() => _reminderBehavior = val);
-                        _savePreference('reminder_behavior', val);
-                      }
-                    },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Style selector pills
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    setState(() => _reminderBehavior = 'persistent');
+                    _savePreference('reminder_behavior', 'persistent');
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _reminderBehavior == 'persistent'
+                          ? const Color(0xFFE11D48)
+                          : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: _reminderBehavior == 'persistent'
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFE11D48).withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.notifications_active_rounded,
+                          size: 15,
+                          color: _reminderBehavior == 'persistent' ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Persistent Alarm',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12.5,
+                            fontWeight: _reminderBehavior == 'persistent' ? FontWeight.w800 : FontWeight.w600,
+                            color: _reminderBehavior == 'persistent'
+                                ? Colors.white
+                                : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    setState(() => _reminderBehavior = 'normal');
+                    _savePreference('reminder_behavior', 'normal');
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _reminderBehavior == 'normal'
+                          ? const Color(0xFF0284C7)
+                          : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: _reminderBehavior == 'normal'
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF0284C7).withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.notifications_outlined,
+                          size: 15,
+                          color: _reminderBehavior == 'normal' ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Standard Alert',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12.5,
+                            fontWeight: _reminderBehavior == 'normal' ? FontWeight.w800 : FontWeight.w600,
+                            color: _reminderBehavior == 'normal'
+                                ? Colors.white
+                                : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -923,35 +1269,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ================= 4. SYSTEM PERMISSIONS =================
   Widget _buildPermissionAttentionBanner(bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: isDark ? 0.18 : 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.22 : 0.12),
+            const Color(0xFFEA580C).withValues(alpha: isDark ? 0.15 : 0.08),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.verified_user_rounded, color: AppColors.primary, size: 26),
+          _buildSquircleIcon(
+            icon: Icons.warning_amber_rounded,
+            gradientColors: const [Color(0xFFF59E0B), Color(0xFFEA580C)],
+            size: 38,
+            iconSize: 20,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Reminder Permissions Needed',
-                  style: TextStyle(
+                  'Permissions Required',
+                  style: GoogleFonts.outfit(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark ? Colors.white : const Color(0xFF9A3412),
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  'Grant permissions to guarantee alarms fire accurately without Android battery delay.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                    height: 1.3,
+                  'Grant permissions to guarantee alarms fire accurately.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11.5,
+                    color: isDark ? Colors.white70 : const Color(0xFFC2410C),
                   ),
                 ),
               ],
@@ -961,13 +1317,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ElevatedButton(
             onPressed: _requestAllPermissions,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: const Color(0xFFEA580C),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              elevation: 0,
+              elevation: 2,
             ),
-            child: const Text('Fix All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            child: Text('Fix All', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -977,27 +1333,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildPermissionTile({
     required String title,
     required String description,
+    required IconData icon,
+    required List<Color> gradientColors,
     required bool isGranted,
     required bool isDark,
     required VoidCallback onAction,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isGranted
-              ? (isDark ? AppColors.darkBorder : AppColors.lightBorder)
-              : AppColors.warning.withValues(alpha: 0.4),
-        ),
-      ),
+    return _buildCardContainer(
+      isDark: isDark,
+      accentGlow: isGranted ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          Icon(
-            isGranted ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-            color: isGranted ? AppColors.success : AppColors.warning,
-            size: 22,
+          _buildSquircleIcon(
+            icon: icon,
+            gradientColors: isGranted ? gradientColors : [const Color(0xFFF59E0B), const Color(0xFFFB923C)],
+            size: 40,
+            iconSize: 20,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1006,19 +1358,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: GoogleFonts.outfit(
                     fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                    fontSize: 13.5,
                     color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   description,
-                  style: TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                    height: 1.3,
+                    height: 1.25,
                   ),
                 ),
               ],
@@ -1027,31 +1379,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(width: 8),
           if (isGranted)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
               ),
-              child: const Text(
-                '✓ Active',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.success,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF10B981)),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Active',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF10B981),
+                    ),
+                  ),
+                ],
               ),
             )
           else
-            OutlinedButton(
+            ElevatedButton(
               onPressed: onAction,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.warning,
-                side: const BorderSide(color: AppColors.warning),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF59E0B),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 visualDensity: VisualDensity.compact,
+                elevation: 2,
               ),
-              child: const Text('Fix', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              child: Text('Grant', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700)),
             ),
         ],
       ),
@@ -1065,40 +1426,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
     AppStrings s,
     bool isDark,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-      ),
-      child: Row(
+    return _buildCardContainer(
+      isDark: isDark,
+      accentGlow: const Color(0xFF6366F1),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildThemeButton(
-            context,
-            ThemeMode.system,
-            s.themeSystem,
-            Icons.brightness_auto_rounded,
-            themeProvider.themeMode == ThemeMode.system,
-            isDark,
+          Row(
+            children: [
+              _buildSquircleIcon(
+                icon: Icons.palette_rounded,
+                gradientColors: const [Color(0xFF4F46E5), Color(0xFF818CF8)],
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.code == 'bn' ? 'অ্যাপের রূপ ও থিম' : (s.code == 'hi' ? 'ऐप थीम और रूप' : 'Theme & Appearance'),
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      s.code == 'bn' ? 'লাইট, ডার্ক অথবা সিস্টেম মোড বাছুন' : 'Choose Light, Dark, or System mode',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          _buildThemeButton(
-            context,
-            ThemeMode.light,
-            s.themeLight,
-            Icons.wb_sunny_rounded,
-            themeProvider.themeMode == ThemeMode.light,
-            isDark,
-          ),
-          const SizedBox(width: 8),
-          _buildThemeButton(
-            context,
-            ThemeMode.dark,
-            s.themeDark,
-            Icons.nightlight_round,
-            themeProvider.themeMode == ThemeMode.dark,
-            isDark,
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _buildThemeButton(
+                context,
+                ThemeMode.system,
+                s.themeSystem,
+                Icons.brightness_auto_rounded,
+                themeProvider.themeMode == ThemeMode.system,
+                isDark,
+              ),
+              const SizedBox(width: 8),
+              _buildThemeButton(
+                context,
+                ThemeMode.light,
+                s.themeLight,
+                Icons.wb_sunny_rounded,
+                themeProvider.themeMode == ThemeMode.light,
+                isDark,
+              ),
+              const SizedBox(width: 8),
+              _buildThemeButton(
+                context,
+                ThemeMode.dark,
+                s.themeDark,
+                Icons.nightlight_round,
+                themeProvider.themeMode == ThemeMode.dark,
+                isDark,
+              ),
+            ],
           ),
         ],
       ),
@@ -1117,34 +1513,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: GestureDetector(
         onTap: () => context.read<ThemeProvider>().setThemeMode(mode),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
             color: isSelected
-                ? AppColors.primary
+                ? null
                 : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isSelected
-                  ? AppColors.primary
-                  : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                  ? const Color(0xFF6366F1)
+                  : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
               width: 1.2,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             children: [
               Icon(
                 icon,
-                size: 20,
-                color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
+                size: 22,
+                color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 5),
               Text(
                 label,
-                style: TextStyle(
+                style: GoogleFonts.outfit(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected ? Colors.white : (isDark ? Colors.white : Colors.black87),
+                  color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
                 ),
               ),
             ],
@@ -1161,63 +1573,128 @@ class _SettingsScreenState extends State<SettingsScreen> {
     AppStrings s,
     bool isDark,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-      ),
-      child: Row(
+    final current = lang.languageCode;
+    final options = [
+      {'code': 'bn', 'name': 'বাংলা', 'badge': 'BN'},
+      {'code': 'en', 'name': 'English', 'badge': 'EN'},
+      {'code': 'hi', 'name': 'हिन्दी', 'badge': 'HI'},
+    ];
+
+    return _buildCardContainer(
+      isDark: isDark,
+      accentGlow: const Color(0xFF0D9488),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.translate_rounded, color: AppColors.primary, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Preferred Language',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  'Choose language for user interface',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: lang.languageCode,
-                dropdownColor: isDark ? AppColors.darkCard : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                items: const [
-                  DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(fontSize: 13))),
-                  DropdownMenuItem(value: 'bn', child: Text('বাংলা', style: TextStyle(fontSize: 13))),
-                  DropdownMenuItem(value: 'hi', child: Text('हिन्दी', style: TextStyle(fontSize: 13))),
-                ],
-                onChanged: (val) {
-                  if (val != null) {
-                    context.read<LanguageProvider>().setLanguage(val);
-                  }
-                },
+          Row(
+            children: [
+              _buildSquircleIcon(
+                icon: Icons.translate_rounded,
+                gradientColors: const [Color(0xFF0D9488), Color(0xFF2DD4BF)],
               ),
-            ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.chooseLanguage,
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      s.chooseLanguageSubtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: options.map((opt) {
+              final isSelected = current == opt['code'];
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: InkWell(
+                    onTap: () => context.read<LanguageProvider>().setLanguage(opt['code']!),
+                    borderRadius: BorderRadius.circular(14),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? (isDark ? const Color(0xFF0F3E3A) : const Color(0xFFE6FFFA))
+                            : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC)),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF0D9488)
+                              : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                          width: isSelected ? 2.0 : 1.0,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                opt['name']!,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  color: isSelected
+                                      ? (isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488))
+                                      : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                                ),
+                              ),
+                              if (isSelected) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 14,
+                                  color: isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            opt['badge']!,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.darkTextMuted : AppColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -1230,52 +1707,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
     MedicineProvider provider,
     bool isDark,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-      ),
+    return _buildCardContainer(
+      isDark: isDark,
+      accentGlow: const Color(0xFFE11D48),
+      padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          ListTile(
-            leading: const Icon(Icons.history_toggle_off_rounded, color: AppColors.textSecondary, size: 22),
-            title: Text(
-              'Clear Intake History',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
-            ),
-            subtitle: Text(
-              'Clear past taken and missed records without removing medicines',
-              style: TextStyle(
-                fontSize: 11,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              ),
-            ),
+          InkWell(
             onTap: () => _confirmClearHistory(context, provider),
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                children: [
+                  _buildSquircleIcon(
+                    icon: Icons.history_toggle_off_rounded,
+                    gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
+                    size: 38,
+                    iconSize: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Clear Intake History',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Reset past dose logs without removing medicines',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFFF59E0B)),
+                ],
+              ),
+            ),
           ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.delete_forever_rounded, color: AppColors.error, size: 22),
-            title: const Text(
-              'Delete All MediRemind Data',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-                color: AppColors.error,
-              ),
-            ),
-            subtitle: Text(
-              'Permanently remove all local medicines, alarms, and history',
-              style: TextStyle(
-                fontSize: 11,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              ),
-            ),
+          const SizedBox(height: 6),
+          Divider(color: isDark ? Colors.white10 : const Color(0xFFF1F5F9), height: 1),
+          const SizedBox(height: 6),
+          InkWell(
             onTap: () => _confirmDeleteAllData(context, provider),
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                children: [
+                  _buildSquircleIcon(
+                    icon: Icons.delete_forever_rounded,
+                    gradientColors: const [Color(0xFFDC2626), Color(0xFFEF4444)],
+                    size: 38,
+                    iconSize: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Delete All MediRemind Data',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: AppColors.error,
+                          ),
+                        ),
+                        Text(
+                          'Permanently erase all local medicines, alarms, and history',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.error),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -1286,22 +1807,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Clear Intake History?', style: TextStyle(fontWeight: FontWeight.w700)),
-        content: const Text(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Clear Intake History?', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+        content: Text(
           'This will reset all past dose logs and adherence charts to zero. Your medicine schedule will remain active.\n\nAre you sure you want to clear history?',
-          style: TextStyle(fontSize: 13, height: 1.4),
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.45),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -1315,7 +1836,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               }
             },
-            child: const Text('Clear History'),
+            child: Text('Clear History', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1326,28 +1847,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
-          children: const [
-            Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 24),
-            SizedBox(width: 8),
-            Text('Delete All Data?', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.error)),
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 24),
+            const SizedBox(width: 8),
+            Text('Delete All Data?', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: AppColors.error)),
           ],
         ),
-        content: const Text(
+        content: Text(
           'This will permanently delete:\n• All medicines in cabinet\n• All scheduled reminder alarms\n• Complete intake and adherence history\n• Custom family profiles\n\nThis action cannot be undone.',
-          style: TextStyle(fontSize: 13, height: 1.5),
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -1362,7 +1883,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               }
             },
-            child: const Text('Delete Everything'),
+            child: Text('Delete Everything', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1371,48 +1892,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ================= 8. ABOUT =================
   Widget _buildAboutCard(BuildContext context, AppStrings s, bool isDark) {
-    return Container(
+    return _buildCardContainer(
+      isDark: isDark,
+      accentGlow: const Color(0xFF0EA5E9),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  'assets/icons/app_brand_logo.png',
-                  width: 28,
-                  height: 28,
-                  fit: BoxFit.cover,
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/icons/app_brand_logo.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                '${s.appName} v1.0.0',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.appName,
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 17,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0EA5E9).withValues(alpha: isDark ? 0.2 : 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'v1.0.0 · Safe Medication Companion',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF0EA5E9),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 12),
           Text(
             'MediRemind is a personal medication management and schedule tracking utility. It is not intended to diagnose, treat, or replace professional medical advice.',
-            style: TextStyle(
-              fontSize: 11,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11.5,
               color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           InkWell(
             onTap: () {
               Navigator.push(
@@ -1420,31 +1973,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 MaterialPageRoute(builder: (_) => const WelcomeScreen(isFromSettings: true)),
               );
             },
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.auto_stories_outlined, size: 18, color: AppColors.primary),
-                  const SizedBox(width: 8),
+                  _buildSquircleIcon(
+                    icon: Icons.auto_stories_rounded,
+                    gradientColors: const [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                    size: 34,
+                    iconSize: 18,
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Replay Welcome & Onboarding Guide',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
                     ),
                   ),
                   Icon(
                     Icons.chevron_right_rounded,
-                    size: 18,
+                    size: 20,
                     color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                   ),
                 ],
