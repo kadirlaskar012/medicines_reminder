@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../models/medicine.dart';
+import '../models/reminder_time.dart';
 import '../models/scheduled_dose.dart';
 import '../providers/language_provider.dart';
+import '../providers/medicine_provider.dart';
 import '../screens/medicines/medicine_details_screen.dart';
 import 'dual_tone_capsule.dart';
 
@@ -41,9 +43,25 @@ class DoseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final s = context.watch<LanguageProvider>().strings;
+    final lang = context.watch<LanguageProvider>();
+    final s = lang.strings;
     final med = dose.medicine;
     final rem = dose.reminder;
+
+    final provider = context.watch<MedicineProvider>();
+    final allRems = provider.getRemindersForMedicine(med.id);
+    String? routinePattern;
+    if (allRems.isNotEmpty) {
+      final m = allRems.where((r) => r.timeSlot == TimeSlot.morning).length;
+      final a = allRems.where((r) => r.timeSlot == TimeSlot.afternoon).length;
+      final e = allRems.where((r) => r.timeSlot == TimeSlot.evening).length;
+      final n = allRems.where((r) => r.timeSlot == TimeSlot.night).length;
+      if (e == 0) {
+        routinePattern = '$m-$a-$n';
+      } else {
+        routinePattern = '$m-$a-$e-$n';
+      }
+    }
 
     final now = DateTime.now();
     final doseDateTime = DateTime(
@@ -53,10 +71,8 @@ class DoseCard extends StatelessWidget {
       rem.hour,
       rem.minute,
     );
-    final diff = doseDateTime.difference(now);
-
-    final isPastGracePeriod = diff.inMinutes < -180; // More than 3 hours late
-    final isOverdue = !dose.isTaken && !dose.isSkipped && diff.inMinutes < -15 && !isPastGracePeriod;
+    final isOverdue = !dose.isTaken && !dose.isSkipped && now.isAfter(doseDateTime);
+    final isPastGracePeriod = now.isAfter(doseDateTime.add(const Duration(minutes: 60)));
     final isMissed = !dose.isTaken && !dose.isSkipped && isPastGracePeriod;
 
     final medGradients = _getGradientForMedicine(med.type);
@@ -264,6 +280,40 @@ class DoseCard extends StatelessWidget {
                               ],
                             ),
                           ),
+                          // Prescription Pattern badge (e.g. 💊 1-0-1)
+                          if (routinePattern != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFF0D9488).withValues(alpha: isDark ? 0.25 : 0.12),
+                                    const Color(0xFF06B6D4).withValues(alpha: isDark ? 0.15 : 0.06),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFF0D9488).withValues(alpha: 0.35),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('💊', style: TextStyle(fontSize: 10)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    routinePattern,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark ? const Color(0xFF5EEAD4) : const Color(0xFF0D9488),
+                                      letterSpacing: 0.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ],

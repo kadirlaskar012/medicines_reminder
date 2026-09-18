@@ -16,7 +16,6 @@ import '../medicines/add_edit_medicine_screen.dart';
 import '../medicines/medicines_cabinet_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../../widgets/profile_selector_sheet.dart';
-import '../../widgets/rotary_time_slot_carousel.dart';
 import '../../widgets/missed_medicines_sheet.dart';
 
 class TodayScreen extends StatefulWidget {
@@ -29,6 +28,14 @@ class TodayScreen extends StatefulWidget {
 class _TodayScreenState extends State<TodayScreen> {
   TimeSlot? _selectedSlotFilter; // null = All
   Timer? _autoSkipTimer;
+
+  static TimeSlot get currentLiveTimeSlot {
+    final hour = DateTime.now().hour;
+    if (hour >= 6 && hour < 12) return TimeSlot.morning;
+    if (hour >= 12 && hour < 17) return TimeSlot.afternoon;
+    if (hour >= 17 && hour < 21) return TimeSlot.evening;
+    return TimeSlot.night;
+  }
 
   @override
   void initState() {
@@ -67,7 +74,7 @@ class _TodayScreenState extends State<TodayScreen> {
     if (dose.isTaken || dose.isSkipped) return false;
 
     final now = DateTime.now();
-    final liveSlot = RotaryTimeSlotCarousel.currentLiveTimeSlot;
+    final liveSlot = currentLiveTimeSlot;
     final doseDateTime = DateTime(
       dose.scheduledDate.year,
       dose.scheduledDate.month,
@@ -171,6 +178,23 @@ class _TodayScreenState extends State<TodayScreen> {
       if (compHour != 0) return compHour;
       return a.reminder.minute.compareTo(b.reminder.minute);
     });
+
+    final List<ScheduledDose> currentOrDueDoses = [];
+    final List<ScheduledDose> upcomingDoses = [];
+
+    for (final dose in pendingDoses) {
+      if (_isDoseActionable(dose, isViewingToday)) {
+        currentOrDueDoses.add(dose);
+      } else {
+        upcomingDoses.add(dose);
+      }
+    }
+
+    // If viewing today, ensure at least the very first pending dose is actionable/current
+    if (currentOrDueDoses.isEmpty && pendingDoses.isNotEmpty && isViewingToday) {
+      currentOrDueDoses.add(pendingDoses.first);
+      upcomingDoses.removeAt(0);
+    }
 
     completedDoses.sort((a, b) {
       final compHour = a.reminder.hour.compareTo(b.reminder.hour);
@@ -441,20 +465,15 @@ class _TodayScreenState extends State<TodayScreen> {
               ),
             ),
 
-            // Rotary Time Slot Carousel & All Doses Master Filter
+            // Sleek Daily Prescription Routine Bar (1 - 0 - 0 - 1)
             SliverToBoxAdapter(
-              child: RotaryTimeSlotCarousel(
-                selectedSlot: _selectedSlotFilter,
-                totalDosesCount: totalDoses,
-                doseCounts: {
-                  TimeSlot.morning: morningDoses.length,
-                  TimeSlot.afternoon: afternoonDoses.length,
-                  TimeSlot.evening: eveningDoses.length,
-                  TimeSlot.night: nightDoses.length,
-                },
-                onSlotChanged: (slot) {
-                  setState(() => _selectedSlotFilter = slot);
-                },
+              child: _buildPrescriptionRoutineBar(
+                morningCount: morningDoses.length,
+                afternoonCount: afternoonDoses.length,
+                eveningCount: eveningDoses.length,
+                nightCount: nightDoses.length,
+                isDark: isDark,
+                s: s,
               ),
             ),
 
@@ -633,20 +652,18 @@ class _TodayScreenState extends State<TodayScreen> {
               ),
 
 
-            // Dose Lists: Smart Priority Rendering
             // Dose Lists: Smart Priority Direct Rendering
-            // 1. Pending doses (actionable or scheduled) rendered directly without duplicate header
-            if (pendingDoses.isNotEmpty)
+            // 1. Current / Due Doses (Actionable with Take, Snooze, Skip)
+            if (currentOrDueDoses.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final dose = pendingDoses[index];
-                      final isActionable = _isDoseActionable(dose, isViewingToday);
+                      final dose = currentOrDueDoses[index];
                       return DoseCard(
                         dose: dose,
-                        isActionable: isActionable,
+                        isActionable: true,
                         onTake: () {
                           provider.markAsTaken(dose.medicine, dose.reminder, dose.scheduledDate);
                         },
@@ -665,10 +682,105 @@ class _TodayScreenState extends State<TodayScreen> {
                         },
                       );
                     },
-                    childCount: pendingDoses.length,
+                    childCount: currentOrDueDoses.length,
                   ),
                 ),
               ),
+
+            // 2. Upcoming Medicines Separator (with subtle Dashed Line and label)
+            if (upcomingDoses.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                  child: Row(
+                    children: [
+                      // Left dashed line
+                      Expanded(
+                        child: CustomPaint(
+                          painter: DashedLinePainter(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                          ),
+                          size: const Size(double.infinity, 1),
+                        ),
+                      ),
+                      // Center badge
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.schedule_rounded, size: 12, color: Color(0xFF6366F1)),
+                              const SizedBox(width: 5),
+                              Text(
+                                s.code == 'bn' ? 'পরবর্তী ওষুধসমূহ' : 'UPCOMING MEDICINES',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Right dashed line
+                      Expanded(
+                        child: CustomPaint(
+                          painter: DashedLinePainter(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                          ),
+                          size: const Size(double.infinity, 1),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3. Upcoming Scheduled Doses (Scheduled for later today, clean look)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final dose = upcomingDoses[index];
+                      return DoseCard(
+                        dose: dose,
+                        isActionable: false,
+                        onTake: () {
+                          provider.markAsTaken(dose.medicine, dose.reminder, dose.scheduledDate);
+                        },
+                        onSkip: () {
+                          provider.markAsSkipped(dose.medicine, dose.reminder, dose.scheduledDate);
+                        },
+                        onSnooze: () {
+                          provider.snoozeDose(dose.medicine, dose.reminder, minutes: 10);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(s.snoozedMessage(dose.medicine.name, 10)),
+                              backgroundColor: AppColors.warning,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    childCount: upcomingDoses.length,
+                  ),
+                ),
+              ),
+            ],
 
             // 2. Completed Doses (taken / skipped) in their dedicated completed section
             if (completedDoses.isNotEmpty)
@@ -917,5 +1029,231 @@ class _TodayScreenState extends State<TodayScreen> {
       ),
     ];
   }
+
+  Widget _buildPrescriptionRoutineBar({
+    required int morningCount,
+    required int afternoonCount,
+    required int eveningCount,
+    required int nightCount,
+    required bool isDark,
+    required AppStrings s,
+  }) {
+    final liveSlot = currentLiveTimeSlot;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 2, 20, 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Left Routine Pill: 💊 1-0-0-1
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0D9488), Color(0xFF06B6D4)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(9),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('💊', style: TextStyle(fontSize: 11)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$morningCount-$afternoonCount-$eveningCount-$nightCount',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Right: 4 Slot Chips with Connectors
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildRoutineSlotChip(
+                    emoji: '🌅',
+                    label: s.code == 'bn' ? 'সকাল' : 'Morn',
+                    count: morningCount,
+                    slot: TimeSlot.morning,
+                    isLive: liveSlot == TimeSlot.morning,
+                    isSelected: _selectedSlotFilter == TimeSlot.morning,
+                    isDark: isDark,
+                  ),
+                  _buildRoutineConnector(isDark),
+                  _buildRoutineSlotChip(
+                    emoji: '☀️',
+                    label: s.code == 'bn' ? 'দুপুর' : 'Noon',
+                    count: afternoonCount,
+                    slot: TimeSlot.afternoon,
+                    isLive: liveSlot == TimeSlot.afternoon,
+                    isSelected: _selectedSlotFilter == TimeSlot.afternoon,
+                    isDark: isDark,
+                  ),
+                  _buildRoutineConnector(isDark),
+                  _buildRoutineSlotChip(
+                    emoji: '☕',
+                    label: s.code == 'bn' ? 'সন্ধ্যা' : 'Eve',
+                    count: eveningCount,
+                    slot: TimeSlot.evening,
+                    isLive: liveSlot == TimeSlot.evening,
+                    isSelected: _selectedSlotFilter == TimeSlot.evening,
+                    isDark: isDark,
+                  ),
+                  _buildRoutineConnector(isDark),
+                  _buildRoutineSlotChip(
+                    emoji: '🌙',
+                    label: s.code == 'bn' ? 'রাত' : 'Night',
+                    count: nightCount,
+                    slot: TimeSlot.night,
+                    isLive: liveSlot == TimeSlot.night,
+                    isSelected: _selectedSlotFilter == TimeSlot.night,
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoutineConnector(bool isDark) {
+    return Container(
+      width: 5,
+      height: 1.5,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+        borderRadius: BorderRadius.circular(1),
+      ),
+    );
+  }
+
+  Widget _buildRoutineSlotChip({
+    required String emoji,
+    required String label,
+    required int count,
+    required TimeSlot slot,
+    required bool isLive,
+    required bool isSelected,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedSlotFilter = _selectedSlotFilter == slot ? null : slot;
+        });
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? const Color(0xFF4F46E5).withValues(alpha: 0.35) : const Color(0xFFEEF2FF))
+              : isLive
+                  ? (isDark ? const Color(0xFF0D9488).withValues(alpha: 0.22) : const Color(0xFFF0FDFA))
+                  : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF6366F1)
+                : isLive
+                    ? const Color(0xFF0D9488).withValues(alpha: 0.45)
+                    : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 11.5)),
+            const SizedBox(width: 3),
+            Text(
+              count.toString(),
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                fontWeight: count > 0 ? FontWeight.w800 : FontWeight.w500,
+                color: isSelected
+                    ? const Color(0xFF6366F1)
+                    : isLive
+                        ? const Color(0xFF0D9488)
+                        : (count > 0
+                            ? (isDark ? Colors.white : const Color(0xFF1E293B))
+                            : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class DashedLinePainter extends CustomPainter {
+  final Color color;
+  final double dashWidth;
+  final double dashSpace;
+  final double strokeWidth;
+
+  const DashedLinePainter({
+    required this.color,
+    this.dashWidth = 4,
+    this.dashSpace = 3,
+    this.strokeWidth = 1,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    double startX = 0;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth;
+
+    while (startX < size.width) {
+      canvas.drawLine(
+        Offset(startX, 0),
+        Offset(startX + dashWidth, 0),
+        paint,
+      );
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
