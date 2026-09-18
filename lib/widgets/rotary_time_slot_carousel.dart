@@ -20,6 +20,14 @@ class RotaryTimeSlotCarousel extends StatefulWidget {
     required this.onSlotChanged,
   });
 
+  static TimeSlot get currentLiveTimeSlot {
+    final hour = DateTime.now().hour;
+    if (hour >= 6 && hour < 12) return TimeSlot.morning;
+    if (hour >= 12 && hour < 17) return TimeSlot.afternoon;
+    if (hour >= 17 && hour < 21) return TimeSlot.evening;
+    return TimeSlot.night;
+  }
+
   @override
   State<RotaryTimeSlotCarousel> createState() => _RotaryTimeSlotCarouselState();
 }
@@ -34,21 +42,13 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
 
   late int _focusedIndex;
 
-  static TimeSlot get currentLiveTimeSlot {
-    final hour = DateTime.now().hour;
-    if (hour >= 6 && hour < 12) return TimeSlot.morning;
-    if (hour >= 12 && hour < 17) return TimeSlot.afternoon;
-    if (hour >= 17 && hour < 21) return TimeSlot.evening;
-    return TimeSlot.night;
-  }
-
   @override
   void initState() {
     super.initState();
     if (widget.selectedSlot != null) {
       _focusedIndex = _slots.indexOf(widget.selectedSlot!);
     } else {
-      _focusedIndex = _slots.indexOf(currentLiveTimeSlot);
+      _focusedIndex = _slots.indexOf(RotaryTimeSlotCarousel.currentLiveTimeSlot);
     }
   }
 
@@ -105,7 +105,7 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final s = context.watch<LanguageProvider>().strings;
     final now = DateTime.now();
-    final liveSlot = currentLiveTimeSlot;
+    final liveSlot = RotaryTimeSlotCarousel.currentLiveTimeSlot;
 
     final isAllDosesActive = widget.selectedSlot == null;
 
@@ -119,20 +119,20 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
     final isCenterLiveNow = centerSlot == liveSlot;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      margin: const EdgeInsets.fromLTRB(16, 2, 16, 4),
+      padding: const EdgeInsets.fromLTRB(12, 7, 12, 5),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -150,25 +150,25 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                   decoration: BoxDecoration(
                     gradient: isAllDosesActive ? AppColors.primaryGradient : null,
                     color: isAllDosesActive
                         ? null
                         : (isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9)),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isAllDosesActive
                           ? AppColors.primaryTealLight
                           : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                      width: isAllDosesActive ? 1.5 : 1,
+                      width: isAllDosesActive ? 1.4 : 0.9,
                     ),
                     boxShadow: isAllDosesActive
                         ? [
                             BoxShadow(
-                              color: AppColors.primaryTeal.withValues(alpha: 0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                              color: AppColors.primaryTeal.withValues(alpha: 0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 1.5),
                             ),
                           ]
                         : null,
@@ -178,16 +178,16 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
                     children: [
                       Icon(
                         Icons.medication_rounded,
-                        size: 15,
+                        size: 14,
                         color: isAllDosesActive ? Colors.white : AppColors.primaryTeal,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 5),
                       Text(
                         s.code == 'bn'
                             ? 'সব ওষুধ (${widget.totalDosesCount})'
                             : 'All Doses (${widget.totalDosesCount})',
                         style: GoogleFonts.outfit(
-                          fontSize: 12.5,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w800,
                           color: isAllDosesActive
                               ? Colors.white
@@ -195,10 +195,10 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
                         ),
                       ),
                       if (isAllDosesActive) ...[
-                        const SizedBox(width: 5),
+                        const SizedBox(width: 4),
                         Container(
-                          width: 6,
-                          height: 6,
+                          width: 5,
+                          height: 5,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
@@ -212,10 +212,10 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
 
               // Live Clock Status Chip
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     width: 0.8,
@@ -225,24 +225,24 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 6,
-                      height: 6,
+                      width: 5,
+                      height: 5,
                       decoration: BoxDecoration(
                         color: AppColors.accentEmerald,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.accentEmerald.withValues(alpha: 0.8),
-                            blurRadius: 4,
+                            blurRadius: 3,
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Text(
                       '${DateFormat('hh:mm a').format(now)} · ${_getSlotTitle(liveSlot, s)}',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                       ),
@@ -253,7 +253,7 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 7),
 
           // 2. Rotary Dial Row (Left Arrow < | Prev Slot | Center Focus Slot | Next Slot | Right Arrow >)
           GestureDetector(
@@ -345,10 +345,10 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
           // 3. Center Arrow Indicator (▲)
           Center(
             child: Container(
-              margin: const EdgeInsets.only(top: 3),
+              margin: const EdgeInsets.only(top: 1),
               child: Icon(
                 Icons.arrow_drop_up_rounded,
-                size: 22,
+                size: 16,
                 color: (!isAllDosesActive && widget.selectedSlot == centerSlot)
                     ? centerSlot.color
                     : (isCenterLiveNow ? AppColors.primaryTeal : (isDark ? Colors.white30 : Colors.black26)),
@@ -367,17 +367,17 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        width: 32,
-        height: 56,
+        width: 28,
+        height: 52,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isDark
                 ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
                 : [const Color(0xFFF1F5F9), const Color(0xFFE2E8F0)],
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
             width: 1,
@@ -385,7 +385,7 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
         ),
         child: Icon(
           icon,
-          size: 20,
+          size: 18,
           color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
         ),
       ),
@@ -403,8 +403,8 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        height: 70,
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -414,45 +414,45 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: slot.color.withValues(alpha: isDark ? 0.4 : 0.28),
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: slot.color.withValues(alpha: isDark ? 0.14 : 0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: slot.color.withValues(alpha: isDark ? 0.12 : 0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 1.5),
             ),
           ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(_getSlotEmoji(slot), style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 3),
+            Text(_getSlotEmoji(slot), style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: 1.5),
             Text(
               _getSlotTitle(slot, s),
               style: GoogleFonts.outfit(
-                fontSize: 11,
+                fontSize: 9.5,
                 fontWeight: FontWeight.w700,
                 color: isDark ? Colors.white70 : slot.color,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 1),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0.5),
               decoration: BoxDecoration(
                 color: slot.color.withValues(alpha: isDark ? 0.28 : 0.18),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(5),
               ),
               child: Text(
                 '$count',
                 style: GoogleFonts.outfit(
-                  fontSize: 10,
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w800,
                   color: isDark ? Colors.white : slot.color,
                 ),
@@ -478,8 +478,8 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutBack,
-        height: 76,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        height: 58,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isSelected
@@ -491,16 +491,16 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? Colors.white : slot.color,
-            width: isSelected ? 2 : 1.5,
+            width: isSelected ? 1.8 : 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: slot.color.withValues(alpha: isSelected ? 0.45 : 0.2),
-              blurRadius: isSelected ? 12 : 6,
-              offset: const Offset(0, 3),
+              color: slot.color.withValues(alpha: isSelected ? 0.38 : 0.16),
+              blurRadius: isSelected ? 8 : 4,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -510,12 +510,12 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(_getSlotEmoji(slot), style: const TextStyle(fontSize: 17)),
-                const SizedBox(width: 5),
+                Text(_getSlotEmoji(slot), style: const TextStyle(fontSize: 14.5)),
+                const SizedBox(width: 4),
                 Text(
                   _getSlotTitle(slot, s),
                   style: GoogleFonts.outfit(
-                    fontSize: 13.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: isSelected
                         ? Colors.white
@@ -524,18 +524,18 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
                 ),
               ],
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (isLiveNow) ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? Colors.white.withValues(alpha: 0.3)
                           : AppColors.accentEmerald.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(5),
                       border: Border.all(
                         color: isSelected
                             ? Colors.white
@@ -546,20 +546,20 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
                     child: Text(
                       s.code == 'bn' ? '● এখন' : '● NOW',
                       style: GoogleFonts.outfit(
-                        fontSize: 8.5,
+                        fontSize: 8,
                         fontWeight: FontWeight.w900,
                         color: isSelected ? Colors.white : AppColors.accentEmerald,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 4),
                 ],
                 Text(
                   count == 1
                       ? (s.code == 'bn' ? '১টি ওষুধ' : '1 dose')
                       : (s.code == 'bn' ? '$countটি ওষুধ' : '$count doses'),
                   style: GoogleFonts.outfit(
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: isSelected
                         ? Colors.white.withValues(alpha: 0.95)

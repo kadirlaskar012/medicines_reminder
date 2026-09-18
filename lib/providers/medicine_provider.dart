@@ -324,6 +324,7 @@ class MedicineProvider extends ChangeNotifier {
       await _refreshMedicinesAndReminders();
       await rescheduleAllActiveReminders();
       await _refreshRecords();
+      await autoSkipPastDueDoses();
     } catch (e) {
       debugPrint('SQLite notice: loading initial fallback: $e');
       _seedInMemoryFallback();
@@ -379,6 +380,9 @@ class MedicineProvider extends ChangeNotifier {
   void selectDate(DateTime date) async {
     _selectedDate = date;
     await _refreshRecords();
+    if (DateUtils.isSameDay(date, DateTime.now())) {
+      await autoSkipPastDueDoses();
+    }
     notifyListeners();
   }
 
@@ -716,5 +720,58 @@ class MedicineProvider extends ChangeNotifier {
 
   List<ReminderTime> getRemindersForMedicine(String medicineId) {
     return _remindersByMedicine[medicineId] ?? [];
+  }
+
+  /// Calculates the time when a time slot officially finishes for a given date
+  DateTime getSlotEndTime(TimeSlot slot, DateTime date) {
+    switch (slot) {
+      case TimeSlot.morning:
+        return DateTime(date.year, date.month, date.day, 12, 0);
+      case TimeSlot.afternoon:
+        return DateTime(date.year, date.month, date.day, 17, 0);
+      case TimeSlot.evening:
+        return DateTime(date.year, date.month, date.day, 21, 0);
+      case TimeSlot.night:
+        return DateTime(date.year, date.month, date.day, 6, 0).add(const Duration(days: 1));
+    }
+  }
+
+  /// Automatically marks past unrecorded doses as skipped when their time slot has ended
+  Future<void> autoSkipPastDueDoses() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final todayDoses = getDosesForDate(today);
+    bool changed = false;
+
+    for (final dose in todayDoses) {
+      if (dose.isTaken || dose.isSkipped) continue;
+
+      final slotEnd = getSlotEndTime(dose.reminder.timeSlot, today);
+      // If current time has advanced past the end of the dose's time slot
+      if (now.isAfter(slotEnd)) {
+        final dateStr = DateFormat('yyyy-MM-dd').format(today);
+        final key = '${dose.medicine.id}_${dose.reminder.id}_$dateStr';
+        final record = IntakeRecord(
+          id: _uuid.v4(),
+          medicineId: dose.medicine.id,
+          reminderTimeId: dose.reminder.id,
+          scheduledDate: dateStr,
+          scheduledHour: dose.reminder.hour,
+          scheduledMinute: dose.reminder.minute,
+          status: IntakeStatus.skipped,
+          recordedAt: now,
+        );
+
+        try {
+          await _db.recordIntake(record);
+        } catch (_) {}
+        _recordsByDoseKey[key] = record;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      notifyListeners();
+    }
   }
 }

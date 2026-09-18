@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +27,7 @@ class TodayScreen extends StatefulWidget {
 
 class _TodayScreenState extends State<TodayScreen> {
   TimeSlot? _selectedSlotFilter; // null = All
+  Timer? _autoSkipTimer;
 
   @override
   void initState() {
@@ -36,9 +38,53 @@ class _TodayScreenState extends State<TodayScreen> {
         final now = DateTime.now();
         if (!DateUtils.isSameDay(provider.selectedDate, now)) {
           provider.selectDate(now);
+        } else {
+          provider.autoSkipPastDueDoses();
         }
       }
     });
+
+    // Check periodically every minute for slot transition auto-skipping
+    _autoSkipTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) {
+        final provider = context.read<MedicineProvider>();
+        if (DateUtils.isSameDay(provider.selectedDate, DateTime.now())) {
+          provider.autoSkipPastDueDoses();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoSkipTimer?.cancel();
+    super.dispose();
+  }
+
+  bool _isDoseActionable(ScheduledDose dose, bool isViewingToday) {
+    if (!isViewingToday) return false;
+    if (dose.isTaken || dose.isSkipped) return false;
+
+    final now = DateTime.now();
+    final liveSlot = RotaryTimeSlotCarousel.currentLiveTimeSlot;
+    final doseDateTime = DateTime(
+      dose.scheduledDate.year,
+      dose.scheduledDate.month,
+      dose.scheduledDate.day,
+      dose.reminder.hour,
+      dose.reminder.minute,
+    );
+
+    // If due now or overdue
+    if (now.isAfter(doseDateTime)) return true;
+
+    // If in the current live slot
+    if (dose.reminder.timeSlot == liveSlot) return true;
+
+    // If within 30 minutes of scheduled time
+    if (doseDateTime.difference(now).inMinutes <= 30) return true;
+
+    return false;
   }
 
   String _getTimeSlotTitle(TimeSlot slot, AppStrings s) {
@@ -372,7 +418,7 @@ class _TodayScreenState extends State<TodayScreen> {
             // Hero Adherence Card
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                padding: const EdgeInsets.fromLTRB(20, 2, 20, 4),
                 child: AdherenceRing(
                   rate: provider.todayAdherenceRate,
                   takenCount: provider.todayTakenCount,
@@ -432,11 +478,15 @@ class _TodayScreenState extends State<TodayScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          isViewingToday
-                              ? (s.code == 'bn' ? 'আজকের ওষুধ' : 'TODAY\'S DOSES')
-                              : (s.code == 'bn'
-                                  ? '${provider.selectedDate.day} ${DateFormat('MMMM').format(provider.selectedDate)}-এর ওষুধ'
-                                  : '${DateFormat('MMMM d').format(provider.selectedDate).toUpperCase()}\'S DOSES'),
+                          _selectedSlotFilter != null
+                              ? (s.code == 'bn'
+                                  ? '${_getTimeSlotTitle(_selectedSlotFilter!, s)}-এর ওষুধ'
+                                  : '${_getTimeSlotTitle(_selectedSlotFilter!, s).toUpperCase()} DOSES')
+                              : (isViewingToday
+                                  ? (s.code == 'bn' ? 'আজকের ওষুধ' : 'TODAY\'S DOSES')
+                                  : (s.code == 'bn'
+                                      ? '${provider.selectedDate.day} ${DateFormat('MMMM').format(provider.selectedDate)}-এর ওষুধ'
+                                      : '${DateFormat('MMMM d').format(provider.selectedDate).toUpperCase()}\'S DOSES')),
                           style: GoogleFonts.outfit(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
@@ -444,6 +494,30 @@ class _TodayScreenState extends State<TodayScreen> {
                             letterSpacing: 0.8,
                           ),
                         ),
+                        if (pendingDoses.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryTeal.withValues(alpha: isDark ? 0.25 : 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.primaryTeal.withValues(alpha: 0.35),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              s.code == 'bn'
+                                  ? '${pendingDoses.length}টি বাকি'
+                                  : '${pendingDoses.length} pending',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryTeal,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     Row(
@@ -547,86 +621,83 @@ class _TodayScreenState extends State<TodayScreen> {
 
 
             // Dose Lists: Smart Priority Rendering
-            if (_selectedSlotFilter == null) ...[
-              // Master "All Doses" View:
-              // 1. Upcoming & Due Now Doses (urgency sorted, topmost)
-              if (pendingDoses.isNotEmpty)
-                ..._buildDoseSection(
-                  context,
-                  title: s.code == 'bn' ? 'আসন্ন ও প্রয়োজনীয় ওষুধ' : 'Upcoming & Due Doses',
-                  icon: Icons.access_time_filled_rounded,
-                  color: AppColors.primaryTeal,
-                  doses: pendingDoses,
-                  s: s,
-                ),
-
-              // 2. Completed Doses (taken / skipped)
-              if (completedDoses.isNotEmpty)
-                ..._buildDoseSection(
-                  context,
-                  title: s.code == 'bn' ? 'আজকের সম্পন্ন ওষুধ' : 'Completed Today',
-                  icon: Icons.check_circle_rounded,
-                  color: AppColors.accentEmerald,
-                  doses: completedDoses,
-                  s: s,
-                  isCompletedSection: true,
-                ),
-            ] else ...[
-              // Slot Filtered View:
-              if (pendingDoses.isNotEmpty)
-                ..._buildDoseSection(
-                  context,
-                  title: s.code == 'bn'
-                      ? '${_getTimeSlotTitle(_selectedSlotFilter!, s)} - আসন্ন ও করণীয়'
-                      : '${_getTimeSlotTitle(_selectedSlotFilter!, s)} - Upcoming',
-                  icon: _selectedSlotFilter!.icon,
-                  color: _selectedSlotFilter!.color,
-                  doses: pendingDoses,
-                  s: s,
-                ),
-
-              if (completedDoses.isNotEmpty)
-                ..._buildDoseSection(
-                  context,
-                  title: s.code == 'bn'
-                      ? '${_getTimeSlotTitle(_selectedSlotFilter!, s)} - সম্পন্ন'
-                      : '${_getTimeSlotTitle(_selectedSlotFilter!, s)} - Completed',
-                  icon: Icons.check_circle_outline_rounded,
-                  color: AppColors.accentEmerald,
-                  doses: completedDoses,
-                  s: s,
-                  isCompletedSection: true,
-                ),
-
-              if (pendingDoses.isEmpty && completedDoses.isEmpty && totalDoses > 0)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            _selectedSlotFilter!.icon,
-                            size: 44,
-                            color: _selectedSlotFilter!.color.withValues(alpha: 0.4),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            s.code == 'bn'
-                                ? '${_getTimeSlotTitle(_selectedSlotFilter!, s)}-এ কোনো ওষুধ নির্ধারিত নেই'
-                                : 'No medicines scheduled for ${_getTimeSlotTitle(_selectedSlotFilter!, s)}',
-                            style: GoogleFonts.outfit(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            // Dose Lists: Smart Priority Direct Rendering
+            // 1. Pending doses (actionable or scheduled) rendered directly without duplicate header
+            if (pendingDoses.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final dose = pendingDoses[index];
+                      final isActionable = _isDoseActionable(dose, isViewingToday);
+                      return DoseCard(
+                        dose: dose,
+                        isActionable: isActionable,
+                        onTake: () {
+                          provider.markAsTaken(dose.medicine, dose.reminder, dose.scheduledDate);
+                        },
+                        onSkip: () {
+                          provider.markAsSkipped(dose.medicine, dose.reminder, dose.scheduledDate);
+                        },
+                        onSnooze: () {
+                          provider.snoozeDose(dose.medicine, dose.reminder, minutes: 10);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(s.snoozedMessage(dose.medicine.name, 10)),
+                              backgroundColor: AppColors.warning,
+                              behavior: SnackBarBehavior.floating,
                             ),
+                          );
+                        },
+                      );
+                    },
+                    childCount: pendingDoses.length,
+                  ),
+                ),
+              ),
+
+            // 2. Completed Doses (taken / skipped) in their dedicated completed section
+            if (completedDoses.isNotEmpty)
+              ..._buildDoseSection(
+                context,
+                title: s.code == 'bn' ? 'আজকের সম্পন্ন ওষুধ' : 'Completed Today',
+                icon: Icons.check_circle_rounded,
+                color: AppColors.accentEmerald,
+                doses: completedDoses,
+                s: s,
+                isCompletedSection: true,
+                isViewingToday: isViewingToday,
+              ),
+
+            if (_selectedSlotFilter != null && pendingDoses.isEmpty && completedDoses.isEmpty && totalDoses > 0)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          _selectedSlotFilter!.icon,
+                          size: 44,
+                          color: _selectedSlotFilter!.color.withValues(alpha: 0.4),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          s.code == 'bn'
+                              ? '${_getTimeSlotTitle(_selectedSlotFilter!, s)}-এ কোনো ওষুধ নির্ধারিত নেই'
+                              : 'No medicines scheduled for ${_getTimeSlotTitle(_selectedSlotFilter!, s)}',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-            ],
+              ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 90)),
           ],
@@ -643,6 +714,7 @@ class _TodayScreenState extends State<TodayScreen> {
     required List<ScheduledDose> doses,
     required AppStrings s,
     bool isCompletedSection = false,
+    bool isViewingToday = true,
   }) {
     final provider = context.read<MedicineProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -657,39 +729,39 @@ class _TodayScreenState extends State<TodayScreen> {
           child: Row(
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 26,
+                height: 26,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [color, color.withValues(alpha: 0.8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
                       color: color.withValues(alpha: 0.38),
-                      blurRadius: 8,
+                      blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Center(
-                  child: Icon(icon, size: 16, color: Colors.white),
+                  child: Icon(icon, size: 14, color: Colors.white),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Text(
                 title,
                 style: GoogleFonts.outfit(
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -706,7 +778,7 @@ class _TodayScreenState extends State<TodayScreen> {
                 child: Text(
                   countLabel,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                     color: color,
                   ),
@@ -722,8 +794,10 @@ class _TodayScreenState extends State<TodayScreen> {
           delegate: SliverChildBuilderDelegate(
             (context, index) {
               final dose = doses[index];
+              final isActionable = _isDoseActionable(dose, isViewingToday);
               return DoseCard(
                 dose: dose,
+                isActionable: isActionable,
                 onTake: () {
                   provider.markAsTaken(dose.medicine, dose.reminder, dose.scheduledDate);
                 },

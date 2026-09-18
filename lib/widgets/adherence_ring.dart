@@ -48,10 +48,10 @@ class AdherenceRing extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           colors: isDark
               ? [
@@ -73,9 +73,9 @@ class AdherenceRing extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryTeal.withValues(alpha: isDark ? 0.2 : 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: AppColors.primaryTeal.withValues(alpha: isDark ? 0.16 : 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -89,7 +89,7 @@ class AdherenceRing extends StatelessWidget {
               children: [
                 // Top Tag Pill
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.primaryTeal.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(20),
@@ -102,24 +102,24 @@ class AdherenceRing extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 6,
-                        height: 6,
+                        width: 5,
+                        height: 5,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.accentEmerald,
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.accentEmerald.withValues(alpha: 0.8),
-                              blurRadius: 6,
+                              blurRadius: 4,
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 4),
                       Text(
                         'DAILY ADHERENCE',
                         style: GoogleFonts.outfit(
-                          fontSize: 10,
+                          fontSize: 9.5,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.6,
                           color: isDark ? AppColors.primaryTealLight : AppColors.primaryDark,
@@ -128,37 +128,37 @@ class AdherenceRing extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 5),
 
                 // Main Title
                 Text(
                   title,
                   style: GoogleFonts.outfit(
-                    fontSize: 18,
+                    fontSize: 15.5,
                     fontWeight: FontWeight.w800,
                     color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                     letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
 
                 // Subtitle
                 Text(
                   subtitle,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
                     color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
 
                 // Streak Flame Pill
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                   decoration: BoxDecoration(
                     color: AppColors.accentAmber.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: AppColors.accentAmber.withValues(alpha: 0.3),
                       width: 0.8,
@@ -167,12 +167,12 @@ class AdherenceRing extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('🔥', style: TextStyle(fontSize: 13)),
+                      const Text('🔥', style: TextStyle(fontSize: 11)),
                       const SizedBox(width: 4),
                       Text(
                         '$streakDays-Day Streak! Keep going!',
                         style: GoogleFonts.outfit(
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: AppColors.accentAmber,
                         ),
@@ -184,17 +184,17 @@ class AdherenceRing extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
 
           // Right: Circular Gradient Progress Ring
           SizedBox(
-            width: 84,
-            height: 84,
+            width: 66,
+            height: 66,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 CustomPaint(
-                  size: const Size(84, 84),
+                  size: const Size(66, 66),
                   painter: _GradientProgressPainter(
                     progress: totalCount == 0 ? 1.0 : rate.clamp(0.0, 1.0),
                     trackColor: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
@@ -203,7 +203,7 @@ class AdherenceRing extends StatelessWidget {
                       AppColors.accentCyan,
                       accentColor,
                     ],
-                    strokeWidth: 8,
+                    strokeWidth: 6.5,
                   ),
                 ),
                 Column(
@@ -212,7 +212,7 @@ class AdherenceRing extends StatelessWidget {
                     Text(
                       totalCount == 0 ? '100%' : '$percentage%',
                       style: GoogleFonts.outfit(
-                        fontSize: 19,
+                        fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                         letterSpacing: -0.5,
@@ -221,7 +221,7 @@ class AdherenceRing extends StatelessWidget {
                     Text(
                       'TODAY',
                       style: GoogleFonts.outfit(
-                        fontSize: 9,
+                        fontSize: 8.5,
                         fontWeight: FontWeight.w700,
                         color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                         letterSpacing: 0.5,
