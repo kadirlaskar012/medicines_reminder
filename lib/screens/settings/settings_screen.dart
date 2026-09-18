@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_svg_icons.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/services/cloud_sync_service.dart';
@@ -2046,17 +2047,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Developer & Creator Credits',
+                          'Kadir Laskar',
                           style: GoogleFonts.outfit(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
                             color: isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488),
                           ),
                         ),
                         Text(
-                          'App Creator, Design & Engineering',
+                          'Lead Developer & UI/UX Designer / Founder & Creator',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
+                            fontWeight: FontWeight.w600,
                             color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
                           ),
                         ),
@@ -2080,100 +2082,285 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showDeveloperCreditsSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: isDark ? AppColors.darkCard : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 44,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white24 : Colors.black12,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0D9488), Color(0xFF06B6D4), Color(0xFF3B82F6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0D9488).withValues(alpha: 0.4),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
+              ),
+              const SizedBox(height: 20),
+
+              // Creator Avatar with Verified Badge
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0D9488), Color(0xFF06B6D4), Color(0xFF3B82F6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0D9488).withValues(alpha: 0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        'KL',
+                        style: GoogleFonts.outfit(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkCard : Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.verified_rounded,
+                      color: Color(0xFF0D9488),
+                      size: 22,
+                    ),
                   ),
                 ],
               ),
-              child: const Center(
-                child: Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 32),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'MediRemind Creator',
-              style: GoogleFonts.outfit(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Crafted with Passion for Modern Healthcare',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF0D9488),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              const SizedBox(height: 14),
+
+              // Creator Name
+              Text(
+                'Kadir Laskar',
+                style: GoogleFonts.outfit(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  letterSpacing: -0.3,
                 ),
               ),
-              child: Text(
-                'MediRemind is designed to give you seamless, beautiful, and dependable medicine tracking. Your custom developer credentials will be proudly presented here.',
-                textAlign: TextAlign.center,
+              const SizedBox(height: 4),
+
+              // Role & Title
+              Text(
+                'Lead Developer & UI/UX Designer',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12.5,
-                  height: 1.45,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0D9488),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0D9488),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 2,
+              const SizedBox(height: 2),
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF4F46E5).withValues(alpha: isDark ? 0.25 : 0.12),
+                      const Color(0xFF06B6D4).withValues(alpha: isDark ? 0.2 : 0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                    width: 0.8,
+                  ),
                 ),
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('Close', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700)),
+                child: Text(
+                  'Founder & Creator · MediRemind',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
+                  ),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+
+              // Mission & Vision Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.favorite_rounded, size: 16, color: Color(0xFFEF4444)),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Creator\'s Mission',
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'MediRemind was built with extreme dedication and care to ensure that you and your family never miss a vital medicine dose. Designed for reliability, intuitive privacy, and modern health tracking.',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12.5,
+                        height: 1.5,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // GitHub Profile Button
+              InkWell(
+                onTap: () async {
+                  final uri = Uri.parse('https://github.com/kadirlaskar012');
+                  try {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } catch (_) {}
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.terminal_rounded, size: 18, color: Color(0xFF0D9488)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'github.com/kadirlaskar012',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                              ),
+                            ),
+                            Text(
+                              'View Open Source Repositories',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10.5,
+                                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.open_in_new_rounded, size: 16, color: Color(0xFF0D9488)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Open Source Licenses Button
+              InkWell(
+                onTap: () {
+                  showLicensePage(
+                    context: context,
+                    applicationName: 'MediRemind',
+                    applicationVersion: '1.0.0',
+                    applicationLegalese: 'Crafted with ❤️ by Kadir Laskar',
+                  );
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.balance_rounded, size: 18, color: Color(0xFF6366F1)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Open Source Licenses & Packages',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, size: 18, color: isDark ? Colors.white38 : Colors.black38),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Close Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D9488),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 2,
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Close', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
