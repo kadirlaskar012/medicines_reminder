@@ -87,33 +87,61 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
       ),
       body: Column(
         children: [
-          // 1. Search Bar
+          // 1. Search Bar (Luxury Elevated Frosted Design)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
             child: Container(
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                color: isDark ? AppColors.darkCard : Colors.white,
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
               child: TextField(
                 onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                style: GoogleFonts.outfit(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                ),
                 decoration: InputDecoration(
                   hintText: s.searchMedicineHint,
-                  hintStyle: TextStyle(
-                    fontSize: 14,
+                  hintStyle: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
                     color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
                   ),
-                  prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF0D9488), Color(0xFF06B6D4)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0D9488).withValues(alpha: 0.35),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.search_rounded, color: Colors.white, size: 18),
+                    ),
+                  ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear_rounded, size: 18),
@@ -133,8 +161,12 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(14),
+                color: isDark ? AppColors.darkCard : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  width: 1,
+                ),
               ),
               child: Row(
                 children: [
@@ -318,23 +350,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Container(
-                                      width: 50,
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        color: isDark ? AppColors.darkCardElevated : const Color(0xFFF8FAFC),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: DualToneCapsule.fromIndex(
-                                          med.colorValue,
-                                          size: 40,
-                                        ),
-                                      ),
-                                    ),
+                                    _buildMedicineSquircleIcon(med, isDark),
                                     const SizedBox(width: 14),
                                     Expanded(
                                       child: Column(
@@ -355,36 +371,84 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              if (!med.isActive) ...[
+                                              const SizedBox(width: 6),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: med.isActive
+                                                      ? AppColors.accentEmerald.withValues(alpha: 0.12)
+                                                      : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(
+                                                    color: med.isActive
+                                                        ? AppColors.accentEmerald.withValues(alpha: 0.3)
+                                                        : Colors.transparent,
+                                                    width: 0.8,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Container(
+                                                      width: 5,
+                                                      height: 5,
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: med.isActive ? AppColors.accentEmerald : (isDark ? Colors.white38 : Colors.black38),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      med.isActive ? (s.code == 'bn' ? 'সক্রিয়' : 'Active') : (s.code == 'bn' ? 'স্থগিত' : 'Paused'),
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: med.isActive ? AppColors.accentEmerald : (isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                '${med.dosage.isNotEmpty ? med.dosage : "500 mg"} · ${s.medicineTypeName(med.type.name)}',
+                                                style: GoogleFonts.plusJakartaSans(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+                                                ),
+                                              ),
+                                              if (med.isLowStock || med.isOutOfStock) ...[
                                                 const SizedBox(width: 6),
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                                   decoration: BoxDecoration(
-                                                    color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                                                    color: (med.isOutOfStock ? AppColors.accentRose : AppColors.accentAmber).withValues(alpha: 0.15),
                                                     borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(
+                                                      color: (med.isOutOfStock ? AppColors.accentRose : AppColors.accentAmber).withValues(alpha: 0.4),
+                                                      width: 0.8,
+                                                    ),
                                                   ),
                                                   child: Text(
-                                                    'Paused',
+                                                    med.isOutOfStock
+                                                        ? (s.code == 'bn' ? 'স্টক শেষ' : 'Out of stock')
+                                                        : '${med.currentStock} ${s.code == 'bn' ? 'বাকি' : 'left'}',
                                                     style: GoogleFonts.outfit(
                                                       fontSize: 10,
                                                       fontWeight: FontWeight.w700,
-                                                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+                                                      color: med.isOutOfStock ? AppColors.accentRose : AppColors.accentAmber,
                                                     ),
                                                   ),
                                                 ),
                                               ],
                                             ],
                                           ),
-                                          const SizedBox(height: 3),
-                                          Text(
-                                            '${med.dosage.isNotEmpty ? med.dosage : "500 mg"} · ${s.medicineTypeName(med.type.name)}',
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
+                                          const SizedBox(height: 5),
                                           Wrap(
                                             spacing: 6,
                                             children: reminders.map((r) {
@@ -641,6 +705,24 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
 
   Widget _buildTabItem(String key, String label, int count, bool isDark) {
     final isSelected = _selectedStatusTab == key;
+
+    // Distinct signature gradient & glow for each status tab
+    List<Color> gradientColors;
+    Color glowColor;
+    if (key == 'All') {
+      gradientColors = const [Color(0xFF0D9488), Color(0xFF14B8A6)];
+      glowColor = const Color(0xFF0D9488);
+    } else if (key == 'Active') {
+      gradientColors = const [Color(0xFF4F46E5), Color(0xFF6366F1)];
+      glowColor = const Color(0xFF4F46E5);
+    } else if (key == 'Paused') {
+      gradientColors = const [Color(0xFFEA580C), Color(0xFFF97316)];
+      glowColor = const Color(0xFFEA580C);
+    } else {
+      gradientColors = const [Color(0xFF7C3AED), Color(0xFF8B5CF6)];
+      glowColor = const Color(0xFF7C3AED);
+    }
+
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _selectedStatusTab = key),
@@ -648,21 +730,95 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? (isDark ? const Color(0xFF0B132B) : Colors.white) : Colors.transparent,
+            gradient: isSelected
+                ? LinearGradient(
+                    colors: gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: isSelected ? null : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
-                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2))]
+                ? [
+                    BoxShadow(
+                      color: glowColor.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
                 : null,
           ),
           child: Text(
             '$label ($count)',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: GoogleFonts.outfit(
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              color: isSelected ? AppColors.primary : (isDark ? Colors.white60 : Colors.black54),
-              fontSize: 12,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary),
+              fontSize: 11.5,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMedicineSquircleIcon(Medicine med, bool isDark) {
+    List<Color> gradientColors;
+    switch (med.type) {
+      case MedicineType.tablet:
+        gradientColors = const [Color(0xFF0284C7), Color(0xFF06B6D4)];
+        break;
+      case MedicineType.capsule:
+        gradientColors = const [Color(0xFF4F46E5), Color(0xFF7C3AED)];
+        break;
+      case MedicineType.syrup:
+        gradientColors = const [Color(0xFFEA580C), Color(0xFFF59E0B)];
+        break;
+      case MedicineType.inhaler:
+        gradientColors = const [Color(0xFF059669), Color(0xFF10B981)];
+        break;
+      case MedicineType.injection:
+        gradientColors = const [Color(0xFFDB2777), Color(0xFFEC4899)];
+        break;
+      case MedicineType.drops:
+        gradientColors = const [Color(0xFF0284C7), Color(0xFF38BDF8)];
+        break;
+      case MedicineType.ointment:
+        gradientColors = const [Color(0xFFD97706), Color(0xFFFBBF24)];
+        break;
+      case MedicineType.supplement:
+        gradientColors = const [Color(0xFFF97316), Color(0xFFFB923C)];
+        break;
+      case MedicineType.other:
+        gradientColors = const [Color(0xFF7C3AED), Color(0xFFA855F7)];
+        break;
+    }
+
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: gradientColors.first.withValues(alpha: 0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Center(
+        child: DualToneCapsule.fromIndex(
+          med.colorValue,
+          size: 38,
         ),
       ),
     );

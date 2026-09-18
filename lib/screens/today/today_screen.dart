@@ -564,12 +564,26 @@ class _TodayScreenState extends State<TodayScreen> {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                width: 28,
+                height: 28,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: isDark ? 0.2 : 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  gradient: LinearGradient(
+                    colors: [color, color.withValues(alpha: 0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(9),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.35),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, size: 15, color: color),
+                child: Center(
+                  child: Icon(icon, size: 15, color: Colors.white),
+                ),
               ),
               const SizedBox(width: 8),
               Text(
