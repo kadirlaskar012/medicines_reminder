@@ -43,12 +43,11 @@ class DoseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final lang = context.watch<LanguageProvider>();
-    final s = lang.strings;
+    final s = context.read<LanguageProvider>().strings;
     final med = dose.medicine;
     final rem = dose.reminder;
 
-    final provider = context.watch<MedicineProvider>();
+    final provider = context.read<MedicineProvider>();
     final allRems = provider.getRemindersForMedicine(med.id);
     String? routinePattern;
     if (allRems.isNotEmpty) {

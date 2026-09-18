@@ -309,6 +309,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
             child: filtered.isEmpty
                 ? const EmptyMedicinesView()
                 : ListView.builder(
+                    physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 80),
                     itemCount: filtered.length,
                     itemBuilder: (context, idx) {

@@ -161,6 +161,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
         backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       ),
       body: ListView(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 80),
         children: [
           // Period Selector ([Weekly] [Monthly] [Yearly])

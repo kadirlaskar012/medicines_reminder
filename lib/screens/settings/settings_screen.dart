@@ -265,6 +265,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
       ),
       body: ListView(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
         children: [
           // 1. ACCOUNT & CLOUD SYNC

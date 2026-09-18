@@ -1061,39 +1061,47 @@ class _TodayScreenState extends State<TodayScreen> {
         ),
         child: Row(
           children: [
-            // Left Routine Pill: 💊 1-0-0-1
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0D9488), Color(0xFF06B6D4)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(9),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0D9488).withValues(alpha: 0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+            // Left Routine Pill: 💊 1-0-0-1 (Tap to reset filter)
+            InkWell(
+              onTap: () {
+                if (_selectedSlotFilter != null) {
+                  setState(() => _selectedSlotFilter = null);
+                }
+              },
+              borderRadius: BorderRadius.circular(9),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0D9488), Color(0xFF06B6D4)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('💊', style: TextStyle(fontSize: 11)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$morningCount-$afternoonCount-$eveningCount-$nightCount',
-                    style: GoogleFonts.outfit(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
+                  borderRadius: BorderRadius.circular(9),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0D9488).withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('💊', style: TextStyle(fontSize: 11)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$morningCount-$afternoonCount-$eveningCount-$nightCount',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -1171,52 +1179,55 @@ class _TodayScreenState extends State<TodayScreen> {
     required bool isSelected,
     required bool isDark,
   }) {
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedSlotFilter = _selectedSlotFilter == slot ? null : slot;
-        });
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark ? const Color(0xFF4F46E5).withValues(alpha: 0.35) : const Color(0xFFEEF2FF))
-              : isLive
-                  ? (isDark ? const Color(0xFF0D9488).withValues(alpha: 0.22) : const Color(0xFFF0FDFA))
-                  : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
+    return Tooltip(
+      message: '$label: $count',
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedSlotFilter = _selectedSlotFilter == slot ? null : slot;
+          });
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+          decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFF6366F1)
+                ? (isDark ? const Color(0xFF4F46E5).withValues(alpha: 0.35) : const Color(0xFFEEF2FF))
                 : isLive
-                    ? const Color(0xFF0D9488).withValues(alpha: 0.45)
+                    ? (isDark ? const Color(0xFF0D9488).withValues(alpha: 0.22) : const Color(0xFFF0FDFA))
                     : Colors.transparent,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 11.5)),
-            const SizedBox(width: 3),
-            Text(
-              count.toString(),
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                fontWeight: count > 0 ? FontWeight.w800 : FontWeight.w500,
-                color: isSelected
-                    ? const Color(0xFF6366F1)
-                    : isLive
-                        ? const Color(0xFF0D9488)
-                        : (count > 0
-                            ? (isDark ? Colors.white : const Color(0xFF1E293B))
-                            : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))),
-              ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xFF6366F1)
+                  : isLive
+                      ? const Color(0xFF0D9488).withValues(alpha: 0.45)
+                      : Colors.transparent,
+              width: 1,
             ),
-          ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 11.5)),
+              const SizedBox(width: 3),
+              Text(
+                count.toString(),
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: count > 0 ? FontWeight.w800 : FontWeight.w500,
+                  color: isSelected
+                      ? const Color(0xFF6366F1)
+                      : isLive
+                          ? const Color(0xFF0D9488)
+                          : (count > 0
+                              ? (isDark ? Colors.white : const Color(0xFF1E293B))
+                              : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

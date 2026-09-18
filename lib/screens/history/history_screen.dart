@@ -78,12 +78,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final s = context.watch<LanguageProvider>().strings;
 
     final totalTaken = _recentLogs.where((l) => l.status == IntakeStatus.taken).length;
-    final totalSkipped = _recentLogs.where((l) => l.status == IntakeStatus.skipped).length;
+    final totalSkipped = _recentLogs.where((l) => l.status == IntakeStatus.skipped || l.status == IntakeStatus.missed).length;
     final adherenceScore = _recentLogs.isEmpty ? 0 : ((totalTaken / _recentLogs.length) * 100).toInt();
 
     final filteredLogs = _recentLogs.where((l) {
       if (_selectedFilter == 'taken' && l.status != IntakeStatus.taken) return false;
-      if (_selectedFilter == 'missed' && l.status != IntakeStatus.skipped) return false;
+      if (_selectedFilter == 'missed' && l.status != IntakeStatus.skipped && l.status != IntakeStatus.missed) return false;
       if (_selectedDate != null) {
         final recDate = l.recordedAt;
         final isSameRec = recDate.year == _selectedDate!.year &&
@@ -356,7 +356,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       final dayLogs = groupedLogs[dateKey]!;
                       final firstDate = dayLogs.first.recordedAt;
                       final dayTaken = dayLogs.where((l) => l.status == IntakeStatus.taken).length;
-                      final daySkipped = dayLogs.where((l) => l.status == IntakeStatus.skipped).length;
+                      final daySkipped = dayLogs.where((l) => l.status == IntakeStatus.skipped || l.status == IntakeStatus.missed).length;
 
                       String headerTitle;
                       if (dateKey == todayStr) {
@@ -514,7 +514,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          isTaken ? 'Taken' : 'Missed',
+                                          isTaken ? s.taken : s.skipped,
                                           style: GoogleFonts.outfit(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w800,
