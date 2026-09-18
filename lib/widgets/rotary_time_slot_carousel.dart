@@ -370,19 +370,23 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         width: 32,
-        height: 54,
+        height: 56,
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
+          gradient: LinearGradient(
+            colors: isDark
+                ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                : [const Color(0xFFF1F5F9), const Color(0xFFE2E8F0)],
+          ),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-            width: 0.8,
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+            width: 1,
           ),
         ),
         child: Icon(
           icon,
           size: 20,
-          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
         ),
       ),
     );
@@ -399,15 +403,29 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        height: 68,
+        height: 70,
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCardElevated.withValues(alpha: 0.5) : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder.withValues(alpha: 0.6) : AppColors.lightBorder,
-            width: 0.8,
+          gradient: LinearGradient(
+            colors: [
+              slot.color.withValues(alpha: isDark ? 0.22 : 0.12),
+              slot.color.withValues(alpha: isDark ? 0.10 : 0.04),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: slot.color.withValues(alpha: isDark ? 0.4 : 0.28),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: slot.color.withValues(alpha: isDark ? 0.14 : 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -418,19 +436,26 @@ class _RotaryTimeSlotCarouselState extends State<RotaryTimeSlotCarousel> {
               _getSlotTitle(slot, s),
               style: GoogleFonts.outfit(
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white70 : slot.color,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 1),
-            Text(
-              '$count',
-              style: GoogleFonts.outfit(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: slot.color.withValues(alpha: 0.85),
+            const SizedBox(height: 2),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+              decoration: BoxDecoration(
+                color: slot.color.withValues(alpha: isDark ? 0.28 : 0.18),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '$count',
+                style: GoogleFonts.outfit(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : slot.color,
+                ),
               ),
             ),
           ],

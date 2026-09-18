@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../core/database/db_helper.dart';
 import '../core/services/notification_service.dart';
 import '../core/theme/app_colors.dart';
 import '../models/medicine.dart';
@@ -102,39 +103,63 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       final provider = context.read<MedicineProvider>();
 
       // Ensure data is loaded
-      if (provider.isLoading) {
-        await Future.delayed(const Duration(milliseconds: 350));
-        if (!mounted) return;
+      int retries = 0;
+      while (provider.isLoading && mounted && retries < 20) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        retries++;
       }
+      if (!mounted) return;
 
-      final med = provider.medicines.firstWhere(
-        (m) => m.id == medicineId || m.name.toLowerCase() == medicineName.toLowerCase(),
-        orElse: () => Medicine(
-          id: medicineId ?? 'dose_${DateTime.now().millisecondsSinceEpoch}',
-          profileId: 'default_me',
-          name: medicineName,
-          dosage: dosage,
-          type: MedicineType.tablet,
-          colorValue: 0xFF0D9488,
-          instruction: FoodInstruction.afterMeal,
-          createdAt: DateTime.now(),
-        ),
-      );
+      Medicine? resolvedMed;
+      if (medicineId != null) {
+        try {
+          resolvedMed = provider.medicines.firstWhere((m) => m.id == medicineId);
+        } catch (_) {}
+      }
+      if (resolvedMed == null) {
+        try {
+          resolvedMed = provider.medicines.firstWhere(
+            (m) => m.name.toLowerCase() == medicineName.toLowerCase(),
+          );
+        } catch (_) {}
+      }
+      if (resolvedMed == null && medicineId != null) {
+        resolvedMed = await DBHelper.instance.getMedicineById(medicineId);
+      }
+      final med = resolvedMed ??
+          Medicine(
+            id: medicineId ?? 'dose_${DateTime.now().millisecondsSinceEpoch}',
+            profileId: 'default_me',
+            name: medicineName,
+            dosage: dosage,
+            type: MedicineType.tablet,
+            colorValue: 0xFF0D9488,
+            instruction: FoodInstruction.afterMeal,
+            createdAt: DateTime.now(),
+          );
 
+      ReminderTime? resolvedRem;
       final reminders = provider.getRemindersForMedicine(med.id);
-      final rem = reminders.firstWhere(
-        (r) => r.id == reminderId,
-        orElse: () => reminders.isNotEmpty
-            ? reminders.first
-            : ReminderTime(
-                id: reminderId ?? 'rem_${DateTime.now().millisecondsSinceEpoch}',
-                medicineId: med.id,
-                hour: DateTime.now().hour,
-                minute: DateTime.now().minute,
-                daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-                notificationId: 1001,
-              ),
-      );
+      if (reminderId != null) {
+        try {
+          resolvedRem = reminders.firstWhere((r) => r.id == reminderId);
+        } catch (_) {}
+      }
+      if (resolvedRem == null && reminders.isNotEmpty) {
+        resolvedRem = reminders.first;
+      }
+      if (resolvedRem == null && reminderId != null) {
+        resolvedRem = await DBHelper.instance.getReminderById(reminderId);
+      }
+      final rem = resolvedRem ??
+          ReminderTime(
+            id: reminderId ?? 'rem_${DateTime.now().millisecondsSinceEpoch}',
+            medicineId: med.id,
+            hour: DateTime.now().hour,
+            minute: DateTime.now().minute,
+            daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+            notificationId: notifId ?? 1001,
+          );
 
       // Dismiss any lingering active notification for this reminder
       await NotificationService.instance.dismissActiveReminderNotification(

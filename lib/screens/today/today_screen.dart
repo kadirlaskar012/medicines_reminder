@@ -148,16 +148,24 @@ class _TodayScreenState extends State<TodayScreen> {
                       child: Container(
                         padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkCard : Colors.white,
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                                : [Colors.white, const Color(0xFFF8FAFC)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(
-                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                            width: 1,
+                            color: isDark
+                                ? const Color(0xFF0D9488).withValues(alpha: 0.35)
+                                : const Color(0xFF0D9488).withValues(alpha: 0.22),
+                            width: 1.2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                              blurRadius: 10,
+                              color: const Color(0xFF0D9488).withValues(alpha: isDark ? 0.2 : 0.08),
+                              blurRadius: 12,
                               offset: const Offset(0, 3),
                             ),
                           ],
@@ -256,20 +264,33 @@ class _TodayScreenState extends State<TodayScreen> {
                           },
                           borderRadius: BorderRadius.circular(14),
                           child: Container(
-                            width: 42,
-                            height: 42,
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.darkCard : Colors.white,
+                              gradient: LinearGradient(
+                                colors: isDark
+                                    ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                                    : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                                width: 1,
+                                color: const Color(0xFF0D9488).withValues(alpha: isDark ? 0.35 : 0.3),
+                                width: 1.2,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0D9488).withValues(alpha: isDark ? 0.2 : 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.calendar_month_rounded,
-                              size: 20,
-                              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                              size: 21,
+                              color: Color(0xFF0D9488),
                             ),
                           ),
                         ),
@@ -283,42 +304,55 @@ class _TodayScreenState extends State<TodayScreen> {
                           },
                           borderRadius: BorderRadius.circular(14),
                           child: Container(
-                            width: 42,
-                            height: 42,
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.darkCard : Colors.white,
+                              gradient: LinearGradient(
+                                colors: isDark
+                                    ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                                    : [const Color(0xFFEFF6FF), const Color(0xFFDBEAFE)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                                width: 1,
+                                color: const Color(0xFF3B82F6).withValues(alpha: isDark ? 0.35 : 0.3),
+                                width: 1.2,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF3B82F6).withValues(alpha: isDark ? 0.2 : 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.notifications_none_rounded,
-                                  size: 21,
-                                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                  size: 22,
+                                  color: Color(0xFF3B82F6),
                                 ),
                                 if (hasAlerts)
                                   Positioned(
                                     top: 10,
                                     right: 11,
                                     child: Container(
-                                      width: 7,
-                                      height: 7,
+                                      width: 8,
+                                      height: 8,
                                       decoration: BoxDecoration(
                                         color: AppColors.accentRose,
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: isDark ? AppColors.darkCard : Colors.white,
-                                          width: 1.2,
+                                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                          width: 1.4,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppColors.accentRose.withValues(alpha: 0.8),
-                                            blurRadius: 4,
+                                            color: AppColors.accentRose.withValues(alpha: 0.9),
+                                            blurRadius: 6,
                                           ),
                                         ],
                                       ),
@@ -368,40 +402,75 @@ class _TodayScreenState extends State<TodayScreen> {
             // Section Header: Date status + View All
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      isViewingToday
-                          ? (s.code == 'bn' ? 'আজকের ওষুধ' : 'TODAY\'S DOSES')
-                          : (s.code == 'bn'
-                              ? '${provider.selectedDate.day} ${DateFormat('MMMM').format(provider.selectedDate)}-এর ওষুধ'
-                              : '${DateFormat('MMMM d').format(provider.selectedDate).toUpperCase()}\'S DOSES'),
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
-                        letterSpacing: 0.8,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF4F46E5), Color(0xFF06B6D4)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF4F46E5).withValues(alpha: 0.35),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.event_note_rounded, size: 14, color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isViewingToday
+                              ? (s.code == 'bn' ? 'আজকের ওষুধ' : 'TODAY\'S DOSES')
+                              : (s.code == 'bn'
+                                  ? '${provider.selectedDate.day} ${DateFormat('MMMM').format(provider.selectedDate)}-এর ওষুধ'
+                                  : '${DateFormat('MMMM d').format(provider.selectedDate).toUpperCase()}\'S DOSES'),
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
                     ),
                     Row(
                       children: [
                         if (!isViewingToday) ...[
                           InkWell(
                             onTap: () => provider.selectDate(now),
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryTeal.withValues(alpha: isDark ? 0.2 : 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppColors.primaryTeal.withValues(alpha: 0.3),
+                                  width: 0.8,
+                                ),
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.today_rounded, size: 14, color: AppColors.primaryTeal),
+                                  const Icon(Icons.today_rounded, size: 13, color: AppColors.primaryTeal),
                                   const SizedBox(width: 4),
                                   Text(
                                     s.code == 'bn' ? 'আজকে ফিরুন' : 'Today',
                                     style: GoogleFonts.outfit(
-                                      fontSize: 12,
+                                      fontSize: 11.5,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.primaryTeal,
                                     ),
@@ -419,16 +488,40 @@ class _TodayScreenState extends State<TodayScreen> {
                               MaterialPageRoute(builder: (_) => const MedicinesCabinetScreen()),
                             );
                           },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            child: Text(
-                              '${s.medicinesTab} →',
-                              style: GoogleFonts.outfit(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.primaryTealLight : AppColors.primaryTeal,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFF0D9488).withValues(alpha: isDark ? 0.25 : 0.12),
+                                  const Color(0xFF06B6D4).withValues(alpha: isDark ? 0.15 : 0.06),
+                                ],
                               ),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF0D9488).withValues(alpha: 0.35),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  s.medicinesTab,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? AppColors.primaryTealLight : AppColors.primaryTeal,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 13,
+                                  color: isDark ? AppColors.primaryTealLight : AppColors.primaryTeal,
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -560,52 +653,61 @@ class _TodayScreenState extends State<TodayScreen> {
     return [
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: Row(
             children: [
               Container(
-                width: 28,
-                height: 28,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [color, color.withValues(alpha: 0.8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: color.withValues(alpha: 0.35),
-                      blurRadius: 6,
+                      color: color.withValues(alpha: 0.38),
+                      blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Center(
-                  child: Icon(icon, size: 15, color: Colors.white),
+                  child: Icon(icon, size: 16, color: Colors.white),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
                 title,
                 style: GoogleFonts.outfit(
-                  fontSize: 14.5,
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: isDark ? 0.2 : 0.1),
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withValues(alpha: isDark ? 0.25 : 0.14),
+                      color.withValues(alpha: isDark ? 0.12 : 0.06),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.3),
+                    width: 0.8,
+                  ),
                 ),
                 child: Text(
                   countLabel,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: color,
                   ),
                 ),
