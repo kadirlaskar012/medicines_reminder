@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediRemind - Master UI/UX Design Blueprint & Interactive Live Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Base Color Tokens */
+    --primary-teal: #0D9488;
+    --primary-teal-light: #14B8A6;
+    --primary-teal-glow: rgba(13, 148, 136, 0.35);
+    
+    --accent-emerald: #10B981;
+    --accent-emerald-glow: rgba(16, 185, 129, 0.4);
+    
+    --accent-cyan: #06B6D4;
+    --accent-purple: #8B5CF6;
+    --accent-amber: #F59E0B;
+    --accent-rose: #F43F5E;
+    --accent-blue: #3B82F6;
+    
+    /* Dark Theme (Default) */
+    --bg-workspace: #080D1A;
+    --bg-panel: #0F172A;
+    --bg-panel-hover: #1E293B;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-color-glow: rgba(13, 148, 136, 0.4);
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    
+    /* Device Frame Tokens (Dark) */
+    --dev-bg: #0B1120;
+    --dev-card-bg: #151F32;
+    --dev-card-border: rgba(255, 255, 255, 0.08);
+    --dev-inner-pill: #1E2B42;
+    --dev-nav-bg: rgba(15, 23, 42, 0.85);
+    --dev-shadow: 0 35px 80px -15px rgba(0, 0, 0, 0.8), 0 0 50px rgba(13, 148, 136, 0.15);
+  }
+
+  [data-theme="light"] {
+    /* Light Theme Tokens */
+    --bg-workspace: #F1F5F9;
+    --bg-panel: #FFFFFF;
+    --bg-panel-hover: #F8FAFC;
+    --border-color: #E2E8F0;
+    --border-color-glow: rgba(13, 148, 136, 0.5);
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    
+    /* Device Frame Tokens (Light) */
+    --dev-bg: #F8FAFC;
+    --dev-card-bg: #FFFFFF;
+    --dev-card-border: #E2E8F0;
+    --dev-inner-pill: #F1F5F9;
+    --dev-nav-bg: rgba(255, 255, 255, 0.9);
+    --dev-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.15), 0 0 30px rgba(13, 148, 136, 0.12);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-workspace);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Top Global Header */
+  .workspace-header {
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(16px);
+  }
+
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--primary-teal-light), var(--primary-teal));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px var(--primary-teal-glow);
+    font-size: 22px;
+  }
+
+  .brand-info h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand-badge {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-emerald);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 700;
+  }
+
+  .brand-info p {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .action-btn {
+    background: var(--bg-panel-hover);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 9px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .action-btn:hover {
+    border-color: var(--primary-teal-light);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  }
+
+  .action-btn.primary {
+    background: linear-gradient(135deg, var(--primary-teal-light), var(--primary-teal));
+    color: white;
+    border: none;
+    box-shadow: 0 4px 16px var(--primary-teal-glow);
+  }
+
+  /* Main Workspace Layout */
+  .workspace-layout {
+    display: grid;
+    grid-template-columns: 460px 1fr;
+    gap: 36px;
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 32px 32px 64px 32px;
+  }
+
+  @media (max-width: 1100px) {
+    .workspace-layout {
+      grid-template-columns: 1fr;
+      justify-items: center;
+    }
+  }
+
+  /* ========================================================
+     LEFT COLUMN: THE INTERACTIVE MOBILE PHONE SIMULATOR
+     ======================================================== */
+  .simulator-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    position: sticky;
+    top: 96px;
+  }
+
+  .simulator-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--bg-panel);
+    padding: 6px 10px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  }
+
+  .sim-chip {
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+
+  .sim-chip.active, .sim-chip:hover {
+    background: var(--primary-teal);
+    color: white;
+    box-shadow: 0 4px 12px var(--primary-teal-glow);
+  }
+
+  /* Phone Hardware Mockup */
+  .phone-frame {
+    width: 410px;
+    height: 840px;
+    background: #000000;
+    border-radius: 54px;
+    padding: 12px;
+    box-shadow: var(--dev-shadow), 0 0 0 4px #262E3D, 0 0 0 7px #0F172A;
+    position: relative;
+    user-select: none;
+    transition: all 0.3s ease;
+  }
+
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    background-color: var(--dev-bg);
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  /* Dynamic Island / Punch Hole */
+  .dynamic-island {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 116px;
+    height: 30px;
+    background: #000000;
+    border-radius: 20px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+  }
+
+  .island-cam {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #111E2E;
+    box-shadow: inset 0 0 2px #06B6D4;
+  }
+
+  .island-sensor {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #0D131F;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    height: 44px;
+    padding: 12px 24px 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: var(--text-primary);
+    z-index: 50;
+  }
+
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  /* Screen Content Viewports */
+  .screen-viewport {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 18px 90px 18px;
+    display: none;
+    animation: fadeInScale 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .screen-viewport.active {
+    display: block;
+  }
+
+  .screen-viewport::-webkit-scrollbar {
+    width: 0;
+  }
+
+  @keyframes fadeInScale {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ========================================================
+     SCREEN 1: TODAY DASHBOARD
+     ======================================================== */
+  /* Top Profile & Notification Bar */
+  .dash-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    margin-top: 4px;
+  }
+
+  .profile-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--dev-card-bg);
+    border: 1px solid var(--dev-card-border);
+    padding: 6px 14px 6px 6px;
+    border-radius: 26px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .profile-pill:hover {
+    transform: scale(1.02);
+  }
+
+  .profile-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0EA5E9, #0D9488);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 10px var(--primary-teal-glow);
+  }
+
+  .profile-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .profile-sub {
+    font-size: 10px;
+    color: var(--accent-emerald);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-emerald);
+    box-shadow: 0 0 6px var(--accent-emerald);
+  }
+
+  .notif-bell-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--dev-card-bg);
+    border: 1px solid var(--dev-card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+  }
+
+  .notif-badge-dot {
+    position: absolute;
+    top: 8px;
+    right: 9px;
+    width: 8px;
+    height: 8px;
+    background: var(--accent-rose);
+    border-radius: 50%;
+    border: 2px solid var(--dev-card-bg);
+  }
+
+  /* Hero Compliance Ring Card */
+  .hero-adherence-card {
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.15) 0%, rgba(14, 165, 233, 0.1) 100%), var(--dev-card-bg);
+    border: 1px solid rgba(13, 148, 136, 0.25);
+    border-radius: 28px;
+    padding: 20px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 12px 32px -8px var(--primary-teal-glow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-adherence-card::after {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, var(--primary-teal-glow) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-left {
+    flex: 1;
+  }
+
+  .streak-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(245, 158, 11, 0.18);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #F59E0B;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+  }
+
+  .hero-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .hero-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* Circular Progress Ring */
+  .progress-ring-wrap {
+    position: relative;
+    width: 86px;
+    height: 86px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .progress-ring-svg {
+    transform: rotate(-90deg);
+  }
+
+  .ring-circle-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 8;
+  }
+
+  .ring-circle-val {
+    fill: none;
+    stroke: url(#emeraldTealGrad);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 220;
+    stroke-dashoffset: 55;
+    transition: stroke-dashoffset 0.8s ease;
+  }
+
+  .ring-center-text {
+    position: absolute;
+    text-align: center;
+  }
+
+  .ring-percent {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .ring-sub {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  /* Calendar Timeline Ribbon */
+  .calendar-ribbon {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    gap: 6px;
+  }
+
+  .cal-day-pill {
+    flex: 1;
+    text-align: center;
+    padding: 10px 4px;
+    background: var(--dev-card-bg);
+    border: 1px solid var(--dev-card-border);
+    border-radius: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .cal-day-pill.active {
+    background: linear-gradient(135deg, var(--primary-teal-light), var(--primary-teal));
+    border-color: var(--primary-teal-light);
+    color: white !important;
+    box-shadow: 0 6px 18px var(--primary-teal-glow);
+    transform: translateY(-2px);
+  }
+
+  .cal-day-pill.active .cal-day-name, .cal-day-pill.active .cal-day-num {
+    color: white !important;
+  }
+
+  .cal-day-name {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .cal-day-num {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .cal-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent-emerald);
+    margin: 4px auto 0 auto;
+  }
+
+  /* Section Title with Time Badge */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    margin-top: 10px;
+  }
+
+  .slot-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .slot-icon {
+    font-size: 16px;
+  }
+
+  .slot-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .slot-count-badge {
+    background: var(--dev-inner-pill);
+    border: 1px solid var(--dev-card-border);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+
+  /* 3D Squircle Dose Cards */
+  .dose-card {
+    background: var(--dev-card-bg);
+    border: 1px solid var(--dev-card-border);
+    border-radius: 24px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .dose-card:hover {
+    border-color: var(--primary-teal-glow);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+  }
+
+  .dose-card.taken {
+    border-color: rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, var(--dev-card-bg) 100%);
+  }
+
+  .dose-card-inner {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+
+  /* 3D Capsule Pill Graphic Container */
+  .pill-3d-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .pill-3d-box.teal {
+    background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
+    box-shadow: 0 8px 20px var(--primary-teal-glow);
+  }
+
+  .pill-3d-box.purple {
+    background: linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%);
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.35);
+  }
+
+  .pill-3d-box.amber {
+    background: linear-gradient(135deg, #FBBF24 0%, #D97706 100%);
+    box-shadow: 0 8px 20px rgba(217, 119, 6, 0.35);
+  }
+
+  .dose-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dose-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 3px;
+  }
+
+  .dose-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .time-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: var(--dev-inner-pill);
+    color: var(--text-secondary);
+    border: 1px solid var(--dev-card-border);
+  }
+
+  .dose-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .dose-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn-take-now {
+    background: linear-gradient(135deg, var(--accent-emerald), #059669);
+    color: white;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 14px var(--accent-emerald-glow);
+    transition: all 0.2s;
+  }
+
+  .btn-take-now:hover {
+    transform: scale(1.04);
+  }
+
+  .btn-snooze-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    background: var(--dev-inner-pill);
+    border: 1px solid var(--dev-card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+
+  .btn-snooze-icon:hover {
+    border-color: #F59E0B;
+    color: #F59E0B;
+  }
+
+  .dose-status-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent-emerald);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  /* ========================================================
+     SCREEN 2: MEDICINES CABINET
+     ======================================================== */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 14px;
+  }
+
+  .search-input {
+    width: 100%;
+    background: var(--dev-card-bg);
+    border: 1px solid var(--dev-card-border);
+    padding: 12px 16px 12px 42px;
+    border-radius: 18px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-input:focus {
+    border-color: var(--primary-teal-light);
+    box-shadow: 0 0 0 3px var(--primary-teal-glow);
+  }
+
+  .search-icon-pos {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    color: var(--text-muted);
+  }
+
+  /* Category Filter Chips Ribbon */
+  .category-ribbon {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 18px;
+  }
+
+  .category-ribbon::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cat-chip {
+    padding: 7px 14px;
+    background: var(--dev-card-bg);
+    border: 1px solid var(--dev-card-border);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .cat-chip.active {
+    background: var(--primary-teal);
+    color: white;
+    border-color: var(--primary-teal-light);
+    box-shadow: 0 4px 12px var(--primary-teal-glow);
+  }
+
+  /* Stock Bar Component */
+  .stock-bar-wrap {
+    margin-top: 8px;
+  }
+
+  .stock-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .stock-track {
+    width: 100%;
+    height: 6px;
+    background: var(--dev-inner-pill);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .stock-fill {
+    height: 100%;
+    border-radius: 6px;
+  }
+
+  .stock-fill.green {
+    background: linear-gradient(90deg, #10B981, #059669);
+  }
+
+  .stock-fill.red {
+    background: linear-gradient(90deg, #F43F5E, #E11D48);
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.5);
+  }
+
+  /* ========================================================
+     SCREEN 3: HISTORY & REPORTS
+     ======================================================== */
+  .chart-card {
+    background: var(--dev-card-bg);
+    border: 1px solid var(--dev-card-border);
+    border-radius: 26px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .chart-bars-container {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 130px;
+    padding-top: 20px;
+    gap: 8px;
+  }
+
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+
+  .bar-fill-tube {
+    width: 100%;
+    max-width: 24px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, var(--accent-emerald), var(--primary-teal));
+    transition: height 0.6s ease;
+    box-shadow: 0 4px 12px var(--primary-teal-glow);
+  }
+
+  .bar-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  /* ========================================================
+     SCREEN 4: EMERGENCY ALARM FULLSCREEN MOCKUP
+     ======================================================== */
+  .alarm-mock-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0A1128;
+    z-index: 120;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 60px 24px 36px 24px;
+    color: white;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .alarm-mock-overlay.active {
+    display: flex;
+    animation: alarmPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes alarmPop {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .alarm-spotlight {
+    position: absolute;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(13, 148, 136, 0.4) 0%, rgba(16, 185, 129, 0.15) 50%, transparent 80%);
+    pointer-events: none;
+    animation: pulseSpot 3s infinite alternate;
+  }
+
+  @keyframes pulseSpot {
+    0% { transform: translateX(-50%) scale(0.9); opacity: 0.7; }
+    100% { transform: translateX(-50%) scale(1.15); opacity: 1; }
+  }
+
+  .floating-capsule-hero {
+    width: 120px;
+    height: 120px;
+    margin: 30px auto;
+    font-size: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.5));
+    animation: floatPill 2.8s ease-in-out infinite alternate;
+  }
+
+  @keyframes floatPill {
+    0% { transform: translateY(-8px) rotate(-6deg); }
+    100% { transform: translateY(8px) rotate(6deg); }
+  }
+
+  /* Floating Bottom Navigation Island */
+  .floating-nav-island {
+    position: absolute;
+    bottom: 16px;
+    left: 18px;
+    right: 18px;
+    height: 64px;
+    background: var(--dev-nav-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--dev-card-border);
+    border-radius: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 10px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
+    z-index: 90;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 8px 14px;
+    border-radius: 20px;
+    color: var(--text-muted);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .nav-item.active {
+    color: var(--primary-teal-light);
+    background: rgba(13, 148, 136, 0.15);
+  }
+
+  .nav-icon {
+    font-size: 19px;
+  }
+
+  .nav-label {
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  /* ========================================================
+     RIGHT COLUMN: THE DETAILED DESIGN BLUEPRINT SPECIFICATION
+     ======================================================== */
+  .blueprint-col {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .spec-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 26px;
+    padding: 28px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.05);
+    transition: border-color 0.2s;
+  }
+
+  .spec-card:hover {
+    border-color: var(--border-color-glow);
+  }
+
+  .spec-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .spec-badge-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: var(--primary-teal);
+    color: white;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .spec-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+  }
+
+  .spec-desc {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  /* Color Palette Swatch Grid */
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .swatch-card {
+    background: var(--bg-panel-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .swatch-color {
+    height: 48px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .swatch-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .swatch-hex {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: monospace;
+  }
+
+  /* Comparison Table Before vs After */
+  .comp-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 14px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+  }
+
+  .comp-table th {
+    background: var(--bg-panel-hover);
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 800;
+  }
+
+  .comp-table td {
+    padding: 14px 16px;
+    font-size: 13px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .tag-bad {
+    color: #F87171;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tag-good {
+    color: #34D399;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Confetti Canvas */
+  #confettiCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+  }
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- Confetti Effect Canvas -->
+<canvas id="confettiCanvas"></canvas>
+
+<!-- Top Global Header -->
+<header class="workspace-header">
+  <div class="brand-logo">
+    <div class="logo-icon">💊</div>
+    <div class="brand-info">
+      <h1>MediRemind <span class="brand-badge">UI/UX Master Blueprint</span></h1>
+      <p>Interactive Prototype & Architectural Design Transformation</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="action-btn" id="themeToggleBtn" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> <span id="themeLabel">Light Mode</span>
+    </button>
+    <button class="action-btn" onclick="openAddMedicineModal()">
+      ➕ Add Medicine Flow
+    </button>
+    <button class="action-btn" onclick="openAlarmPreview()">
+      🚨 Alarm Ringing Screen
+    </button>
+    <button class="action-btn primary" onclick="resetSimulator()">
+      🔄 Reset Doses
+    </button>
+  </div>
+</header>
+
+<!-- Main Workspace Layout -->
+<div class="workspace-layout">
+
+  <!-- ========================================================
+       LEFT COLUMN: REALTIME INTERACTIVE MOBILE PHONE SIMULATOR
+       ======================================================== -->
+  <div class="simulator-col">
+    <!-- Simulator Screen Jumper -->
+    <div class="simulator-controls">
+      <button class="sim-chip active" onclick="switchSimScreen('today', this)">🏠 Today</button>
+      <button class="sim-chip" onclick="switchSimScreen('cabinet', this)">💊 Cabinet</button>
+      <button class="sim-chip" onclick="switchSimScreen('history', this)">📊 History</button>
+      <button class="sim-chip" onclick="switchSimScreen('settings', this)">⚙️ Settings</button>
+    </div>
+
+    <!-- Phone Hardware Mockup -->
+    <div class="phone-frame">
+      <div class="phone-screen">
+        
+        <!-- Dynamic Island -->
+        <div class="dynamic-island">
+          <div class="island-sensor"></div>
+          <div class="island-cam"></div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+          <span id="liveClock">09:41</span>
+          <div class="status-icons">
+            <span>5G</span>
+            <span>📶</span>
+            <span>🔋</span>
+          </div>
+        </div>
+
+        <!-- VIEWPORT 1: TODAY SCREEN (DASHBOARD) -->
+        <div class="screen-viewport active" id="view-today">
+          <!-- Top Profile Header -->
+          <div class="dash-topbar">
+            <div class="profile-pill">
+              <div class="profile-avatar">👨‍⚕️</div>
+              <div>
+                <div class="profile-name">Kadir Laskar</div>
+                <div class="profile-sub"><span class="status-dot"></span> All Family Sync</div>
+              </div>
+            </div>
+            <div class="notif-bell-btn" onclick="openAlarmPreview()" title="Test Ringing Screen">
+              🔔
+              <div class="notif-badge-dot"></div>
+            </div>
+          </div>
+
+          <!-- Hero Compliance Ring Card -->
+          <div class="hero-adherence-card">
+            <svg width="0" height="0">
+              <defs>
+                <linearGradient id="emeraldTealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#14B8A6" />
+                  <stop offset="100%" stop-color="#10B981" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="hero-left">
+              <div class="streak-pill">🔥 14 Days Streak</div>
+              <h2 class="hero-title" id="greetingText">Good Morning!</h2>
+              <p class="hero-subtitle" id="doseStatusSubtitle">2 of 3 doses taken today</p>
+            </div>
+            <div class="progress-ring-wrap">
+              <svg class="progress-ring-svg" width="86" height="86">
+                <circle class="ring-circle-bg" cx="43" cy="43" r="35" />
+                <circle class="ring-circle-val" id="ringCircle" cx="43" cy="43" r="35" />
+              </svg>
+              <div class="ring-center-text">
+                <div class="ring-percent" id="ringPercentText">67%</div>
+                <div class="ring-sub">Done</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar Timeline Ribbon -->
+          <div class="calendar-ribbon">
+            <div class="cal-day-pill">
+              <div class="cal-day-name">Mon</div>
+              <div class="cal-day-num">14</div>
+              <div class="cal-dot"></div>
+            </div>
+            <div class="cal-day-pill">
+              <div class="cal-day-name">Tue</div>
+              <div class="cal-day-num">15</div>
+              <div class="cal-dot"></div>
+            </div>
+            <div class="cal-day-pill">
+              <div class="cal-day-name">Wed</div>
+              <div class="cal-day-num">16</div>
+              <div class="cal-dot"></div>
+            </div>
+            <div class="cal-day-pill active">
+              <div class="cal-day-name">Thu</div>
+              <div class="cal-day-num">17</div>
+              <div class="cal-dot"></div>
+            </div>
+            <div class="cal-day-pill">
+              <div class="cal-day-name">Fri</div>
+              <div class="cal-day-num">18</div>
+              <div class="cal-dot"></div>
+            </div>
+            <div class="cal-day-pill">
+              <div class="cal-day-name">Sat</div>
+              <div class="cal-day-num">19</div>
+            </div>
+          </div>
+
+          <!-- Section: Morning Slot -->
+          <div class="section-header">
+            <div class="slot-title-wrap">
+              <span class="slot-icon">🌅</span>
+              <span class="slot-name">Morning</span>
+            </div>
+            <span class="slot-count-badge">8:00 AM • 2 Medicines</span>
+          </div>
+
+          <!-- Dose Card 1: Paracetamol (Taken) -->
+          <div class="dose-card taken" id="card-para">
+            <div class="dose-card-inner">
+              <div class="pill-3d-box teal">💊</div>
+              <div class="dose-info">
+                <div class="dose-name-row">
+                  <span class="dose-name">Paracetamol 650</span>
+                  <span class="time-pill">08:00 AM</span>
+                </div>
+                <div class="dose-desc">1 Tablet • After Meal</div>
+                <div class="dose-status-tag">✓ Taken at 08:05 AM</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dose Card 2: Omega 3 (Pending Take) -->
+          <div class="dose-card" id="card-omega">
+            <div class="dose-card-inner">
+              <div class="pill-3d-box amber">🌿</div>
+              <div class="dose-info">
+                <div class="dose-name-row">
+                  <span class="dose-name">Omega-3 Fish Oil</span>
+                  <span class="time-pill">08:30 AM</span>
+                </div>
+                <div class="dose-desc">1 Softgel • With Breakfast</div>
+                <div class="dose-actions" id="actions-omega">
+                  <button class="btn-take-now" onclick="takeDose('card-omega', 'actions-omega')">
+                    <span>✓</span> Take Now
+                  </button>
+                  <button class="btn-snooze-icon" onclick="snoozeDose('card-omega')" title="Snooze 10m">⏰</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Evening Slot -->
+          <div class="section-header">
+            <div class="slot-title-wrap">
+              <span class="slot-icon">🌙</span>
+              <span class="slot-name">Evening & Night</span>
+            </div>
+            <span class="slot-count-badge">8:30 PM • 1 Medicine</span>
+          </div>
+
+          <!-- Dose Card 3: Amoxicillin (Pending Take) -->
+          <div class="dose-card" id="card-amox">
+            <div class="dose-card-inner">
+              <div class="pill-3d-box purple">🧪</div>
+              <div class="dose-info">
+                <div class="dose-name-row">
+                  <span class="dose-name">Amoxicillin 500mg</span>
+                  <span class="time-pill">08:30 PM</span>
+                </div>
+                <div class="dose-desc">1 Capsule • After Dinner</div>
+                <div class="dose-actions" id="actions-amox">
+                  <button class="btn-take-now" onclick="takeDose('card-amox', 'actions-amox')">
+                    <span>✓</span> Take Now
+                  </button>
+                  <button class="btn-snooze-icon" onclick="snoozeDose('card-amox')" title="Snooze 10m">⏰</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEWPORT 2: MEDICINES CABINET -->
+        <div class="screen-viewport" id="view-cabinet">
+          <div style="margin: 6px 0 16px 0;">
+            <h2 style="font-family: 'Outfit'; font-size: 22px; font-weight: 800;">My Medicine Cabinet</h2>
+            <p style="font-size: 12px; color: var(--text-secondary);">4 Active Prescriptions</p>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="search-wrap">
+            <span class="search-icon-pos">🔍</span>
+            <input type="text" class="search-input" placeholder="Search medicine, type, disease...">
+          </div>
+
+          <!-- Category Chips -->
+          <div class="category-ribbon">
+            <div class="cat-chip active">All (4)</div>
+            <div class="cat-chip">Tablets 💊</div>
+            <div class="cat-chip">Syrups 🧪</div>
+            <div class="cat-chip">Supplements 🌿</div>
+          </div>
+
+          <!-- Cabinet Item 1 -->
+          <div class="dose-card">
+            <div class="dose-card-inner">
+              <div class="pill-3d-box teal">💊</div>
+              <div class="dose-info">
+                <div class="dose-name-row">
+                  <span class="dose-name">Paracetamol 650mg</span>
+                  <span class="time-pill">Daily</span>
+                </div>
+                <div class="dose-desc">After Meal • 1 Tab per dose</div>
+                <div class="stock-bar-wrap">
+                  <div class="stock-label-row">
+                    <span style="color: var(--text-muted)">Stock Remaining</span>
+                    <span style="color: var(--accent-emerald)">24 Tablets (Good)</span>
+                  </div>
+                  <div class="stock-track">
+                    <div class="stock-fill green" style="width: 80%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cabinet Item 2 (Low Stock Alert) -->
+          <div class="dose-card" style="border-color: rgba(244, 63, 94, 0.4);">
+            <div class="dose-card-inner">
+              <div class="pill-3d-box purple">💉</div>
+              <div class="dose-info">
+                <div class="dose-name-row">
+                  <span class="dose-name">Insulin Glargine</span>
+                  <span class="time-pill" style="color: #F43F5E; background: rgba(244, 63, 94, 0.1);">Low Stock</span>
+                </div>
+                <div class="dose-desc">15 Units • Before Meal</div>
+                <div class="stock-bar-wrap">
+                  <div class="stock-label-row">
+                    <span style="color: var(--text-muted)">Stock Remaining</span>
+                    <span style="color: #F43F5E; font-weight: 800;">3 Doses Left ⚠️</span>
+                  </div>
+                  <div class="stock-track">
+                    <div class="stock-fill red" style="width: 15%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEWPORT 3: HISTORY & REPORTS -->
+        <div class="screen-viewport" id="view-history">
+          <div style="margin: 6px 0 16px 0;">
+            <h2 style="font-family: 'Outfit'; font-size: 22px; font-weight: 800;">Adherence Analytics</h2>
+            <p style="font-size: 12px; color: var(--text-secondary);">Your Weekly Compliance & Streak</p>
+          </div>
+
+          <!-- Weekly Graph Card -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div style="font-size: 11px; font-weight: 800; color: var(--accent-emerald); text-transform: uppercase;">Weekly Compliance</div>
+                <div style="font-family: 'Outfit'; font-size: 24px; font-weight: 900; color: var(--text-primary);">94.2%</div>
+              </div>
+              <div class="streak-pill">🔥 14 Days</div>
+            </div>
+
+            <!-- Gradient Bar Chart -->
+            <div class="chart-bars-container">
+              <div class="bar-col">
+                <div class="bar-fill-tube" style="height: 90%;"></div>
+                <span class="bar-label">M</span>
+              </div>
+              <div class="bar-col">
+                <div class="bar-fill-tube" style="height: 100%;"></div>
+                <span class="bar-label">T</span>
+              </div>
+              <div class="bar-col">
+                <div class="bar-fill-tube" style="height: 100%;"></div>
+                <span class="bar-label">W</span>
+              </div>
+              <div class="bar-col">
+                <div class="bar-fill-tube" style="height: 80%;"></div>
+                <span class="bar-label">T</span>
+              </div>
+              <div class="bar-col">
+                <div class="bar-fill-tube" style="height: 100%;"></div>
+                <span class="bar-label">F</span>
+              </div>
+              <div class="bar-col">
+                <div class="bar-fill-tube" style="height: 95%;"></div>
+                <span class="bar-label">S</span>
+              </div>
+              <div class="bar-col">
+                <div class="bar-fill-tube" style="height: 70%; background: linear-gradient(180deg, #F59E0B, #D97706);"></div>
+                <span class="bar-label" style="color: var(--text-primary); font-weight: 800;">S</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Log Activity -->
+          <div class="section-header">
+            <span class="slot-name">Recent Intake Logs</span>
+            <span class="slot-count-badge">Last 24h</span>
+          </div>
+
+          <div class="dose-card" style="padding: 12px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 700; font-size: 14px;">Paracetamol 650mg</div>
+                <div style="font-size: 11px; color: var(--text-muted)">Scheduled 08:00 AM</div>
+              </div>
+              <span class="dose-status-tag">✓ Confirmed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEWPORT 4: SETTINGS -->
+        <div class="screen-viewport" id="view-settings">
+          <div style="margin: 6px 0 16px 0;">
+            <h2 style="font-family: 'Outfit'; font-size: 22px; font-weight: 800;">App Settings</h2>
+            <p style="font-size: 12px; color: var(--text-secondary);">Profiles, Alarms & Cloud Backup</p>
+          </div>
+
+          <div class="spec-card" style="padding: 16px; margin-bottom: 12px; border-radius: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 22px;">☁️</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 14px;">Supabase Cloud Sync</div>
+                  <div style="font-size: 11px; color: var(--accent-emerald);">Connected • Realtime backup</div>
+                </div>
+              </div>
+              <span style="font-size: 14px;">✓</span>
+            </div>
+          </div>
+
+          <div class="spec-card" style="padding: 16px; margin-bottom: 12px; border-radius: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 22px;">⏰</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 14px;">Full Screen Ringing Alarm</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">Exact Android AlarmManager</div>
+                </div>
+              </div>
+              <button class="action-btn" onclick="openAlarmPreview()" style="padding: 6px 12px; font-size: 11px;">Test</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCREEN 5: EMERGENCY ALARM FULLSCREEN MOCKUP -->
+        <div class="alarm-mock-overlay" id="alarmOverlay">
+          <div class="alarm-spotlight"></div>
+          
+          <div>
+            <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 800; letter-spacing: 1px; color: #14B8A6;">
+              🔔 MEDICINE REMINDER
+            </div>
+          </div>
+
+          <div>
+            <div class="floating-capsule-hero">💊</div>
+            <div style="display: inline-block; background: #1E293B; border: 1px solid #334155; padding: 8px 20px; border-radius: 20px; font-family: 'Outfit'; font-size: 26px; font-weight: 900; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+              08:00 AM
+            </div>
+            <h2 style="font-family: 'Outfit'; font-size: 30px; font-weight: 900; margin-bottom: 6px;">Paracetamol 650mg</h2>
+            <p style="font-size: 15px; color: #14B8A6; font-weight: 700;">650 mg • After Meal (1 Tablet)</p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px; z-index: 10;">
+            <button class="btn-take-now" onclick="closeAlarmPreview(true)" style="width: 100%; height: 54px; font-size: 16px; justify-content: center; border-radius: 18px;">
+              ✓ I Took My Medicine
+            </button>
+            <div style="display: flex; gap: 10px;">
+              <button class="action-btn" onclick="closeAlarmPreview(false)" style="flex: 1; justify-content: center; height: 48px; border-radius: 14px; background: rgba(255,255,255,0.08); color: white;">
+                ⏰ Snooze 10m
+              </button>
+              <button class="action-btn" onclick="closeAlarmPreview(false)" style="flex: 1; justify-content: center; height: 48px; border-radius: 14px; background: rgba(239,68,68,0.15); color: #EF4444; border-color: rgba(239,68,68,0.3);">
+                ✕ Skip Dose
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCREEN 6: INTERACTIVE ADD MEDICINE MODAL -->
+        <div class="alarm-mock-overlay" id="addMedOverlay" style="background: var(--dev-bg); justify-content: flex-start; text-align: left; padding: 50px 20px 24px 20px; overflow-y: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div>
+              <h2 style="font-family: 'Outfit'; font-size: 22px; font-weight: 800; color: var(--text-primary);">Add Medicine</h2>
+              <p style="font-size: 11px; color: var(--text-muted);">Realtime 3D Capsule & Form Preview</p>
+            </div>
+            <button class="action-btn" onclick="closeAddMedicineModal()" style="padding: 6px 12px; border-radius: 50%; width: 34px; height: 34px; justify-content: center;">✕</button>
+          </div>
+
+          <!-- Live Dynamic 3D Pill Hero that changes color & icon -->
+          <div style="background: var(--dev-card-bg); border: 1px solid var(--dev-card-border); border-radius: 24px; padding: 18px; text-align: center; margin-bottom: 18px; position: relative; overflow: hidden;">
+            <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">LIVE 3D FORM PREVIEW</div>
+            <div id="livePillHero" style="width: 76px; height: 76px; margin: 0 auto 10px auto; border-radius: 24px; background: linear-gradient(135deg, #14B8A6, #0D9488); display: flex; align-items: center; justify-content: center; font-size: 38px; box-shadow: 0 10px 25px var(--primary-teal-glow); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+              💊
+            </div>
+            <div id="livePillName" style="font-family: 'Outfit'; font-size: 17px; font-weight: 800; color: var(--text-primary);">Amoxicillin 500mg</div>
+            <div id="livePillInstruction" style="font-size: 12px; color: var(--primary-teal-light); font-weight: 700;">Capsule • After Meal</div>
+          </div>
+
+          <!-- Form Fields -->
+          <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block;">Medicine Type</label>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="sim-chip active" onclick="selectMedType('💊', 'Capsule', this)">Capsule</button>
+                <button type="button" class="sim-chip" onclick="selectMedType('⚪', 'Tablet', this)">Tablet</button>
+                <button type="button" class="sim-chip" onclick="selectMedType('🧪', 'Syrup', this)">Syrup</button>
+                <button type="button" class="sim-chip" onclick="selectMedType('💉', 'Injection', this)">Injection</button>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block;">Theme Color Accent</label>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <div onclick="selectMedColor('#14B8A6', '#0D9488', 'rgba(13, 148, 136, 0.4)')" style="width: 28px; height: 28px; border-radius: 50%; background: #0D9488; cursor: pointer; box-shadow: 0 0 10px #0D9488;"></div>
+                <div onclick="selectMedColor('#A78BFA', '#7C3AED', 'rgba(124, 58, 237, 0.4)')" style="width: 28px; height: 28px; border-radius: 50%; background: #8B5CF6; cursor: pointer;"></div>
+                <div onclick="selectMedColor('#FBBF24', '#D97706', 'rgba(217, 119, 6, 0.4)')" style="width: 28px; height: 28px; border-radius: 50%; background: #F59E0B; cursor: pointer;"></div>
+                <div onclick="selectMedColor('#38BDF8', '#0284C7', 'rgba(2, 132, 199, 0.4)')" style="width: 28px; height: 28px; border-radius: 50%; background: #06B6D4; cursor: pointer;"></div>
+                <div onclick="selectMedColor('#FB7185', '#E11D48', 'rgba(225, 29, 72, 0.4)')" style="width: 28px; height: 28px; border-radius: 50%; background: #F43F5E; cursor: pointer;"></div>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block;">Meal Instruction</label>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="sim-chip" onclick="selectFoodTiming('Before Meal', this)">Before Meal</button>
+                <button type="button" class="sim-chip active" onclick="selectFoodTiming('After Meal', this)">After Meal</button>
+                <button type="button" class="sim-chip" onclick="selectFoodTiming('With Meal', this)">With Meal</button>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-take-now" onclick="saveNewMedicineMock()" style="width: 100%; height: 50px; font-size: 15px; justify-content: center; border-radius: 16px;">
+            ✓ Save & Schedule Alarm
+          </button>
+        </div>
+
+        <!-- Floating Island Bottom Navigation -->
+        <div class="floating-nav-island">
+          <div class="nav-item active" id="nav-today" onclick="switchSimScreen('today', null)">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">Today</span>
+          </div>
+          <div class="nav-item" id="nav-cabinet" onclick="switchSimScreen('cabinet', null)">
+            <span class="nav-icon">💊</span>
+            <span class="nav-label">Medicines</span>
+          </div>
+          <div class="nav-item" id="nav-history" onclick="switchSimScreen('history', null)">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">History</span>
+          </div>
+          <div class="nav-item" id="nav-settings" onclick="switchSimScreen('settings', null)">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Settings</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       RIGHT COLUMN: THE COMPREHENSIVE DESIGN BLUEPRINT & SPECS
+       ======================================================== -->
+  <div class="blueprint-col">
+    
+    <!-- Blueprint Overview Banner -->
+    <div class="spec-card" style="background: linear-gradient(135deg, rgba(13, 148, 136, 0.15) 0%, rgba(14, 165, 233, 0.1) 100%), var(--bg-panel); border-color: rgba(13, 148, 136, 0.35);">
+      <div class="spec-title-row">
+        <div class="spec-badge-num">★</div>
+        <h2 class="spec-title">Executive Design Philosophy: From Flat HTML to World-Class Luxury</h2>
+      </div>
+      <p class="spec-desc">
+        You correctly identified that the previous interface felt like a plain HTML document with flat black text on white. 
+        This blueprint introduces a **medical-luxury design system**: rich squircle card geometry (24px radius), soft multi-colored ambient elevation, jewel-tone category gradients, tactile micro-animations, and animated compliance rings matching the highest industry benchmarks (Apple Health, Medisafe, Revolut).
+      </p>
+
+      <!-- Before vs After Table -->
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th>Element</th>
+            <th>Old Look (Basic HTML Feeling)</th>
+            <th>New Overhaul (International Standard)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Canvas & Background</strong></td>
+            <td><span class="tag-bad">✕ Plain Flat White `#FFFFFF`</span></td>
+            <td><span class="tag-good">✓ Soft Velvet Slate & Deep Obsidian Glass</span></td>
+          </tr>
+          <tr>
+            <td><strong>Card Geometry</strong></td>
+            <td><span class="tag-bad">✕ Sharp 8-12px square boxes</span></td>
+            <td><span class="tag-good">✓ 24px Squircle with subtle ambient glow</span></td>
+          </tr>
+          <tr>
+            <td><strong>Adherence Progress</strong></td>
+            <td><span class="tag-bad">✕ Plain text: "3 of 4 taken"</span></td>
+            <td><span class="tag-good">✓ Animated SVG Gradient Ring & 14-Day Streak Flame</span></td>
+          </tr>
+          <tr>
+            <td><strong>Dose Action</strong></td>
+            <td><span class="tag-bad">✕ Generic small flat button</span></td>
+            <td><span class="tag-good">✓ Gradient Pill with Confetti & Spring Haptics</span></td>
+          </tr>
+          <tr>
+            <td><strong>Bottom Navigation</strong></td>
+            <td><span class="tag-bad">✕ Blocky glued bottom bar</span></td>
+            <td><span class="tag-good">✓ Floating Island Dock with Frosted Glassmorphism</span></td>
+          </tr>
+          <tr>
+            <td><strong>Alarm Screen</strong></td>
+            <td><span class="tag-bad">✕ Standard static text alert</span></td>
+            <td><span class="tag-good">✓ 3D Floating Capsule Hero with Pulsing Spotlight</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SPEC 1: Color Palette Architecture -->
+    <div class="spec-card">
+      <div class="spec-title-row">
+        <div class="spec-badge-num">1</div>
+        <h2 class="spec-title">Jewel-Tone Color Palette & Tokens</h2>
+      </div>
+      <p class="spec-desc">
+        Curated colors tailored specifically for medicine adherence. Every medicine category has its own distinct color identity to prevent patient confusion.
+      </p>
+
+      <div class="swatch-grid">
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #0D9488;"></div>
+          <div class="swatch-name">Primary Teal</div>
+          <div class="swatch-hex">#0D9488</div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #10B981;"></div>
+          <div class="swatch-name">Emerald Mint</div>
+          <div class="swatch-hex">#10B981</div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #06B6D4;"></div>
+          <div class="swatch-name">Electric Cyan</div>
+          <div class="swatch-hex">#06B6D4</div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #8B5CF6;"></div>
+          <div class="swatch-name">Royal Violet</div>
+          <div class="swatch-hex">#8B5CF6</div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #F59E0B;"></div>
+          <div class="swatch-name">Sunset Amber</div>
+          <div class="swatch-hex">#F59E0B</div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #F43F5E;"></div>
+          <div class="swatch-name">Crimson Coral</div>
+          <div class="swatch-hex">#F43F5E</div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #0B1120;"></div>
+          <div class="swatch-name">Obsidian Slate</div>
+          <div class="swatch-hex">#0B1120</div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #F8FAFC; border: 1px solid #CBD5E1;"></div>
+          <div class="swatch-name">Porcelain Light</div>
+          <div class="swatch-hex">#F8FAFC</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPEC 2: Typography & Rhythm -->
+    <div class="spec-card">
+      <div class="spec-title-row">
+        <div class="spec-badge-num">2</div>
+        <h2 class="spec-title">Modern Typography: Outfit & Plus Jakarta Sans</h2>
+      </div>
+      <p class="spec-desc">
+        We replace standard browser system fonts with Google's high-end geometric pair: <strong>Outfit</strong> for bold, punchy numerals and headers, and <strong>Plus Jakarta Sans</strong> for ultra-legible medical instructions.
+      </p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div style="background: var(--bg-panel-hover); padding: 16px; border-radius: 16px;">
+          <div style="font-size: 11px; color: var(--primary-teal-light); font-weight: 800;">HEADER FONT</div>
+          <div style="font-family: 'Outfit'; font-size: 24px; font-weight: 900; margin: 4px 0;">Outfit Bold</div>
+          <p style="font-size: 12px; color: var(--text-secondary);">Clean geometric curves with distinct numbers for timestamps (08:00 AM) and medicine names.</p>
+        </div>
+        <div style="background: var(--bg-panel-hover); padding: 16px; border-radius: 16px;">
+          <div style="font-size: 11px; color: var(--accent-emerald); font-weight: 800;">BODY FONT</div>
+          <div style="font-size: 20px; font-weight: 700; margin: 4px 0;">Plus Jakarta Sans</div>
+          <p style="font-size: 12px; color: var(--text-secondary);">High x-height and open apertures ensuring crystal-clear readability for elderly family members.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPEC 3: Tactile Interactions & Micro-Animations -->
+    <div class="spec-card">
+      <div class="spec-title-row">
+        <div class="spec-badge-num">3</div>
+        <h2 class="spec-title">Tactile Interactions & Micro-Animations</h2>
+      </div>
+      <p class="spec-desc">
+        An interface comes alive through smooth transitions and rewarding feedback loops:
+      </p>
+
+      <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px;">
+        <li style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 18px;">✨</span>
+          <div>
+            <strong style="font-size: 14px;">Staggered Spring Entrance (`flutter_animate`):</strong>
+            <p style="font-size: 13px; color: var(--text-secondary);">Each dose card slides into view with a 40ms stagger delay and soft spring curve instead of jarring static page pops.</p>
+          </div>
+        </li>
+        <li style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 18px;">🎉</span>
+          <div>
+            <strong style="font-size: 14px;">Dose Completion Celebration (Test in simulator!):</strong>
+            <p style="font-size: 13px; color: var(--text-secondary);">Tapping "Take Now" dynamically updates the ring progress and fires joyful particle confetti when all doses are taken.</p>
+          </div>
+        </li>
+        <li style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 18px;">📳</span>
+          <div>
+            <strong style="font-size: 14px;">Smart Haptic Ticks:</strong>
+            <p style="font-size: 13px; color: var(--text-secondary);">Tactile feedback (`HapticFeedback.lightImpact`) on card clicks so taking medicine feels physically satisfying.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- SPEC 4: Step-by-Step Implementation Roadmap -->
+    <div class="spec-card">
+      <div class="spec-title-row">
+        <div class="spec-badge-num">4</div>
+        <h2 class="spec-title">Engineering Execution Plan in Flutter Codebase</h2>
+      </div>
+      <p class="spec-desc">
+        How we will translate this exact blueprint into the Flutter app files while preserving 100% of SQLite data, alarms, and notifications:
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="background: var(--bg-panel-hover); padding: 12px 16px; border-radius: 14px; border-left: 4px solid var(--primary-teal); font-size: 13px;">
+          <strong>Step 1: Theme & Design Tokens Overhaul</strong><br>
+          <span style="color: var(--text-muted)">Update `lib/core/theme/app_colors.dart` & `app_theme.dart` with the new ambient glow shadows, velvet slate background, and Outfit typography.</span>
+        </div>
+        <div style="background: var(--bg-panel-hover); padding: 12px 16px; border-radius: 14px; border-left: 4px solid var(--accent-emerald); font-size: 13px;">
+          <strong>Step 2: Component Library Upgrade</strong><br>
+          <span style="color: var(--text-muted)">Build the new `AdherenceRingHeader`, `SquircleDoseCard`, `StockMeterBar`, and `FloatingIslandNavBar` components.</span>
+        </div>
+        <div style="background: var(--bg-panel-hover); padding: 12px 16px; border-radius: 14px; border-left: 4px solid var(--accent-purple); font-size: 13px;">
+          <strong>Step 3: Screen Overhaul & Transitions</strong><br>
+          <span style="color: var(--text-muted)">Apply the new layouts to `TodayScreen`, `MedicinesCabinetScreen`, `HistoryScreen`, and `AddEditMedicineScreen`.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Live Clock in Status Bar
+  function updateClock() {
+    const now = new Date();
+    const hrs = String(now.getHours()).padStart(2, '0');
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    const el = document.getElementById('liveClock');
+    if (el) el.textContent = `${hrs}:${mins}`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // Screen Switcher inside Phone Frame
+  function switchSimScreen(screenName, clickedBtn) {
+    // Hide all viewports
+    document.querySelectorAll('.screen-viewport').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.sim-chip').forEach(el => el.classList.remove('active'));
+
+    const targetView = document.getElementById('view-' + screenName);
+    if (targetView) targetView.classList.add('active');
+
+    const targetNav = document.getElementById('nav-' + screenName);
+    if (targetNav) targetNav.classList.add('active');
+
+    if (clickedBtn) {
+      clickedBtn.classList.add('active');
+    } else {
+      // Find matching top chip
+      const chips = document.querySelectorAll('.sim-chip');
+      chips.forEach(c => {
+        if (c.textContent.toLowerCase().includes(screenName)) c.classList.add('active');
+      });
+    }
+
+    // Close alarm overlay if open
+    closeAlarmPreview(false);
+  }
+
+  // Interactive Dose Taking & Progress Ring Updates
+  let takenCount = 1;
+  const totalDoses = 3;
+
+  function takeDose(cardId, actionWrapId) {
+    const card = document.getElementById(cardId);
+    const actions = document.getElementById(actionWrapId);
+    if (!card || !actions) return;
+
+    card.classList.add('taken');
+    actions.innerHTML = `<span class="dose-status-tag">✓ Confirmed at ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+    
+    takenCount = Math.min(totalDoses, takenCount + 1);
+    updateAdherence();
+
+    // Trigger celebration confetti
+    fireConfetti();
+  }
+
+  function snoozeDose(cardId) {
+    alert("⏰ Dose snoozed for 10 minutes. A background reminder will fire!");
+  }
+
+  function updateAdherence() {
+    const percent = Math.round((takenCount / totalDoses) * 100);
+    const ringCircle = document.getElementById('ringCircle');
+    const ringPercentText = document.getElementById('ringPercentText');
+    const doseStatusSubtitle = document.getElementById('doseStatusSubtitle');
+
+    if (ringPercentText) ringPercentText.textContent = `${percent}%`;
+    if (doseStatusSubtitle) doseStatusSubtitle.textContent = `${takenCount} of ${totalDoses} doses taken today`;
+
+    // 220 is full circumference
+    const offset = 220 - (220 * (percent / 100));
+    if (ringCircle) ringCircle.style.strokeDashoffset = offset;
+  }
+
+  // Reset simulator
+  function resetSimulator() {
+    takenCount = 1;
+    const cardOmega = document.getElementById('card-omega');
+    if (cardOmega) {
+      cardOmega.classList.remove('taken');
+      document.getElementById('actions-omega').innerHTML = `
+        <button class="btn-take-now" onclick="takeDose('card-omega', 'actions-omega')">
+          <span>✓</span> Take Now
+        </button>
+        <button class="btn-snooze-icon" onclick="snoozeDose('card-omega')">⏰</button>
+      `;
+    }
+
+    const cardAmox = document.getElementById('card-amox');
+    if (cardAmox) {
+      cardAmox.classList.remove('taken');
+      document.getElementById('actions-amox').innerHTML = `
+        <button class="btn-take-now" onclick="takeDose('card-amox', 'actions-amox')">
+          <span>✓</span> Take Now
+        </button>
+        <button class="btn-snooze-icon" onclick="snoozeDose('card-amox')">⏰</button>
+      `;
+    }
+
+    updateAdherence();
+  }
+
+  // Alarm preview modal
+  function openAlarmPreview() {
+    const el = document.getElementById('alarmOverlay');
+    if (el) el.classList.add('active');
+  }
+
+  function closeAlarmPreview(isTaken) {
+    const el = document.getElementById('alarmOverlay');
+    if (el) el.classList.remove('active');
+    if (isTaken) {
+      fireConfetti();
+    }
+  }
+
+  // Interactive Add Medicine Modal Functions
+  function openAddMedicineModal() {
+    const el = document.getElementById('addMedOverlay');
+    if (el) el.classList.add('active');
+  }
+
+  function closeAddMedicineModal() {
+    const el = document.getElementById('addMedOverlay');
+    if (el) el.classList.remove('active');
+  }
+
+  let selectedPillIcon = '💊';
+  let selectedPillType = 'Capsule';
+  let selectedFoodTimingStr = 'After Meal';
+
+  function selectMedType(icon, typeName, btn) {
+    selectedPillIcon = icon;
+    selectedPillType = typeName;
+    const hero = document.getElementById('livePillHero');
+    if (hero) hero.textContent = icon;
+    const desc = document.getElementById('livePillInstruction');
+    if (desc) desc.textContent = `${typeName} • ${selectedFoodTimingStr}`;
+    btn.parentElement.querySelectorAll('.sim-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function selectMedColor(c1, c2, glow) {
+    const hero = document.getElementById('livePillHero');
+    if (hero) {
+      hero.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+      hero.style.boxShadow = `0 10px 25px ${glow}`;
+    }
+  }
+
+  function selectFoodTiming(timing, btn) {
+    selectedFoodTimingStr = timing;
+    const desc = document.getElementById('livePillInstruction');
+    if (desc) desc.textContent = `${selectedPillType} • ${timing}`;
+    btn.parentElement.querySelectorAll('.sim-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function saveNewMedicineMock() {
+    fireConfetti();
+    closeAddMedicineModal();
+    switchSimScreen('cabinet', null);
+    alert('🎉 Prescription Saved! Added with live stock meter & alarm schedule.');
+  }
+
+  // Theme Toggle: Obsidian Dark vs Porcelain Light
+  function toggleTheme() {
+    const currentTheme = document.body.getAttribute('data-theme') || 'dark';
+    const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', nextTheme);
+
+    const icon = document.getElementById('themeIcon');
+    const label = document.getElementById('themeLabel');
+    if (nextTheme === 'light') {
+      icon.textContent = '🌙';
+      label.textContent = 'Dark Mode';
+    } else {
+      icon.textContent = '☀️';
+      label.textContent = 'Light Mode';
+    }
+  }
+
+  // Pure Canvas Confetti System
+  function fireConfetti() {
+    const canvas = document.getElementById('confettiCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const colors = ['#10B981', '#14B8A6', '#06B6D4', '#8B5CF6', '#F59E0B', '#F43F5E'];
+
+    for (let i = 0; i < 90; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        w: Math.random() * 9 + 4,
+        h: Math.random() * 5 + 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vx: (Math.random() - 0.5) * 16,
+        vy: (Math.random() - 0.8) * 18,
+        rot: Math.random() * 360,
+        rotSpeed: (Math.random() - 0.5) * 10,
+        alpha: 1,
+      });
+    }
+
+    let frame = 0;
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.45; // gravity
+        p.rot += p.rotSpeed;
+        p.alpha -= 0.012;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rot * Math.PI) / 180);
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      });
+
+      frame++;
+      if (frame < 80) {
+        requestAnimationFrame(animate);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+
+  // Initialize
+  updateAdherence();
+</script>
+</body>
+</html>
