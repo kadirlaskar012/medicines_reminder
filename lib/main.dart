@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants/supabase_config.dart';
+import 'core/database/db_helper.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/supabase_service.dart';
 import 'core/theme/app_theme.dart';
@@ -49,7 +50,18 @@ void main() async {
   await NotificationService.instance.initialize();
 
   final prefs = await SharedPreferences.getInstance();
-  final hasSeenWelcome = prefs.getBool(WelcomeScreen.prefKeySeenWelcome) ?? false;
+  bool hasSeenWelcome = prefs.getBool(WelcomeScreen.prefKeySeenWelcome) ?? false;
+
+  // If user updated or installed over a previous version, verify SQLite DB
+  if (!hasSeenWelcome) {
+    try {
+      final existingMeds = await DBHelper.instance.getAllMedicines();
+      if (existingMeds.isNotEmpty) {
+        hasSeenWelcome = true;
+        await prefs.setBool(WelcomeScreen.prefKeySeenWelcome, true);
+      }
+    } catch (_) {}
+  }
 
   runApp(
     MultiProvider(

@@ -25,6 +25,8 @@ class MedicinesCabinetScreen extends StatefulWidget {
 class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
   String _searchQuery = '';
   String _selectedStatusTab = 'All'; // All, Active, Completed
+  String _sortBy = 'az'; // Default Alphabetical A-Z, 'za', 'newest', 'lowStock'
+  MedicineType? _selectedTypeFilter; // null means All Types
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +49,23 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
       if (_selectedStatusTab == 'Paused') return !m.isActive && !m.isExpired;
       if (_selectedStatusTab == 'Completed') return m.isExpired;
 
+      if (_selectedTypeFilter != null && m.type != _selectedTypeFilter) {
+        return false;
+      }
+
       return true;
     }).toList();
+
+    // Default Alphabetical A-Z sorting, plus interactive sorting
+    if (_sortBy == 'az') {
+      filtered.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    } else if (_sortBy == 'za') {
+      filtered.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+    } else if (_sortBy == 'newest') {
+      filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    } else if (_sortBy == 'lowStock') {
+      filtered.sort((a, b) => a.currentStock.compareTo(b.currentStock));
+    }
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
@@ -130,9 +147,132 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
             ),
           ),
 
-          const SizedBox(height: 10),
+          // 3. Sort & Filter Controls Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+            child: Row(
+              children: [
+                // Sort By Button
+                InkWell(
+                  onTap: () => _showSortBottomSheet(context, s, isDark),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.sort_by_alpha_rounded, size: 15, color: AppColors.primaryTealLight),
+                        const SizedBox(width: 5),
+                        Text(
+                          _getSortLabel(s),
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Icon(Icons.arrow_drop_down_rounded, size: 16, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
 
-          // 3. Medicine List or Empty View
+                // Filter by Type Button
+                InkWell(
+                  onTap: () => _showFilterBottomSheet(context, s, isDark, allMeds),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _selectedTypeFilter != null
+                          ? AppColors.primaryTeal.withValues(alpha: 0.15)
+                          : (isDark ? AppColors.darkSurface : Colors.white),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _selectedTypeFilter != null
+                            ? AppColors.primaryTeal
+                            : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.filter_list_rounded,
+                          size: 15,
+                          color: _selectedTypeFilter != null
+                              ? AppColors.primaryTealLight
+                              : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          _selectedTypeFilter == null
+                              ? s.allTypes
+                              : s.medicineTypeName(_selectedTypeFilter!.name),
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: _selectedTypeFilter != null ? FontWeight.w700 : FontWeight.w600,
+                            color: _selectedTypeFilter != null
+                                ? (isDark ? AppColors.primaryTealLight : AppColors.primaryTeal)
+                                : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+                          ),
+                        ),
+                        if (_selectedTypeFilter != null) ...[
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () => setState(() => _selectedTypeFilter = null),
+                            child: const Icon(Icons.close_rounded, size: 14, color: AppColors.primaryTealLight),
+                          ),
+                        ] else ...[
+                          const SizedBox(width: 3),
+                          Icon(Icons.arrow_drop_down_rounded, size: 16, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                const Spacer(),
+
+                // Total counter badge
+                Text(
+                  '${filtered.length} ${s.code == 'bn' ? 'টি' : (s.code == 'hi' ? 'दवाएं' : 'meds')}',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          // 4. Medicine List or Empty View
           Expanded(
             child: filtered.isEmpty
                 ? const EmptyMedicinesView()
@@ -624,6 +764,195 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  String _getSortLabel(AppStrings s) {
+    switch (_sortBy) {
+      case 'az':
+        return s.sortAZ;
+      case 'za':
+        return s.sortZA;
+      case 'newest':
+        return s.sortNewest;
+      case 'lowStock':
+        return s.sortLowStock;
+      default:
+        return s.sortAZ;
+    }
+  }
+
+  void _showSortBottomSheet(BuildContext context, AppStrings s, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.darkCard : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  s.sortBy,
+                  style: GoogleFonts.outfit(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildSortOption(ctx, 'az', s.sortAZ, Icons.sort_by_alpha_rounded, isDark),
+                _buildSortOption(ctx, 'za', s.sortZA, Icons.text_rotate_vertical_rounded, isDark),
+                _buildSortOption(ctx, 'newest', s.sortNewest, Icons.schedule_rounded, isDark),
+                _buildSortOption(ctx, 'lowStock', s.sortLowStock, Icons.inventory_2_outlined, isDark),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOption(BuildContext ctx, String key, String label, IconData icon, bool isDark) {
+    final isSelected = _sortBy == key;
+    return InkWell(
+      onTap: () {
+        setState(() => _sortBy = key);
+        Navigator.pop(ctx);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        margin: const EdgeInsets.only(bottom: 4),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryTeal.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? AppColors.primaryTealLight : (isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? (isDark ? AppColors.primaryTealLight : AppColors.primaryTeal)
+                      : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+                ),
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primaryTealLight),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFilterBottomSheet(BuildContext context, AppStrings s, bool isDark, List<Medicine> allMeds) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.darkCard : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      s.filterByType,
+                      style: GoogleFonts.outfit(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      ),
+                    ),
+                    if (_selectedTypeFilter != null)
+                      TextButton(
+                        onPressed: () {
+                          setState(() => _selectedTypeFilter = null);
+                          Navigator.pop(ctx);
+                        },
+                        child: Text(s.code == 'bn' ? 'রিসেট' : 'Reset'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilterChip(
+                      selected: _selectedTypeFilter == null,
+                      label: Text('${s.allTypes} (${allMeds.length})'),
+                      onSelected: (_) {
+                        setState(() => _selectedTypeFilter = null);
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                    ...MedicineType.values.map((type) {
+                      final count = allMeds.where((m) => m.type == type).length;
+                      return FilterChip(
+                        selected: _selectedTypeFilter == type,
+                        label: Text('${s.medicineTypeName(type.name)} ($count)'),
+                        onSelected: (_) {
+                          setState(() => _selectedTypeFilter = type);
+                          Navigator.pop(ctx);
+                        },
+                      );
+                    }),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

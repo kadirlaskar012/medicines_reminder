@@ -423,7 +423,7 @@ class _TodayScreenState extends State<TodayScreen> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             child: Text(
-                              s.code == 'bn' ? 'ক্যাবিনেট' : 'Cabinet →',
+                              '${s.medicinesTab} →',
                               style: GoogleFonts.outfit(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,

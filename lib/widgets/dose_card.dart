@@ -6,10 +6,8 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../models/scheduled_dose.dart';
 import '../providers/language_provider.dart';
-import '../screens/medicines/add_edit_medicine_screen.dart';
 import '../screens/medicines/medicine_details_screen.dart';
 import 'dual_tone_capsule.dart';
-import 'medicine_info_stock_sheet.dart';
 
 class DoseCard extends StatelessWidget {
   final ScheduledDose dose;
@@ -214,7 +212,7 @@ class DoseCard extends StatelessWidget {
 
             const SizedBox(width: 10),
 
-            // Right: Interactive Status / Actions
+            // Right: Status indicator (Taken / Skipped / Missed / Due Now)
             if (dose.isTaken)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -236,7 +234,7 @@ class DoseCard extends StatelessWidget {
                         const Icon(Icons.check_circle_rounded, color: AppColors.accentEmerald, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          'Taken',
+                          s.taken,
                           style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -269,7 +267,7 @@ class DoseCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'Skipped',
+                  s.code == 'bn' ? 'বাদ দেওয়া হয়েছে' : (s.code == 'hi' ? 'छोड़ दिया' : 'Skipped'),
                   style: GoogleFonts.outfit(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -278,227 +276,183 @@ class DoseCard extends StatelessWidget {
                 ),
               )
             else if (isMissed)
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentRose.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: AppColors.accentRose.withValues(alpha: 0.3),
-                        width: 0.8,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.accentRose.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.accentRose.withValues(alpha: 0.35),
+                    width: 0.8,
+                  ),
+                ),
+                child: Text(
+                  s.code == 'bn' ? 'মিস হয়েছে' : (s.code == 'hi' ? 'छूट गई' : 'Missed'),
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.accentRose,
+                  ),
+                ),
+              )
+            else if (isOverdue)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.accentAmber.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.accentAmber.withValues(alpha: 0.4),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppColors.accentAmber,
+                        shape: BoxShape.circle,
                       ),
                     ),
-                    child: Text(
-                      'Missed',
+                    const SizedBox(width: 4),
+                    Text(
+                      s.code == 'bn' ? 'বাকি আছে' : (s.code == 'hi' ? 'देरी' : 'Due Now'),
                       style: GoogleFonts.outfit(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.accentRose,
+                        color: AppColors.accentAmber,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  InkWell(
-                    onTap: onTake,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      child: Text(
-                        'Take Now',
-                        style: GoogleFonts.outfit(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryTealLight,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            else
-              // Active / Due Now / Overdue / Upcoming Actions
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Take Now Button
-                  GestureDetector(
-                    onTap: onTake,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.emeraldGradient,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.accentEmerald.withValues(alpha: 0.35),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.check_rounded, color: Colors.white, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            isOverdue ? 'Take' : 'Take',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-
-                  // Snooze Icon Button
-                  InkWell(
-                    onTap: onSnooze,
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                          width: 1,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.snooze_rounded,
-                        size: 15,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-
-                  // Skip Icon Button
-                  InkWell(
-                    onTap: onSkip,
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                          width: 1,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 15,
-                        color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
           ],
         ),
-            const SizedBox(height: 10),
-            Container(
-              height: 1,
-              color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.6),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Left: Edit badge button
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => AddEditMedicineScreen(medicineToEdit: med)),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(10),
+
+        // Action Buttons for Active / Due / Upcoming / Missed Doses
+        if (!dose.isTaken && !dose.isSkipped) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              // 1. Take Now Button (Emerald Gradient)
+              Expanded(
+                flex: 5,
+                child: InkWell(
+                  onTap: onTake,
+                  borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(vertical: 9),
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.edit_outlined, size: 13, color: AppColors.primaryTealLight),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Edit',
-                          style: GoogleFonts.outfit(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                          ),
+                      gradient: AppColors.emeraldGradient,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accentEmerald.withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
-                  ),
-                ),
-
-                // Right: Info & Stock badge button
-                InkWell(
-                  onTap: () => MedicineInfoStockSheet.show(context, med),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryTeal.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppColors.primaryTeal.withValues(alpha: 0.3),
-                        width: 0.8,
-                      ),
-                    ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.inventory_2_outlined, size: 13, color: AppColors.primaryTealLight),
+                        const Icon(Icons.check_rounded, color: Colors.white, size: 16),
                         const SizedBox(width: 5),
                         Text(
-                          'Info & Stock',
+                          s.takeAction,
                           style: GoogleFonts.outfit(
-                            fontSize: 11,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.primaryTealLight : AppColors.primaryTeal,
+                            color: Colors.white,
                           ),
                         ),
-                        if (med.isLowStock || med.isOutOfStock) ...[
-                          const SizedBox(width: 4),
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: AppColors.accentRose,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+
+              // 2. Snooze Button (Warm Amber)
+              Expanded(
+                flex: 4,
+                child: InkWell(
+                  onTap: onSnooze,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentAmber.withValues(alpha: isDark ? 0.18 : 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.accentAmber.withValues(alpha: 0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.snooze_rounded, color: AppColors.accentAmber, size: 16),
+                        const SizedBox(width: 5),
+                        Text(
+                          s.snoozeAction,
+                          style: GoogleFonts.outfit(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // 3. Skip Button (Soft Coral / Slate)
+              Expanded(
+                flex: 3,
+                child: InkWell(
+                  onTap: onSkip,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.close_rounded,
+                          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                          size: 15,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          s.skipAction,
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
           ],
         ),
       ),

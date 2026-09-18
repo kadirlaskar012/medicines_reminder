@@ -6,7 +6,7 @@ import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/language_provider.dart';
 import '../auth/phone_login_screen.dart';
-import 'user_onboarding_profile_screen.dart';
+import 'onboarding_language_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   final bool isFromSettings;
@@ -35,7 +35,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       if (!context.mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const UserOnboardingProfileScreen()),
+        MaterialPageRoute(builder: (_) => const OnboardingLanguageScreen()),
       );
     }
   }

@@ -991,20 +991,24 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Static pinned Live 3D Preview Card (Always stays fixed at the top)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
-            child: _buildLivePreviewCard(isDark, s),
-          ),
-          // Scrollable form sections underneath
-          Expanded(
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
-                children: [
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Column(
+          children: [
+            // Static pinned Live 3D Preview Card (Always stays fixed at the top)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
+              child: _buildLivePreviewCard(isDark, s),
+            ),
+            // Scrollable form sections underneath
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
+                  children: [
                   // Profile selector if multiple profiles exist
                   if (profiles.length > 1) ...[
                     _buildSectionHeader(s.assignToFamilyMember),
@@ -1906,6 +1910,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       ),
     ),
   ],
+),
 ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),

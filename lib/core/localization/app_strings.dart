@@ -23,7 +23,7 @@ class AppStrings {
 
   // Navigation Tabs
   String get tabToday => code == 'bn' ? 'আজকের শিডিউল' : (code == 'hi' ? 'दैनिक अनुसूची' : 'Today');
-  String get tabCabinet => code == 'bn' ? 'ক্যাবিনেট' : (code == 'hi' ? 'दवाइयां' : 'Cabinet');
+  String get tabCabinet => code == 'bn' ? 'ওষুধ' : (code == 'hi' ? 'दवाइयां' : 'Medicines');
   String get tabHistory => code == 'bn' ? 'ইতিহাস' : (code == 'hi' ? 'इतिहास' : 'History');
   String get tabSettings => code == 'bn' ? 'সেটিংস' : (code == 'hi' ? 'सेटिंग्स' : 'Settings');
   String get todayTab => tabToday;
@@ -659,8 +659,33 @@ class AppStrings {
   String notifLowStockDosesLeft(int stock) => code == 'bn' ? 'মাত্র $stock টি ওষুধ অবশিষ্ট আছে।' : (code == 'hi' ? 'केवल $stock खुराक बची हैं। जल्द रीफिल करें।' : 'Only $stock doses left! Refill soon.');
   String get notifRefillBtn => code == 'bn' ? 'রিফিল' : (code == 'hi' ? 'रीफिल' : 'Refill');
   String get notifCompletedDose => code == 'bn' ? 'সম্পন্ন ডোজ' : (code == 'hi' ? 'पूर्ण खुराक' : 'Dose Completed');
-  String get notifConfirmedTaken => code == 'bn' ? 'সফলভাবে নেওয়া হয়েছে' : (code == 'hi' ? 'सफलतापूर्वक ली गई' : 'Confirmed taken on time');
   String get ok => code == 'bn' ? 'ঠিক আছে' : (code == 'hi' ? 'ठीक है' : 'OK');
+
+  // Sorting & Filtering in Medicines
+  String get sortBy => code == 'bn' ? 'সাজান' : (code == 'hi' ? 'क्रमबद्ध करें' : 'Sort by');
+  String get sortAZ => code == 'bn' ? 'অক্ষর অনুযায়ী (A-Z)' : (code == 'hi' ? 'वर्णमाला (A-Z)' : 'Alphabetical (A-Z)');
+  String get sortZA => code == 'bn' ? 'বিপরীত (Z-A)' : (code == 'hi' ? 'उलटा (Z-A)' : 'Alphabetical (Z-A)');
+  String get sortNewest => code == 'bn' ? 'নতুন যোগ করা' : (code == 'hi' ? 'नवीनतम पहले' : 'Newest First');
+  String get sortLowStock => code == 'bn' ? 'কম স্টক আগে' : (code == 'hi' ? 'कम स्टॉक पहले' : 'Low Stock First');
+  String get filterByType => code == 'bn' ? 'ধরন' : (code == 'hi' ? 'प्रकार' : 'Type');
+  String get allTypes => code == 'bn' ? 'সকল ধরন' : (code == 'hi' ? 'सभी प्रकार' : 'All Types');
+  String get filterStock => code == 'bn' ? 'স্টক ফিল্টার' : (code == 'hi' ? 'स्टॉक फ़िल्टर' : 'Stock');
+  String get lowStockOnly => code == 'bn' ? 'কম স্টক আছে' : (code == 'hi' ? 'केवल कम स्टॉक' : 'Low Stock Only');
+
+  // Actions
+  String get takeAction => code == 'bn' ? 'খেয়েছি' : (code == 'hi' ? 'ले लिया' : 'Take');
+  String get snoozeAction => code == 'bn' ? 'পরে' : (code == 'hi' ? 'बाद में' : 'Snooze');
+  String get skipAction => code == 'bn' ? 'বাদ' : (code == 'hi' ? 'छोड़ें' : 'Skip');
+
+  // Onboarding Language Screen
+  String get chooseLanguage => code == 'bn' ? 'আপনার ভাষা নির্বাচন করুন' : (code == 'hi' ? 'अपनी भाषा चुनें' : 'Choose Your Language');
+  String get chooseLanguageSubtitle => code == 'bn'
+      ? 'ওষুধের সঠিক রিমাইন্ডারের জন্য পছন্দের ভাষা বাছুন। পরবর্তীতে সেটিংসে পরিবর্তন করতে পারবেন।'
+      : (code == 'hi'
+          ? 'दवा रिमाइंडर के लिए अपनी पसंदीदा भाषा चुनें। इसे बाद में सेटिंग्स से बदला जा सकता है।'
+          : 'Select your preferred language for medication reminders. You can change it anytime in Settings.');
+  String get notifConfirmedTaken => code == 'bn' ? 'সফলভাবে নেওয়া হয়েছে' : (code == 'hi' ? 'सफलतापूर्वक ली गई' : 'Confirmed taken on time');
+  String get continueBtn => code == 'bn' ? 'এগিয়ে যান' : (code == 'hi' ? 'आगे बढ़ें' : 'Continue');
 }
 
 
