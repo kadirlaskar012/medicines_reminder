@@ -13,6 +13,7 @@ import '../../providers/medicine_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../core/localization/app_strings.dart';
 import '../../widgets/dual_tone_capsule.dart';
+import '../../widgets/medicine_visual.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final Medicine? medicineToEdit;
@@ -161,23 +162,23 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   int _getColorForType(MedicineType type) {
     switch (type) {
       case MedicineType.tablet:
-        return const Color(0xFF0EA5E9).toARGB32();
+        return AppColors.pillColors[4].toARGB32(); // Electric Cyan
       case MedicineType.capsule:
-        return const Color(0xFF6366F1).toARGB32();
+        return 0; // Dual tone index 0 (Crimson & Cyan)
       case MedicineType.syrup:
-        return const Color(0xFFF59E0B).toARGB32();
+        return AppColors.pillColors[2].toARGB32(); // Warm Amber
       case MedicineType.drops:
-        return const Color(0xFF10B981).toARGB32();
+        return AppColors.pillColors[1].toARGB32(); // Emerald Mint
       case MedicineType.inhaler:
-        return const Color(0xFF06B6D4).toARGB32();
+        return AppColors.pillColors[6].toARGB32(); // Ocean Blue
       case MedicineType.injection:
-        return const Color(0xFFEF4444).toARGB32();
+        return AppColors.pillColors[5].toARGB32(); // Crimson Rose
       case MedicineType.ointment:
-        return const Color(0xFF8B5CF6).toARGB32();
+        return AppColors.pillColors[3].toARGB32(); // Royal Violet
       case MedicineType.supplement:
-        return const Color(0xFF10B981).toARGB32();
+        return AppColors.pillColors[1].toARGB32(); // Emerald Mint
       default:
-        return const Color(0xFF14B8A6).toARGB32();
+        return AppColors.pillColors[0].toARGB32(); // Medical Teal
     }
   }
 
@@ -1110,17 +1111,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Image.asset(
-                              type.assetPath,
-                              width: 32,
-                              height: 32,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => AppSvgIcons.render(
-                                type.svgString,
-                                width: 28,
-                                height: 28,
-                                color: isSelected ? AppColors.primary : null,
-                              ),
+                            MedicineVisual(
+                              type: type,
+                              colorValue: isSelected ? _selectedColorValue : _getColorForType(type),
+                              size: 32,
                             ),
                             const SizedBox(height: 6),
                             Text(
@@ -1146,56 +1140,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Capsule Color Theme Swatches (6 Dual-Tone Pairs)
-            _buildSectionHeader(s.code == 'bn' ? 'ক্যাপসুলের কালার থিম' : 'Pill Color Theme'),
+            // Dynamic Color Theme Swatches based on selected medicine form
+            _buildSectionHeader(_getColorSectionTitle(s)),
             const SizedBox(height: 10),
-            SizedBox(
-              height: 54,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: AppColors.dualCapsuleColors.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 10),
-                itemBuilder: (context, i) {
-                  final pair = AppColors.dualCapsuleColors[i];
-                  final isSelected = _selectedColorValue == i;
-
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedColorValue = i),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkCard : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected
-                              ? pair[0]
-                              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                          width: isSelected ? 2.2 : 1,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: pair[0].withValues(alpha: 0.45),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Center(
-                        child: DualToneCapsule(
-                          size: 34,
-                          primaryColor: pair[0],
-                          secondaryColor: pair[1],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+            _buildColorSwatches(isDark),
             const SizedBox(height: 24),
 
             // 3. Start Date Picker (First)
@@ -2219,36 +2167,137 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   }
 
   Widget _buildLivePreviewIcon(bool isDark) {
-    if (_photoPath != null && File(_photoPath!).existsSync()) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.file(
-          File(_photoPath!),
-          width: 42,
-          height: 42,
-          fit: BoxFit.cover,
+    return MedicineVisual(
+      type: _selectedType,
+      colorValue: _selectedColorValue,
+      photoPath: _photoPath,
+      size: 44,
+      hasGlow: true,
+    );
+  }
+
+  String _getColorSectionTitle(AppStrings s) {
+    switch (_selectedType) {
+      case MedicineType.tablet:
+        return s.code == 'bn' ? 'ট্যাবলেটের কালার থিম' : 'Tablet Color Theme';
+      case MedicineType.capsule:
+        return s.code == 'bn' ? 'ক্যাপসুলের কালার থিম' : 'Capsule Color Theme';
+      case MedicineType.syrup:
+        return s.code == 'bn' ? 'সিরাপের কালার থিম' : 'Syrup Color Theme';
+      case MedicineType.drops:
+        return s.code == 'bn' ? 'ড্রপসের কালার থিম' : 'Drops Color Theme';
+      case MedicineType.inhaler:
+        return s.code == 'bn' ? 'ইনহেলারের কালার থিম' : 'Inhaler Color Theme';
+      case MedicineType.injection:
+        return s.code == 'bn' ? 'ইনজেকশনের কালার থিম' : 'Injection Color Theme';
+      case MedicineType.ointment:
+        return s.code == 'bn' ? 'অয়েন্টমেন্টের কালার থিম' : 'Ointment Color Theme';
+      case MedicineType.supplement:
+        return s.code == 'bn' ? 'সাপ্লিমেন্টের কালার থিম' : 'Supplement Color Theme';
+      default:
+        return s.code == 'bn' ? 'ওষুধের কালার থিম' : 'Medicine Color Theme';
+    }
+  }
+
+  Widget _buildColorSwatches(bool isDark) {
+    if (_selectedType == MedicineType.capsule) {
+      return SizedBox(
+        height: 54,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: AppColors.dualCapsuleColors.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          itemBuilder: (context, i) {
+            final pair = AppColors.dualCapsuleColors[i];
+            final isSelected = _selectedColorValue == i;
+
+            return GestureDetector(
+              onTap: () => setState(() => _selectedColorValue = i),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCard : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? pair[0]
+                        : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                    width: isSelected ? 2.4 : 1,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: pair[0].withValues(alpha: 0.45),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: DualToneCapsule(
+                    size: 34,
+                    primaryColor: pair[0],
+                    secondaryColor: pair[1],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       );
     }
 
-    if (_selectedType == MedicineType.capsule) {
-      return DualToneCapsule.fromIndex(
-        _selectedColorValue,
-        size: 40,
-        hasGlow: true,
-      );
-    }
+    return SizedBox(
+      height: 54,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: AppColors.pillColors.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        itemBuilder: (context, i) {
+          final color = AppColors.pillColors[i];
+          final colorVal = color.toARGB32();
+          final isSelected =
+              MedicineVisual.resolveColor(_selectedColorValue).toARGB32() == colorVal;
 
-    return Image.asset(
-      _selectedType.assetPath,
-      width: 40,
-      height: 40,
-      fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) => AppSvgIcons.render(
-        _selectedType.svgString,
-        width: 32,
-        height: 32,
-        color: AppColors.primaryTeal,
+          return GestureDetector(
+            onTap: () => setState(() => _selectedColorValue = colorVal),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCard : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected
+                      ? color
+                      : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                  width: isSelected ? 2.4 : 1,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.45),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Center(
+                child: MedicineVisual(
+                  type: _selectedType,
+                  colorValue: colorVal,
+                  size: 30,
+                  hasGlow: false,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

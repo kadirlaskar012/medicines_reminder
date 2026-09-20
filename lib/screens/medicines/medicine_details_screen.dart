@@ -6,7 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/medicine.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
-import '../../widgets/dual_tone_capsule.dart';
+import '../../widgets/medicine_visual.dart';
 import '../history/history_screen.dart';
 import 'add_edit_medicine_screen.dart';
 
@@ -95,9 +95,10 @@ class MedicineDetailsScreen extends StatelessWidget {
                 ),
               ),
               child: Center(
-                child: DualToneCapsule.fromIndex(
-                  medicine.colorValue,
+                child: MedicineVisual.fromMedicine(
+                  medicine,
                   size: 96,
+                  hasGlow: true,
                 ),
               ),
             ),

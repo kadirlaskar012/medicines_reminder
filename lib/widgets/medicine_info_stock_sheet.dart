@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../models/medicine.dart';
 import '../providers/medicine_provider.dart';
-import 'dual_tone_capsule.dart';
+import 'medicine_visual.dart';
 
 class MedicineInfoStockSheet extends StatefulWidget {
   final Medicine medicine;
@@ -218,7 +218,7 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Center(
-                      child: DualToneCapsule.fromIndex(widget.medicine.colorValue, size: 36),
+                      child: MedicineVisual.fromMedicine(widget.medicine, size: 36),
                     ),
                   ),
                   const SizedBox(width: 12),

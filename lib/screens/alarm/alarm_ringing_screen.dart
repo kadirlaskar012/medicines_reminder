@@ -8,7 +8,7 @@ import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
-import '../../widgets/dual_tone_capsule.dart';
+import '../../widgets/medicine_visual.dart';
 
 class AlarmRingingScreen extends StatelessWidget {
   final Medicine medicine;
@@ -88,11 +88,12 @@ class AlarmRingingScreen extends StatelessWidget {
                   // Center Content: 3D Dual-Tone Capsule, Time Badge & Details
                   Column(
                     children: [
-                      // 3D Angled Dual Tone Capsule Hero
+                      // 3D Angled Medicine Visual Hero
                       Center(
-                        child: DualToneCapsule.fromIndex(
-                          medicine.colorValue,
+                        child: MedicineVisual.fromMedicine(
+                          medicine,
                           size: 110,
+                          hasGlow: true,
                         ),
                       ).animate(onPlay: (c) => c.repeat(reverse: true))
                        .moveY(begin: -8, end: 8, duration: 1800.ms)

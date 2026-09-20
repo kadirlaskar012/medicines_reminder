@@ -8,7 +8,7 @@ import '../models/reminder_time.dart';
 import '../models/scheduled_dose.dart';
 import '../providers/language_provider.dart';
 import '../providers/medicine_provider.dart';
-import 'dual_tone_capsule.dart';
+import 'medicine_visual.dart';
 
 class MissedMedicinesSheet extends StatelessWidget {
   const MissedMedicinesSheet({super.key});
@@ -340,8 +340,8 @@ class MissedMedicinesSheet extends StatelessWidget {
                   ),
                 ),
                 child: Center(
-                  child: DualToneCapsule.fromIndex(
-                    med.colorValue,
+                  child: MedicineVisual.fromMedicine(
+                    med,
                     size: 24,
                   ),
                 ),

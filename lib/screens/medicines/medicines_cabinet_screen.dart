@@ -8,7 +8,7 @@ import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
-import '../../widgets/dual_tone_capsule.dart';
+import '../../widgets/medicine_visual.dart';
 import '../../widgets/empty_medicines_view.dart';
 import '../../widgets/medicine_info_stock_sheet.dart';
 import '../../widgets/stock_meter_bar.dart';
@@ -767,58 +767,36 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
   }
 
   Widget _buildMedicineSquircleIcon(Medicine med, bool isDark) {
-    List<Color> gradientColors;
-    switch (med.type) {
-      case MedicineType.tablet:
-        gradientColors = const [Color(0xFF0284C7), Color(0xFF06B6D4)];
-        break;
-      case MedicineType.capsule:
-        gradientColors = const [Color(0xFF4F46E5), Color(0xFF7C3AED)];
-        break;
-      case MedicineType.syrup:
-        gradientColors = const [Color(0xFFEA580C), Color(0xFFF59E0B)];
-        break;
-      case MedicineType.inhaler:
-        gradientColors = const [Color(0xFF059669), Color(0xFF10B981)];
-        break;
-      case MedicineType.injection:
-        gradientColors = const [Color(0xFFDB2777), Color(0xFFEC4899)];
-        break;
-      case MedicineType.drops:
-        gradientColors = const [Color(0xFF0284C7), Color(0xFF38BDF8)];
-        break;
-      case MedicineType.ointment:
-        gradientColors = const [Color(0xFFD97706), Color(0xFFFBBF24)];
-        break;
-      case MedicineType.supplement:
-        gradientColors = const [Color(0xFFF97316), Color(0xFFFB923C)];
-        break;
-      case MedicineType.other:
-        gradientColors = const [Color(0xFF7C3AED), Color(0xFFA855F7)];
-        break;
-    }
+    final gradientColors = MedicineVisual.getGradients(med.colorValue, med.type);
 
     return Container(
       width: 52,
       height: 52,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: gradientColors,
+          colors: [
+            gradientColors[0].withValues(alpha: isDark ? 0.35 : 0.20),
+            gradientColors[1].withValues(alpha: isDark ? 0.18 : 0.10),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: gradientColors[0].withValues(alpha: isDark ? 0.55 : 0.35),
+          width: 1.3,
+        ),
         boxShadow: [
           BoxShadow(
-            color: gradientColors.first.withValues(alpha: 0.35),
+            color: gradientColors[0].withValues(alpha: isDark ? 0.3 : 0.15),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Center(
-        child: DualToneCapsule.fromIndex(
-          med.colorValue,
+        child: MedicineVisual.fromMedicine(
+          med,
           size: 38,
         ),
       ),
