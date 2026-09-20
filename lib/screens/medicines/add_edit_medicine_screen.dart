@@ -857,12 +857,56 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     });
   }
 
+  String _formatBnNum(int num, String lang) {
+    if (lang != 'bn') return '$num';
+    return '$num'
+        .replaceAll('0', '০')
+        .replaceAll('1', '১')
+        .replaceAll('2', '২')
+        .replaceAll('3', '৩')
+        .replaceAll('4', '৪')
+        .replaceAll('5', '৫')
+        .replaceAll('6', '৬')
+        .replaceAll('7', '৭')
+        .replaceAll('8', '৮')
+        .replaceAll('9', '৯');
+  }
+
   Future<({int stock, int threshold})?> _showInitialStockSheet(
     BuildContext context,
     AppStrings s,
   ) async {
-    int currentStock = 10; // Standard single strip (১০টি ট্যাবলেট/পাতা) default
-    int threshold = 3;
+    // Dynamic Intelligent Course Calculation
+    // Total required stock = (Course Days) × (Daily Dose Count)
+    // Refill Alert Threshold = 50% of Stock
+    final int dailyDoseCount = _reminders.isNotEmpty ? _reminders.length : 1;
+    final int courseDays;
+    final bool isOngoing;
+
+    if (_durationDays != null && _durationDays! > 0) {
+      courseDays = _durationDays!;
+      isOngoing = false;
+    } else if (_startDate != null && _endDate != null) {
+      final diff = _endDate!.difference(_startDate!).inDays + 1;
+      courseDays = diff > 0 ? diff : 30;
+      isOngoing = false;
+    } else if (_durationDays == 0) {
+      courseDays = 30; // 1 month standard default for ongoing/chronic treatment
+      isOngoing = true;
+    } else {
+      courseDays = 10; // Graceful fallback
+      isOngoing = false;
+    }
+
+    final int calculatedCourseStock = courseDays * dailyDoseCount;
+    int currentStock = calculatedCourseStock > 0 ? calculatedCourseStock : 10;
+
+    // Automatic 50% refill threshold
+    int threshold = (currentStock * 0.5).round();
+    if (threshold < 1 && currentStock > 0) threshold = 1;
+
+    bool userManuallyModifiedThreshold = false;
+
     final stockController = TextEditingController(text: '$currentStock');
     final focusNode = FocusNode();
 
@@ -886,7 +930,112 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 stockController.selection = TextSelection.fromPosition(
                   TextPosition(offset: stockController.text.length),
                 );
+                // Synchronize 50% threshold dynamically unless user manually adjusted threshold
+                if (!userManuallyModifiedThreshold) {
+                  final auto50 = (n * 0.5).round();
+                  threshold = auto50 < 1 && n > 0 ? 1 : auto50;
+                }
               });
+            }
+
+            void updateThreshold(int val) {
+              final maxAllowed = currentStock > 1 ? currentStock : 9999;
+              final t = val < 1 ? 1 : (val > maxAllowed ? maxAllowed : val);
+              setModalState(() {
+                threshold = t;
+                userManuallyModifiedThreshold = true;
+              });
+            }
+
+            final isFiftyPercent = currentStock > 0 && threshold == (currentStock * 0.5).round();
+
+            // Formula calculation texts
+            final String calcFormulaText;
+            final String alertInfoText;
+            if (s.code == 'bn') {
+              calcFormulaText = isOngoing
+                  ? 'নিয়মিত ওষুধ • ৩০ দিনের স্টক (দিনে ${_formatBnNum(dailyDoseCount, s.code)} বার = ${_formatBnNum(calculatedCourseStock, s.code)}টি ওষুধ)'
+                  : '${_formatBnNum(courseDays, s.code)} দিনের কোর্স × দিনে ${_formatBnNum(dailyDoseCount, s.code)} বার = ${_formatBnNum(calculatedCourseStock, s.code)}টি ওষুধের স্বয়ংক্রিয় হিসাব';
+              alertInfoText = '🔔 ৫০% রিফিল এলার্ট: ${_formatBnNum(threshold, s.code)}টি ওষুধ বাকি থাকলে সতর্কবার্তা আসবে';
+            } else if (s.code == 'hi') {
+              calcFormulaText = isOngoing
+                  ? 'नियमित दवा • 30 दिन का स्टॉक (दिन में $dailyDoseCount बार = $calculatedCourseStock दवा)'
+                  : '$courseDays दिन का कोर्स × दिन में $dailyDoseCount बार = $calculatedCourseStock दवा की स्वचालित गणना';
+              alertInfoText = '🔔 50% रीफिल अलर्ट: $threshold दवा बचने पर अलर्ट आएगा';
+            } else {
+              calcFormulaText = isOngoing
+                  ? 'Ongoing treatment • 30-day supply ($dailyDoseCount times daily = $calculatedCourseStock units)'
+                  : '$courseDays days course × $dailyDoseCount times daily = $calculatedCourseStock units calculated';
+              alertInfoText = '🔔 50% Refill Alert: Notified when remaining stock reaches $threshold units';
+            }
+
+            // Tailored dynamic preset chips
+            final Set<int> chipValues = {};
+            final List<({String label, int val, bool isRecommended})> dynamicChips = [];
+
+            // 1. Recommended Course
+            chipValues.add(calculatedCourseStock);
+            dynamicChips.add((
+              label: s.code == 'bn'
+                  ? 'প্রস্তাবিত কোর্স: ${_formatBnNum(calculatedCourseStock, s.code)}টি'
+                  : 'Recommended: $calculatedCourseStock units',
+              val: calculatedCourseStock,
+              isRecommended: true,
+            ));
+
+            // 2. Half Course
+            if (calculatedCourseStock >= 10) {
+              final half = (calculatedCourseStock / 2).round();
+              if (chipValues.add(half)) {
+                dynamicChips.add((
+                  label: s.code == 'bn'
+                      ? 'অর্ধেক: ${_formatBnNum(half, s.code)}টি'
+                      : 'Half Course: $half',
+                  val: half,
+                  isRecommended: false,
+                ));
+              }
+            }
+
+            // 3. 1 Strip (10)
+            if (chipValues.add(10)) {
+              dynamicChips.add((
+                label: s.code == 'bn' ? '১০টি (১ পাতা)' : '10 (1 strip)',
+                val: 10,
+                isRecommended: false,
+              ));
+            }
+
+            // 4. 2 Strips (20)
+            if (chipValues.add(20)) {
+              dynamicChips.add((
+                label: s.code == 'bn' ? '২০টি (২ পাতা)' : '20 (2 strips)',
+                val: 20,
+                isRecommended: false,
+              ));
+            }
+
+            // 5. 30 units
+            if (chipValues.add(30)) {
+              dynamicChips.add((
+                label: s.code == 'bn' ? '৩০টি' : '30 units',
+                val: 30,
+                isRecommended: false,
+              ));
+            }
+
+            // 6. 1 Month supply if not already added
+            if (courseDays != 30) {
+              final oneMonth = 30 * dailyDoseCount;
+              if (chipValues.add(oneMonth)) {
+                dynamicChips.add((
+                  label: s.code == 'bn'
+                      ? '১ মাস: ${_formatBnNum(oneMonth, s.code)}টি'
+                      : '1 Month: $oneMonth',
+                  val: oneMonth,
+                  isRecommended: false,
+                ));
+              }
             }
 
             return Padding(
@@ -894,6 +1043,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 bottom: MediaQuery.of(ctx).viewInsets.bottom,
               ),
               child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.88,
+                ),
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
                 decoration: BoxDecoration(
                   color: isDarkModal ? const Color(0xFF1E293B) : Colors.white,
@@ -907,367 +1059,524 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   ],
                 ),
                 child: SafeArea(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Drag Handle
-                      Center(
-                        child: Container(
-                          width: 44,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: isDarkModal ? Colors.white24 : Colors.black12,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Header with 3D medicine icon
-                      Row(
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Drag Handle
+                        Center(
+                          child: Container(
+                            width: 44,
+                            height: 4,
                             decoration: BoxDecoration(
-                              color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: AppColors.primaryTeal.withValues(alpha: 0.35),
-                                width: 1.2,
-                              ),
+                              color: isDarkModal ? Colors.white24 : Colors.black12,
+                              borderRadius: BorderRadius.circular(2),
                             ),
-                            child: Center(
-                              child: MedicineVisual(
-                                type: _selectedType,
-                                photoPath: _photoPath,
-                                size: 40,
-                                hasGlow: true,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryTeal.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    s.code == 'bn' ? 'স্টক ও রিফিল ট্র্যাকিং' : 'STOCK & REFILL',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.primaryTealLight,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  s.code == 'bn'
-                                      ? 'আপনার কাছে কতগুলো ওষুধ আছে?'
-                                      : (s.code == 'hi' ? 'दवा का वर्तमान स्टॉक कितना है?' : 'How much stock do you have?'),
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                    color: isDarkModal ? Colors.white : const Color(0xFF0F172A),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '$medName ${medDose.isNotEmpty ? "($medDose)" : ""}',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Interactive Counter Container
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: isDarkModal ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                            width: 1.2,
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        const SizedBox(height: 16),
+
+                        // Header with 3D medicine icon
+                        Row(
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.remove_circle_outline_rounded, size: 32),
-                              color: currentStock > 0 ? AppColors.accentRose : Colors.grey,
-                              onPressed: currentStock > 0 ? () => updateStock(currentStock - 1) : null,
-                            ),
-                            Expanded(
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppColors.primaryTeal.withValues(alpha: 0.35),
+                                  width: 1.2,
+                                ),
+                              ),
                               child: Center(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    focusNode.requestFocus();
-                                    stockController.selection = TextSelection(
-                                      baseOffset: 0,
-                                      extentOffset: stockController.text.length,
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: isDarkModal ? const Color(0xFF1E293B) : Colors.white,
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: AppColors.primaryTeal.withValues(alpha: 0.4),
-                                        width: 1.4,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha: isDarkModal ? 0.2 : 0.04),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 1),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
-                                      children: [
-                                        ConstrainedBox(
-                                          constraints: const BoxConstraints(minWidth: 48, maxWidth: 100),
-                                          child: TextField(
-                                            controller: stockController,
-                                            focusNode: focusNode,
-                                            keyboardType: TextInputType.number,
-                                            textAlign: TextAlign.center,
-                                            onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
-                                            onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 30,
-                                              fontWeight: FontWeight.w900,
-                                              color: currentStock > 0 ? AppColors.accentEmerald : AppColors.accentRose,
-                                            ),
-                                            inputFormatters: [
-                                              FilteringTextInputFormatter.digitsOnly,
-                                              LengthLimitingTextInputFormatter(6),
-                                            ],
-                                            decoration: InputDecoration(
-                                              isDense: true,
-                                              hintText: '0',
-                                              hintStyle: GoogleFonts.outfit(
-                                                fontSize: 30,
-                                                fontWeight: FontWeight.w900,
-                                                color: (isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted).withValues(alpha: 0.5),
-                                              ),
-                                              contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-                                              border: InputBorder.none,
-                                              focusedBorder: InputBorder.none,
-                                              enabledBorder: InputBorder.none,
-                                            ),
-                                            onTap: () {
-                                              stockController.selection = TextSelection(
-                                                baseOffset: 0,
-                                                extentOffset: stockController.text.length,
-                                              );
-                                            },
-                                            onChanged: (val) {
-                                              final n = int.tryParse(val);
-                                              setModalState(() {
-                                                currentStock = n ?? 0;
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          s.unitName(effectiveUnit),
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 5),
-                                        Icon(
-                                          Icons.edit_rounded,
-                                          size: 14,
-                                          color: isDarkModal ? Colors.white38 : Colors.black38,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                child: MedicineVisual(
+                                  type: _selectedType,
+                                  photoPath: _photoPath,
+                                  size: 40,
+                                  hasGlow: true,
                                 ),
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.add_circle_outline_rounded, size: 32),
-                              color: AppColors.accentEmerald,
-                              onPressed: () => updateStock(currentStock + 1),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryTeal.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      s.code == 'bn' ? 'স্টক ও রিফিল ট্র্যাকিং' : 'STOCK & REFILL',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.primaryTealLight,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    s.code == 'bn'
+                                        ? 'আপনার কাছে কতগুলো ওষুধ আছে?'
+                                        : (s.code == 'hi' ? 'दवा का वर्तमान स्टॉक कितना है?' : 'How much stock do you have?'),
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDarkModal ? Colors.white : const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '$medName ${medDose.isNotEmpty ? "($medDose)" : ""}',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 16),
 
-                      // Quick Preset Chips (e.g. 10 (1 strip), 15, 20, 30, 50)
-                      Text(
-                        s.code == 'bn' ? 'কুইক স্টক সিলেক্ট করুন:' : 'Quick Select:',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          {'label': s.code == 'bn' ? '১০টি (১ পাতা)' : '10 (1 strip)', 'val': 10},
-                          {'label': s.code == 'bn' ? '১৫টি' : '15 units', 'val': 15},
-                          {'label': s.code == 'bn' ? '২০টি (২ পাতা)' : '20 (2 strips)', 'val': 20},
-                          {'label': s.code == 'bn' ? '৩০টি' : '30 units', 'val': 30},
-                          {'label': s.code == 'bn' ? '৫০টি' : '50 units', 'val': 50},
-                        ].map((chip) {
-                          final int chipVal = chip['val'] as int;
-                          final bool isSelected = currentStock == chipVal;
-                          return ActionChip(
-                            label: Text(chip['label'] as String),
-                            labelStyle: GoogleFonts.outfit(
-                              fontSize: 11.5,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                              color: isSelected ? Colors.white : AppColors.primaryTealLight,
+                        // Smart Course Calculation Highlight Banner
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isDarkModal
+                                  ? [const Color(0xFF1E3A8A).withValues(alpha: 0.35), const Color(0xFF0F172A)]
+                                  : [const Color(0xFFEFF6FF), const Color(0xFFDBEAFE).withValues(alpha: 0.6)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            backgroundColor: isSelected
-                                ? AppColors.primaryTeal
-                                : AppColors.primaryTeal.withValues(alpha: 0.12),
-                            side: BorderSide(
-                              color: isSelected
-                                  ? AppColors.primaryTeal
-                                  : AppColors.primaryTeal.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFF3B82F6).withValues(alpha: isDarkModal ? 0.35 : 0.3),
+                              width: 1.2,
                             ),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            onPressed: () => updateStock(chipVal),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Low-stock Refill Threshold Indicator
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.notifications_active_outlined, size: 16, color: AppColors.accentAmber),
-                                const SizedBox(width: 8),
-                                Text(
-                                  s.code == 'bn'
-                                      ? 'কতটিতে নামলে সতর্কবার্তা চান?'
-                                      : 'Refill alert when below:',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDarkModal ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
-                                  visualDensity: VisualDensity.compact,
-                                  onPressed: threshold > 1 ? () => setModalState(() => threshold--) : null,
-                                ),
-                                Text(
-                                  '$threshold ${s.unitName(effectiveUnit)}',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.accentAmber,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
-                                  visualDensity: VisualDensity.compact,
-                                  onPressed: () => setModalState(() => threshold++),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-
-                      // Confirm Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            final finalStock = int.tryParse(stockController.text.trim()) ?? currentStock;
-                            Navigator.pop(ctx, (stock: finalStock < 0 ? 0 : finalStock, threshold: threshold));
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 3,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                              const SizedBox(width: 8),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.auto_awesome_rounded, size: 16, color: Color(0xFF2563EB)),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      s.code == 'bn'
+                                          ? 'কোর্স অনুযায়ী স্বয়ংক্রিয় হিসাব'
+                                          : (s.code == 'hi' ? 'कोर्स अनुसार स्वचालित गणना' : 'Smart Course Calculation'),
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: isDarkModal ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
                               Text(
-                                s.code == 'bn' ? 'স্টক নিশ্চিত করুন ও রিমাইন্ডার সেট করুন' : 'Confirm Stock & Set Reminders',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.2,
+                                calcFormulaText,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDarkModal ? Colors.white : const Color(0xFF1E293B),
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                alertInfoText,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDarkModal ? AppColors.darkTextMuted : const Color(0xFF475569),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
+                        const SizedBox(height: 14),
 
-                      // Skip Option
-                      Center(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(ctx, (stock: 0, threshold: 0)),
-                          child: Text(
-                            s.code == 'bn' ? 'এখন স্টক দেব না (পরে কার্ড থেকে দেব)' : 'Skip stock for now (0 stock)',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                        // Interactive Counter Container
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: isDarkModal ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline_rounded, size: 32),
+                                color: currentStock > 0 ? AppColors.accentRose : Colors.grey,
+                                onPressed: currentStock > 0 ? () => updateStock(currentStock - 1) : null,
+                              ),
+                              Expanded(
+                                child: Center(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      focusNode.requestFocus();
+                                      stockController.selection = TextSelection(
+                                        baseOffset: 0,
+                                        extentOffset: stockController.text.length,
+                                      );
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: isDarkModal ? const Color(0xFF1E293B) : Colors.white,
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: AppColors.primaryTeal.withValues(alpha: 0.4),
+                                          width: 1.4,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: isDarkModal ? 0.2 : 0.04),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          ConstrainedBox(
+                                            constraints: const BoxConstraints(minWidth: 48, maxWidth: 100),
+                                            child: TextField(
+                                              controller: stockController,
+                                              focusNode: focusNode,
+                                              keyboardType: TextInputType.number,
+                                              textAlign: TextAlign.center,
+                                              onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+                                              onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 30,
+                                                fontWeight: FontWeight.w900,
+                                                color: currentStock > 0 ? AppColors.accentEmerald : AppColors.accentRose,
+                                              ),
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter.digitsOnly,
+                                                LengthLimitingTextInputFormatter(6),
+                                              ],
+                                              decoration: InputDecoration(
+                                                isDense: true,
+                                                hintText: '0',
+                                                hintStyle: GoogleFonts.outfit(
+                                                  fontSize: 30,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: (isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted).withValues(alpha: 0.5),
+                                                ),
+                                                contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                                                border: InputBorder.none,
+                                                focusedBorder: InputBorder.none,
+                                                enabledBorder: InputBorder.none,
+                                              ),
+                                              onTap: () {
+                                                stockController.selection = TextSelection(
+                                                  baseOffset: 0,
+                                                  extentOffset: stockController.text.length,
+                                                );
+                                              },
+                                              onChanged: (val) {
+                                                final n = int.tryParse(val);
+                                                final newStock = n ?? 0;
+                                                setModalState(() {
+                                                  currentStock = newStock;
+                                                  if (!userManuallyModifiedThreshold) {
+                                                    final auto50 = (newStock * 0.5).round();
+                                                    threshold = auto50 < 1 && newStock > 0 ? 1 : auto50;
+                                                  }
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            s.unitName(effectiveUnit),
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Icon(
+                                            Icons.edit_rounded,
+                                            size: 14,
+                                            color: isDarkModal ? Colors.white38 : Colors.black38,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline_rounded, size: 32),
+                                color: AppColors.accentEmerald,
+                                onPressed: () => updateStock(currentStock + 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Quick Preset Chips tailored dynamically
+                        Text(
+                          s.code == 'bn' ? 'কুইক স্টক সিলেক্ট করুন:' : 'Quick Select:',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: dynamicChips.map((chip) {
+                            final int chipVal = chip.val;
+                            final bool isSelected = currentStock == chipVal;
+                            return ActionChip(
+                              avatar: chip.isRecommended
+                                  ? const Icon(Icons.star_rounded, size: 14, color: Colors.amber)
+                                  : null,
+                              label: Text(chip.label),
+                              labelStyle: GoogleFonts.outfit(
+                                fontSize: 11.5,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected ? Colors.white : AppColors.primaryTealLight,
+                              ),
+                              backgroundColor: isSelected
+                                  ? AppColors.primaryTeal
+                                  : AppColors.primaryTeal.withValues(alpha: 0.12),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppColors.primaryTeal
+                                    : (chip.isRecommended
+                                        ? Colors.amber.withValues(alpha: 0.5)
+                                        : AppColors.primaryTeal.withValues(alpha: 0.25)),
+                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              onPressed: () => updateStock(chipVal),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Low-stock Refill Threshold Indicator (50% Auto Alert)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDarkModal ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.notifications_active_outlined, size: 18, color: AppColors.accentAmber),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          s.code == 'bn'
+                                              ? 'কতটিতে নামলে রিফিল সতর্কতা চান?'
+                                              : (s.code == 'hi' ? 'रीफिल अलर्ट कितने पर चाहिए?' : 'Refill alert when below:'),
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDarkModal ? Colors.white : const Color(0xFF0F172A),
+                                          ),
+                                        ),
+                                        Text(
+                                          s.code == 'bn'
+                                              ? '৫০% স্টক বাকি থাকলে স্বয়ংক্রিয় এলার্ট'
+                                              : (s.code == 'hi' ? '50% स्टॉक बचने पर अलर्ट' : 'Triggers alert at 50% stock'),
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                            color: isDarkModal ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // 50% Auto Badge or Reset Chip
+                                  InkWell(
+                                    onTap: () {
+                                      final auto50 = (currentStock * 0.5).round();
+                                      final safeThreshold = auto50 < 1 && currentStock > 0 ? 1 : auto50;
+                                      setModalState(() {
+                                        threshold = safeThreshold;
+                                        userManuallyModifiedThreshold = false;
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                      decoration: BoxDecoration(
+                                        color: isFiftyPercent
+                                            ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                                            : AppColors.primary.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isFiftyPercent
+                                              ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                                              : AppColors.primary.withValues(alpha: 0.3),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isFiftyPercent ? Icons.check_circle_rounded : Icons.replay_rounded,
+                                            size: 12,
+                                            color: isFiftyPercent ? const Color(0xFF059669) : AppColors.primary,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            s.code == 'bn'
+                                                ? (isFiftyPercent ? '৫০% অটো' : '৫০% এ সেট')
+                                                : (isFiftyPercent ? '50% Auto' : 'Set 50%'),
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800,
+                                              color: isFiftyPercent ? const Color(0xFF059669) : AppColors.primary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle_outline_rounded, size: 24),
+                                    color: threshold > 1 ? AppColors.accentRose : Colors.grey,
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: threshold > 1 ? () => updateThreshold(threshold - 1) : null,
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: isDarkModal ? const Color(0xFF1E293B) : Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: AppColors.accentAmber.withValues(alpha: 0.4)),
+                                    ),
+                                    child: Text(
+                                      '${_formatBnNum(threshold, s.code)} ${s.unitName(effectiveUnit)}',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppColors.accentAmber,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.add_circle_outline_rounded, size: 24),
+                                    color: AppColors.accentEmerald,
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: threshold < (currentStock > 1 ? currentStock : 9999)
+                                        ? () => updateThreshold(threshold + 1)
+                                        : null,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+
+                        // Confirm Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final finalStock = int.tryParse(stockController.text.trim()) ?? currentStock;
+                              Navigator.pop(ctx, (stock: finalStock < 0 ? 0 : finalStock, threshold: threshold));
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 3,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  s.code == 'bn' ? 'স্টক নিশ্চিত করুন ও রিমাইন্ডার সেট করুন' : 'Confirm Stock & Set Reminders',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+
+                        // Skip Option
+                        Center(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(ctx, (stock: 0, threshold: 0)),
+                            child: Text(
+                              s.code == 'bn' ? 'এখন স্টক দেব না (পরে কার্ড থেকে দেব)' : 'Skip stock for now (0 stock)',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

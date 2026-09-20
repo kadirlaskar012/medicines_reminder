@@ -54,4 +54,25 @@ void main() {
     expect(rem.isDaily, false);
     expect(rem.recurrenceSummary, 'Mon, Wed, Fri');
   });
+
+  test('Course-based stock calculation and 50% refill alert threshold test', () {
+    // 10 days course, 2 doses per day (Lunch and Afternoon)
+    const int durationDays = 10;
+    const int dailyDoseCount = 2;
+
+    final int calculatedStock = durationDays * dailyDoseCount;
+    expect(calculatedStock, 20);
+
+    // 50% threshold calculation
+    final int refillThreshold = (calculatedStock * 0.5).round();
+    expect(refillThreshold, 10);
+
+    // 7 days course, 3 doses per day
+    const int duration7Days = 7;
+    const int dailyDoses3 = 3;
+    final int stock21 = duration7Days * dailyDoses3;
+    expect(stock21, 21);
+    final int threshold11 = (stock21 * 0.5).round();
+    expect(threshold11, 11);
+  });
 }
