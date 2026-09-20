@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -321,27 +320,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: ClipRRect(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            decoration: BoxDecoration(
-              color: (isDark ? AppColors.darkSurface : Colors.white).withValues(alpha: 0.88),
-              border: Border(
-                top: BorderSide(
-                  color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.8),
-                  width: 1,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-                  blurRadius: 16,
-                  offset: const Offset(0, -3),
-                ),
-              ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.85),
+              width: 1,
             ),
-            child: SafeArea(
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+              blurRadius: 16,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: SafeArea(
               top: false,
               child: SizedBox(
                 height: 76,
@@ -385,9 +381,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
               ),
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildNavItem({

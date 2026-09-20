@@ -41,11 +41,16 @@ class DoseCard extends StatelessWidget {
     final allRems = provider.getRemindersForMedicine(med.id);
     String? routinePattern;
     if (allRems.isNotEmpty) {
-      final m = allRems.where((r) => r.timeSlot == TimeSlot.morning).length;
-      final l = allRems.where((r) => r.timeSlot == TimeSlot.lunch).length;
-      final a = allRems.where((r) => r.timeSlot == TimeSlot.afternoon).length;
-      final e = allRems.where((r) => r.timeSlot == TimeSlot.evening).length;
-      final n = allRems.where((r) => r.timeSlot == TimeSlot.night).length;
+      int m = 0, l = 0, a = 0, e = 0, n = 0;
+      for (final r in allRems) {
+        switch (r.timeSlot) {
+          case TimeSlot.morning: m++; break;
+          case TimeSlot.lunch: l++; break;
+          case TimeSlot.afternoon: a++; break;
+          case TimeSlot.evening: e++; break;
+          case TimeSlot.night: n++; break;
+        }
+      }
       if (l == 0 && a == 0 && e == 0) {
         routinePattern = '$m-$n';
       } else if (l == 0 && e == 0) {

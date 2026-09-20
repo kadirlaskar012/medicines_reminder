@@ -34,6 +34,18 @@ class MedicineProvider extends ChangeNotifier {
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = true;
   List<ScheduledDose>? _cachedMissedDoses;
+  List<ScheduledDose>? _cachedDosesForSelectedDate;
+  final Map<String, List<ScheduledDose>> _dosesByDateCache = {};
+  int? _cachedCurrentStreak;
+  int? _cachedBestStreak;
+
+  void _invalidateCaches() {
+    _cachedDosesForSelectedDate = null;
+    _dosesByDateCache.clear();
+    _cachedMissedDoses = null;
+    _cachedCurrentStreak = null;
+    _cachedBestStreak = null;
+  }
 
   // Getters
   List<UserProfile> get profiles => _profiles;
@@ -72,36 +84,11 @@ class MedicineProvider extends ChangeNotifier {
     return true;
   }
 
-  // Doses for selected date
+  // Doses for selected date (memoized for fast 120fps UI rendering)
   List<ScheduledDose> get dosesForSelectedDate {
-    final weekday = _selectedDate.weekday; // 1 = Mon .. 7 = Sun
-    final List<ScheduledDose> list = [];
-
-    for (final med in filteredMedicines) {
-      if (!isMedicineActiveOnDate(med, _selectedDate)) continue;
-      final reminders = _remindersByMedicine[med.id] ?? [];
-      for (final rem in reminders) {
-        if (rem.daysOfWeek.contains(weekday)) {
-          final key = '${med.id}_${rem.id}_$selectedDateStr';
-          final record = _recordsByDoseKey[key];
-          list.add(ScheduledDose(
-            medicine: med,
-            reminder: rem,
-            record: record,
-            scheduledDate: _selectedDate,
-          ));
-        }
-      }
-    }
-
-    // Sort chronologically by hour and minute
-    list.sort((a, b) {
-      final compHour = a.reminder.hour.compareTo(b.reminder.hour);
-      if (compHour != 0) return compHour;
-      return a.reminder.minute.compareTo(b.reminder.minute);
-    });
-
-    return list;
+    if (_cachedDosesForSelectedDate != null) return _cachedDosesForSelectedDate!;
+    _cachedDosesForSelectedDate = getDosesForDate(_selectedDate);
+    return _cachedDosesForSelectedDate!;
   }
 
   // Grouped by time slots
@@ -131,10 +118,14 @@ class MedicineProvider extends ChangeNotifier {
   int get todayTakenCount => dosesForSelectedDate.where((d) => d.isTaken).length;
   int get todayTotalCount => dosesForSelectedDate.length;
 
-  /// Get scheduled doses for any specific date
+  /// Get scheduled doses for any specific date (memoized for O(1) repeated queries)
   List<ScheduledDose> getDosesForDate(DateTime date) {
-    final weekday = date.weekday;
     final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    if (_dosesByDateCache.containsKey(dateStr)) {
+      return _dosesByDateCache[dateStr]!;
+    }
+
+    final weekday = date.weekday;
     final List<ScheduledDose> list = [];
 
     for (final med in filteredMedicines) {
@@ -160,6 +151,7 @@ class MedicineProvider extends ChangeNotifier {
       return a.reminder.minute.compareTo(b.reminder.minute);
     });
 
+    _dosesByDateCache[dateStr] = list;
     return list;
   }
 
@@ -228,8 +220,9 @@ class MedicineProvider extends ChangeNotifier {
     return earliest != null ? DateTime(earliest.year, earliest.month, earliest.day) : null;
   }
 
-  /// Real consecutive adherence streak (in days) based on real intake records
+  /// Real consecutive adherence streak (in days) based on real intake records (memoized)
   int get currentStreakDays {
+    if (_cachedCurrentStreak != null) return _cachedCurrentStreak!;
     if (_medicines.isEmpty) return 0;
     final earliest = _earliestMedicineDate;
     if (earliest == null) return 0;
@@ -258,11 +251,13 @@ class MedicineProvider extends ChangeNotifier {
         break;
       }
     }
+    _cachedCurrentStreak = streak;
     return streak;
   }
 
-  /// Best consecutive adherence streak (in days) based on real intake records
+  /// Best consecutive adherence streak (in days) based on real intake records (memoized)
   int get bestStreakDays {
+    if (_cachedBestStreak != null) return _cachedBestStreak!;
     if (_medicines.isEmpty) return 0;
     final earliest = _earliestMedicineDate;
     if (earliest == null) return 0;
@@ -272,7 +267,10 @@ class MedicineProvider extends ChangeNotifier {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final totalDays = today.difference(earliest).inDays;
-    if (totalDays < 0) return currentStreakDays;
+    if (totalDays < 0) {
+      _cachedBestStreak = currentStreakDays;
+      return _cachedBestStreak!;
+    }
 
     for (int i = totalDays; i >= 0; i--) {
       final date = today.subtract(Duration(days: i));
@@ -285,7 +283,9 @@ class MedicineProvider extends ChangeNotifier {
         current = 0;
       }
     }
-    return best > currentStreakDays ? best : currentStreakDays;
+    final result = best > currentStreakDays ? best : currentStreakDays;
+    _cachedBestStreak = result;
+    return result;
   }
 
   // ==================== INITIALIZATION ====================
@@ -315,16 +315,26 @@ class MedicineProvider extends ChangeNotifier {
       _activeProfile = null; // null represents "All Family"
 
       await _refreshMedicinesAndReminders();
-      await rescheduleAllActiveReminders();
       await _refreshRecords();
-      await autoSkipPastDueDoses(checkPastDays: true);
+      _invalidateCaches();
     } catch (e) {
       debugPrint('SQLite notice: loading initial fallback: $e');
       _seedInMemoryFallback();
     } finally {
       _isLoading = false;
-      _cachedMissedDoses = null;
+      _invalidateCaches();
       notifyListeners();
+      // Perform platform-channel alarms scheduling and past checks in background
+      unawaited(_backgroundStartupMaintenance());
+    }
+  }
+
+  Future<void> _backgroundStartupMaintenance() async {
+    try {
+      await autoSkipPastDueDoses(checkPastDays: true);
+      await rescheduleAllActiveReminders();
+    } catch (e) {
+      debugPrint('Background startup maintenance notice: $e');
     }
   }
 
@@ -358,6 +368,7 @@ class MedicineProvider extends ChangeNotifier {
       final rems = await _db.getRemindersForMedicine(med.id);
       _remindersByMedicine[med.id] = rems;
     }
+    _invalidateCaches();
   }
 
   Future<void> rescheduleAllActiveReminders() async {
@@ -467,17 +478,19 @@ class MedicineProvider extends ChangeNotifier {
       final key = '${r.medicineId}_${r.reminderTimeId}_${r.scheduledDate}';
       _recordsByDoseKey[key] = r;
     }
-    _cachedMissedDoses = null;
+    _invalidateCaches();
   }
 
   // ==================== ACTIONS ====================
   void switchProfile(UserProfile? profile) {
     _activeProfile = profile;
+    _invalidateCaches();
     notifyListeners();
   }
 
   void selectDate(DateTime date) async {
     _selectedDate = date;
+    _cachedDosesForSelectedDate = null;
     await _refreshRecords();
     if (DateUtils.isSameDay(date, DateTime.now())) {
       await autoSkipPastDueDoses();
@@ -956,7 +969,7 @@ class MedicineProvider extends ChangeNotifier {
     }
 
     if (changed) {
-      _cachedMissedDoses = null;
+      _invalidateCaches();
       notifyListeners();
     }
   }

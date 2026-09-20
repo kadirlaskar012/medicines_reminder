@@ -26,6 +26,13 @@ class DBHelper {
       version: 4,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
+      onOpen: (db) async {
+        try {
+          await db.execute('CREATE INDEX IF NOT EXISTS idx_reminder_medicine ON reminder_times (medicineId)');
+          await db.execute('CREATE INDEX IF NOT EXISTS idx_intake_date ON intake_records (scheduledDate)');
+          await db.execute('CREATE INDEX IF NOT EXISTS idx_intake_lookup ON intake_records (medicineId, reminderTimeId, scheduledDate)');
+        } catch (_) {}
+      },
     );
   }
 
@@ -126,6 +133,11 @@ class DBHelper {
         notes TEXT
       )
     ''');
+
+    // Indexes for fast querying
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_reminder_medicine ON reminder_times (medicineId)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_intake_date ON intake_records (scheduledDate)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_intake_lookup ON intake_records (medicineId, reminderTimeId, scheduledDate)');
 
     // Insert Default Profile
     await db.insert('profiles', UserProfile.defaultProfile.toMap());

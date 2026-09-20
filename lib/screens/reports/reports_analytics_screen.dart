@@ -1497,8 +1497,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
         ? items[_selectedBarIndex!]
         : null;
 
-    return Column(
-      children: [
+    return RepaintBoundary(
+      child: Column(
+        children: [
         // Interactive Tooltip / Detail callout
         if (selected != null)
           Container(
@@ -1587,8 +1588,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSummaryCard({
     required String label,
