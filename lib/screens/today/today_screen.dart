@@ -190,11 +190,10 @@ class _TodayScreenState extends State<TodayScreen> {
       }
     }
 
-    // If viewing today, ensure at least the very first pending dose is actionable/current
-    if (currentOrDueDoses.isEmpty && pendingDoses.isNotEmpty && isViewingToday) {
-      currentOrDueDoses.add(pendingDoses.first);
-      upcomingDoses.removeAt(0);
-    }
+    final effectiveSlot = _selectedSlotFilter ?? currentLiveTimeSlot;
+    final currentSlotDoses = visibleDoses.where((d) => d.reminder.timeSlot == effectiveSlot).toList();
+    final currentSlotTaken = currentSlotDoses.where((d) => d.isTaken).length;
+    final currentSlotSkipped = currentSlotDoses.where((d) => d.isSkipped).length;
 
     completedDoses.sort((a, b) {
       final compHour = a.reminder.hour.compareTo(b.reminder.hour);
@@ -654,7 +653,88 @@ class _TodayScreenState extends State<TodayScreen> {
 
             // Dose Lists: Smart Priority Direct Rendering
             // 1. Current / Due Doses (Actionable with Take, Snooze, Skip)
-            if (currentOrDueDoses.isNotEmpty)
+            if (currentOrDueDoses.isNotEmpty) ...[
+              if (isViewingToday && (currentSlotTaken > 0 || currentSlotSkipped > 0))
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          width: 1.1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(effectiveSlot.icon, size: 15, color: effectiveSlot.color),
+                              const SizedBox(width: 7),
+                              Text(
+                                s.code == 'bn' ? _getTimeSlotTitle(effectiveSlot, s) : effectiveSlot.title,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              if (currentSlotTaken > 0) ...[
+                                const Icon(Icons.check_rounded, size: 13, color: AppColors.accentEmerald),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '$currentSlotTaken Take',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.accentEmerald,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              if (currentSlotSkipped > 0) ...[
+                                const Icon(Icons.close_rounded, size: 13, color: AppColors.accentRose),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '$currentSlotSkipped Skip',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.accentRose,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: effectiveSlot.color.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  s.code == 'bn' ? '${currentOrDueDoses.length}টি বাকি' : '${currentOrDueDoses.length} due',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: effectiveSlot.color,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverList(
@@ -686,6 +766,16 @@ class _TodayScreenState extends State<TodayScreen> {
                   ),
                 ),
               ),
+            ] else if (isViewingToday && totalDoses > 0) ...[
+              _buildCurrentSlotStatusCard(
+                context: context,
+                slot: effectiveSlot,
+                slotDoses: currentSlotDoses,
+                hasUpcoming: upcomingDoses.isNotEmpty,
+                isDark: isDark,
+                s: s,
+              ),
+            ],
 
             // 2. Upcoming Medicines Separator (with subtle Dashed Line and label)
             if (upcomingDoses.isNotEmpty) ...[
@@ -906,6 +996,380 @@ class _TodayScreenState extends State<TodayScreen> {
                 color: Colors.white70,
                 size: 11,
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentSlotStatusCard({
+    required BuildContext context,
+    required TimeSlot slot,
+    required List<ScheduledDose> slotDoses,
+    required bool hasUpcoming,
+    required bool isDark,
+    required AppStrings s,
+  }) {
+    final takenCount = slotDoses.where((d) => d.isTaken).length;
+    final skippedCount = slotDoses.where((d) => d.isSkipped).length;
+    final totalCount = slotDoses.length;
+
+    // Slot Title localized
+    String slotHeading;
+    if (s.code == 'bn') {
+      switch (slot) {
+        case TimeSlot.morning:
+          slotHeading = 'সকালের ওষুধ';
+          break;
+        case TimeSlot.afternoon:
+          slotHeading = 'দুপুরের ওষুধ';
+          break;
+        case TimeSlot.evening:
+          slotHeading = 'সন্ধ্যার ওষুধ';
+          break;
+        case TimeSlot.night:
+          slotHeading = 'রাতের ওষুধ';
+          break;
+      }
+    } else if (s.code == 'hi') {
+      slotHeading = '${_getTimeSlotTitle(slot, s)} की दवाएं';
+    } else {
+      slotHeading = '${slot.title} Medicines';
+    }
+
+    if (totalCount == 0) {
+      if (!hasUpcoming) return const SliverToBoxAdapter(child: SizedBox.shrink());
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                    : [const Color(0xFFF8FAFC), Colors.white],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        slot.color.withValues(alpha: isDark ? 0.25 : 0.15),
+                        slot.color.withValues(alpha: isDark ? 0.15 : 0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: slot.color.withValues(alpha: 0.35),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Icon(slot.icon, color: slot.color, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        slotHeading,
+                        style: GoogleFonts.outfit(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        s.code == 'bn'
+                            ? 'এই সময়ে কোনো ওষুধ নির্ধারিত নেই'
+                            : 'No medicines scheduled for this time',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final allCompleted = (takenCount + skippedCount == totalCount);
+    if (!allCompleted) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      slot.color.withValues(alpha: 0.15),
+                      const Color(0xFF0F172A),
+                    ]
+                  : [
+                      slot.color.withValues(alpha: 0.08),
+                      Colors.white,
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: slot.color.withValues(alpha: isDark ? 0.4 : 0.3),
+              width: 1.3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: slot.color.withValues(alpha: isDark ? 0.2 : 0.08),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Row: Slot Icon + Title + Status Icon
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          slot.color.withValues(alpha: isDark ? 0.35 : 0.2),
+                          slot.color.withValues(alpha: isDark ? 0.2 : 0.1),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: slot.color.withValues(alpha: 0.45),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Icon(slot.icon, color: slot.color, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              slotHeading,
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: (takenCount > 0 ? AppColors.accentEmerald : AppColors.accentRose)
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                s.code == 'bn' ? 'সম্পন্ন' : 'Completed',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: takenCount > 0 ? AppColors.accentEmerald : AppColors.accentRose,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          s.code == 'bn'
+                              ? 'নির্ধারিত সময়: ${slot.timeRange}'
+                              : 'Window: ${slot.timeRange}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: (takenCount > 0 ? AppColors.accentEmerald : const Color(0xFFF43F5E))
+                          .withValues(alpha: isDark ? 0.25 : 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: (takenCount > 0 ? AppColors.accentEmerald : const Color(0xFFF43F5E))
+                            .withValues(alpha: 0.45),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        takenCount > 0 ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                        color: takenCount > 0 ? AppColors.accentEmerald : const Color(0xFFF43F5E),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Badges Row: Take & Skip count (Matching User Request Exactly)
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  if (takenCount > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [const Color(0xFF064E3B).withValues(alpha: 0.7), const Color(0xFF022C22).withValues(alpha: 0.8)]
+                              : [const Color(0xFFECFDF5), const Color(0xFFD1FAE5)],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.45 : 0.38),
+                          width: 1.1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.1),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_rounded, size: 15, color: Color(0xFF10B981)),
+                          const SizedBox(width: 5),
+                          Text(
+                            skippedCount == 0
+                                ? (s.code == 'bn' ? 'Take $takenCount' : 'Take $takenCount')
+                                : '$takenCount Take',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (skippedCount > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [const Color(0xFF4C0519).withValues(alpha: 0.7), const Color(0xFF28020D).withValues(alpha: 0.8)]
+                              : [const Color(0xFFFFF1F2), const Color(0xFFFFE4E6)],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.45 : 0.38),
+                          width: 1.1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.2 : 0.1),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.close_rounded, size: 15, color: Color(0xFFF43F5E)),
+                          const SizedBox(width: 5),
+                          Text(
+                            takenCount == 0
+                                ? (s.code == 'bn' ? 'Skip $skippedCount' : 'Skip $skippedCount')
+                                : '$skippedCount Skip',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? const Color(0xFFFB7185) : const Color(0xFF9F1239),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+
+              if (hasUpcoming) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.south_rounded,
+                      size: 13,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        s.code == 'bn'
+                            ? 'পরবর্তী ওষুধ নিচে দেখুন (নির্ধারিত সময়ে সক্রিয় হবে)'
+                            : 'Upcoming medicines will activate below at due time',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
