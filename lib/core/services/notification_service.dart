@@ -85,18 +85,6 @@ void notificationTapBackground(NotificationResponse notificationResponse) async 
           await DBHelper.instance.recordIntake(record);
           debugPrint('Background dose recorded as TAKEN for $medicineName ($medicineId) on $dateStr');
 
-          // Cancel any scheduled 1-hour pre-dose warning for this dose
-          int? baseNotifId = data['reminderBaseNotificationId'] as int?;
-          if (baseNotifId == null && data['notificationId'] is int) {
-            baseNotifId = (data['notificationId'] as int) ~/ 10;
-          }
-          if (baseNotifId != null) {
-            final warningId = (baseNotifId * 10 + dayOfWeek + 600000) % 1000000;
-            try {
-              await plugin.cancel(id: warningId);
-            } catch (_) {}
-          }
-
           // Reschedule weekly alarm for next week so recurring reminders remain intact
           final med = await DBHelper.instance.getMedicineById(medicineId);
           final rem = await DBHelper.instance.getReminderById(reminderId);
@@ -120,18 +108,6 @@ void notificationTapBackground(NotificationResponse notificationResponse) async 
           );
           await DBHelper.instance.recordIntake(record);
           debugPrint('Background dose recorded as SKIPPED for $medicineName ($medicineId) on $dateStr');
-
-          // Cancel any scheduled 1-hour pre-dose warning for this dose
-          int? baseNotifId = data['reminderBaseNotificationId'] as int?;
-          if (baseNotifId == null && data['notificationId'] is int) {
-            baseNotifId = (data['notificationId'] as int) ~/ 10;
-          }
-          if (baseNotifId != null) {
-            final warningId = (baseNotifId * 10 + dayOfWeek + 600000) % 1000000;
-            try {
-              await plugin.cancel(id: warningId);
-            } catch (_) {}
-          }
 
           // Reschedule weekly alarm for next week so recurring reminders remain intact
           final med = await DBHelper.instance.getMedicineById(medicineId);
