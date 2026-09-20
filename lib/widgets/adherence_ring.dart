@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
@@ -47,7 +46,8 @@ class AdherenceRing extends StatelessWidget {
       accentColor = AppColors.accentAmber;
     }
 
-    return Container(
+    return RepaintBoundary(
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
@@ -234,7 +234,7 @@ class AdherenceRing extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms);
+    ));
   }
 }
 

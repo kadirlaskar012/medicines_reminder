@@ -47,6 +47,9 @@ class ScheduledDose {
     return isOverdue;
   }
 
+  /// Whether this dose was not taken (either skipped, auto-missed, or overdue/elapsed)
+  bool get isNotTaken => isSkipped || isAutoMissed || isOverdue;
+
   /// Whether this dose is scheduled for the future and not yet due
   bool get isUpcoming => !isTaken && !isMissed && !isSkipped;
 }

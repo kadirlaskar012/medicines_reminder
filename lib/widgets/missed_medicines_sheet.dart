@@ -565,8 +565,10 @@ class MissedMedicinesSheet extends StatelessWidget {
       switch (slot) {
         case TimeSlot.morning:
           return 'সকাল';
-        case TimeSlot.afternoon:
+        case TimeSlot.lunch:
           return 'দুপুর';
+        case TimeSlot.afternoon:
+          return 'বিকাল';
         case TimeSlot.evening:
           return 'সন্ধ্যা';
         case TimeSlot.night:
@@ -576,8 +578,10 @@ class MissedMedicinesSheet extends StatelessWidget {
       switch (slot) {
         case TimeSlot.morning:
           return 'सुबह';
+        case TimeSlot.lunch:
+          return 'दोपहर (लंच)';
         case TimeSlot.afternoon:
-          return 'दोपहर';
+          return 'दोपहर बाद';
         case TimeSlot.evening:
           return 'शाम';
         case TimeSlot.night:

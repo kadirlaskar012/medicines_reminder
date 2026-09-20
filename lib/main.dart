@@ -19,37 +19,33 @@ import 'screens/welcome/welcome_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Unlock maximum display refresh rate (120Hz+) on supported screens
-  if (Platform.isAndroid) {
-    try {
-      await FlutterDisplayMode.setHighRefreshRate();
-    } catch (e) {
-      debugPrint('High refresh rate setup notice: $e');
-    }
-  }
+  // Run independent initializations in parallel for instant cold startup
+  final initTasks = await Future.wait([
+    if (Platform.isAndroid)
+      FlutterDisplayMode.setHighRefreshRate().catchError((e) {
+        debugPrint('High refresh rate setup notice: $e');
+      })
+    else
+      Future.value(null),
+    NotificationService.instance.initialize().catchError((e) {
+      debugPrint('Notification init notice: $e');
+    }),
+    SharedPreferences.getInstance(),
+    () async {
+      try {
+        await Supabase.initialize(
+          url: SupabaseConfig.projectUrl,
+          // ignore: deprecated_member_use
+          anonKey: SupabaseConfig.anonKey,
+        );
+        await SupabaseService.instance.initSession();
+      } catch (e) {
+        debugPrint('Supabase init notice: $e');
+      }
+    }(),
+  ]);
 
-  // Safely initialize Supabase
-  try {
-    await Supabase.initialize(
-      url: SupabaseConfig.projectUrl,
-      // ignore: deprecated_member_use
-      anonKey: SupabaseConfig.anonKey,
-    );
-  } catch (e) {
-    debugPrint('Supabase initialization note: $e');
-  }
-
-  // Initialize Supabase user session from persistent storage
-  try {
-    await SupabaseService.instance.initSession();
-  } catch (e) {
-    debugPrint('Supabase session init note: $e');
-  }
-
-  // Initialize notification service and channels
-  await NotificationService.instance.initialize();
-
-  final prefs = await SharedPreferences.getInstance();
+  final prefs = initTasks[2] as SharedPreferences;
   bool hasSeenWelcome = prefs.getBool(WelcomeScreen.prefKeySeenWelcome) ?? false;
 
   // If user updated or installed over a previous version, verify SQLite DB

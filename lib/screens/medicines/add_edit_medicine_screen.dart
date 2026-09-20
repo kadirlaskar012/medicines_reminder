@@ -12,8 +12,8 @@ import '../../models/reminder_time.dart';
 import '../../providers/medicine_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../core/localization/app_strings.dart';
-import '../../widgets/dual_tone_capsule.dart';
 import '../../widgets/medicine_visual.dart';
+import '../../widgets/color_wheel_dialog.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final Medicine? medicineToEdit;
@@ -34,7 +34,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
   MedicineType _selectedType = MedicineType.tablet;
   String _selectedUnit = MedicineType.tablet.defaultUnit;
-  int _selectedColorValue = AppColors.pillColors.first.toARGB32();
+  int _selectedColorValue = Colors.white.toARGB32();
   FoodInstruction _selectedInstruction = FoodInstruction.afterMeal;
   String? _selectedProfileId;
 
@@ -76,7 +76,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       _reminders.addAll(existingRems);
     } else {
       _selectedUnit = _selectedType.defaultUnit;
-      _selectedColorValue = _getColorForType(_selectedType);
+      _selectedColorValue = Colors.white.toARGB32();
       _stockController.text = _selectedType.defaultStock.toString();
       _refillThresholdController.text = _selectedType.defaultThreshold.toString();
 
@@ -156,29 +156,6 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           _endDate = picked.add(Duration(days: _durationDays!));
         }
       });
-    }
-  }
-
-  int _getColorForType(MedicineType type) {
-    switch (type) {
-      case MedicineType.tablet:
-        return AppColors.pillColors[4].toARGB32(); // Electric Cyan
-      case MedicineType.capsule:
-        return 0; // Dual tone index 0 (Crimson & Cyan)
-      case MedicineType.syrup:
-        return AppColors.pillColors[2].toARGB32(); // Warm Amber
-      case MedicineType.drops:
-        return AppColors.pillColors[1].toARGB32(); // Emerald Mint
-      case MedicineType.inhaler:
-        return AppColors.pillColors[6].toARGB32(); // Ocean Blue
-      case MedicineType.injection:
-        return AppColors.pillColors[5].toARGB32(); // Crimson Rose
-      case MedicineType.ointment:
-        return AppColors.pillColors[3].toARGB32(); // Royal Violet
-      case MedicineType.supplement:
-        return AppColors.pillColors[1].toARGB32(); // Emerald Mint
-      default:
-        return AppColors.pillColors[0].toARGB32(); // Medical Teal
     }
   }
 
@@ -995,125 +972,118 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => FocusScope.of(context).unfocus(),
-        child: Column(
-          children: [
-            // Static pinned Live 3D Preview Card (Always stays fixed at the top)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
-              child: _buildLivePreviewCard(isDark, s),
-            ),
-            // Scrollable form sections underneath
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
-                  children: [
-                  // Profile selector if multiple profiles exist
-                  if (profiles.length > 1) ...[
-                    _buildSectionHeader(s.assignToFamilyMember),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedProfileId ?? provider.activeProfile?.id ?? profiles.first.id,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.person_rounded),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
+            children: [
+              // Profile selector if multiple profiles exist
+              if (profiles.length > 1) ...[
+                _buildSectionHeader(s.assignToFamilyMember),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedProfileId ?? provider.activeProfile?.id ?? profiles.first.id,
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.person_rounded),
+                  ),
+                  items: profiles.map((p) {
+                    return DropdownMenuItem(
+                      value: p.id,
+                      child: Row(
+                        children: [
+                          AppSvgIcons.render(p.svgAvatar, width: 20, height: 20),
+                          const SizedBox(width: 8),
+                          Text('${(p.id == 'default_me' || p.name.toLowerCase() == 'myself') ? s.myself : p.name} (${s.relationName(p.relation)})'),
+                        ],
                       ),
-                      items: profiles.map((p) {
-                        return DropdownMenuItem(
-                          value: p.id,
-                          child: Row(
-                            children: [
-                              AppSvgIcons.render(p.svgAvatar, width: 20, height: 20),
-                              const SizedBox(width: 8),
-                              Text('${(p.id == 'default_me' || p.name.toLowerCase() == 'myself') ? s.myself : p.name} (${s.relationName(p.relation)})'),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (val) => setState(() => _selectedProfileId = val),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                    );
+                  }).toList(),
+                  onChanged: (val) => setState(() => _selectedProfileId = val),
+                ),
+                const SizedBox(height: 20),
+              ],
 
-            // 1. Basic Medicine Info
-            _buildSectionHeader(s.medicineDetails),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: s.medicineName,
-                hintText: s.medicineNameHint,
-                prefixIcon: const Icon(Icons.medication_rounded),
+              // 1. Basic Medicine Info (Directly at top, visible on launch)
+              _buildSectionHeader(s.medicineDetails),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: s.medicineName,
+                  hintText: s.medicineNameHint,
+                  prefixIcon: const Icon(Icons.medication_rounded),
+                ),
+                validator: (v) => (v == null || v.trim().isEmpty) ? s.enterNameValidation : null,
               ),
-              validator: (v) => (v == null || v.trim().isEmpty) ? s.enterNameValidation : null,
-            ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _dosageController,
-              decoration: InputDecoration(
-                labelText: s.dosageStrength,
-                hintText: s.strengthHint,
-                prefixIcon: const Icon(Icons.scale_rounded),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _dosageController,
+                decoration: InputDecoration(
+                  labelText: s.dosageStrength,
+                  hintText: s.strengthHint,
+                  prefixIcon: const Icon(Icons.scale_rounded),
+                ),
+                validator: (v) => (v == null || v.trim().isEmpty) ? s.enterDosageValidation : null,
               ),
-              validator: (v) => (v == null || v.trim().isEmpty) ? s.enterDosageValidation : null,
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-            // 2. Medicine Form & 3D Icons (ALL VISIBLE DIRECTLY ON SCREEN - NO HORIZONTAL SLIDE!)
-            _buildSectionHeader(s.formAndIcon),
-            const SizedBox(height: 10),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final itemWidth = (constraints.maxWidth - (3 * 8)) / 4;
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: MedicineType.values.map((type) {
-                    final isSelected = _selectedType == type;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedType = type;
-                          _selectedUnit = type.defaultUnit;
-                          _selectedColorValue = _getColorForType(type);
-                          if (!isEditing) {
-                            _stockController.text = type.defaultStock.toString();
-                            _refillThresholdController.text = type.defaultThreshold.toString();
-                          }
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        width: itemWidth,
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.12)
-                              : (isDark ? AppColors.darkCard : Colors.white),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
+              // Live 3D Preview Card (Smoothly scrollable, always accurate)
+              _buildLivePreviewCard(isDark, s),
+              const SizedBox(height: 22),
+
+              // 2. Medicine Form & 3D Icons (ALL VISIBLE DIRECTLY ON SCREEN - NO HORIZONTAL SLIDE!)
+              _buildSectionHeader(s.formAndIcon),
+              const SizedBox(height: 10),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final itemWidth = (constraints.maxWidth - (3 * 8)) / 4;
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: MedicineType.values.map((type) {
+                      final isSelected = _selectedType == type;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedType = type;
+                            _selectedUnit = type.defaultUnit;
+                            if (!isEditing) {
+                              _stockController.text = type.defaultStock.toString();
+                              _refillThresholdController.text = type.defaultThreshold.toString();
+                            }
+                          });
+                        },
+                        child: Container(
+                          width: itemWidth,
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                          decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.primary
-                                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                            width: isSelected ? 2 : 1,
+                                ? AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.12)
+                                : (isDark ? AppColors.darkCard : const Color(0xFFF1F5F9)),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : (isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
+                              width: isSelected ? 2 : 1,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.primary.withValues(alpha: 0.2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
                           ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             MedicineVisual(
                               type: type,
-                              colorValue: isSelected ? _selectedColorValue : _getColorForType(type),
+                              colorValue: isSelected ? _selectedColorValue : Colors.white.toARGB32(),
                               size: 32,
                             ),
                             const SizedBox(height: 6),
@@ -1143,7 +1113,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             // Dynamic Color Theme Swatches based on selected medicine form
             _buildSectionHeader(_getColorSectionTitle(s)),
             const SizedBox(height: 10),
-            _buildColorSwatches(isDark),
+            _buildColorSelectionBar(isDark, s),
             const SizedBox(height: 24),
 
             // 3. Start Date Picker (First)
@@ -1857,9 +1827,6 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         ),
       ),
     ),
-  ],
-),
-),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
         decoration: BoxDecoration(
@@ -2091,11 +2058,18 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkCardElevated : const Color(0xFFF8FAFC),
+              color: isDark ? AppColors.darkCardElevated : const Color(0xFFEEF2F6),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                color: isDark ? AppColors.darkBorder : const Color(0xFFCBD5E1),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Center(
               child: AnimatedSwitcher(
@@ -2177,128 +2151,239 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   }
 
   String _getColorSectionTitle(AppStrings s) {
-    switch (_selectedType) {
-      case MedicineType.tablet:
-        return s.code == 'bn' ? 'ট্যাবলেটের কালার থিম' : 'Tablet Color Theme';
-      case MedicineType.capsule:
-        return s.code == 'bn' ? 'ক্যাপসুলের কালার থিম' : 'Capsule Color Theme';
-      case MedicineType.syrup:
-        return s.code == 'bn' ? 'সিরাপের কালার থিম' : 'Syrup Color Theme';
-      case MedicineType.drops:
-        return s.code == 'bn' ? 'ড্রপসের কালার থিম' : 'Drops Color Theme';
-      case MedicineType.inhaler:
-        return s.code == 'bn' ? 'ইনহেলারের কালার থিম' : 'Inhaler Color Theme';
-      case MedicineType.injection:
-        return s.code == 'bn' ? 'ইনজেকশনের কালার থিম' : 'Injection Color Theme';
-      case MedicineType.ointment:
-        return s.code == 'bn' ? 'অয়েন্টমেন্টের কালার থিম' : 'Ointment Color Theme';
-      case MedicineType.supplement:
-        return s.code == 'bn' ? 'সাপ্লিমেন্টের কালার থিম' : 'Supplement Color Theme';
-      default:
-        return s.code == 'bn' ? 'ওষুধের কালার থিম' : 'Medicine Color Theme';
-    }
+    return s.code == 'bn' ? 'কালার থিম' : (s.code == 'hi' ? 'कलर थीम' : 'Color Theme');
   }
 
-  Widget _buildColorSwatches(bool isDark) {
-    if (_selectedType == MedicineType.capsule) {
-      return SizedBox(
-        height: 54,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: AppColors.dualCapsuleColors.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 10),
-          itemBuilder: (context, i) {
-            final pair = AppColors.dualCapsuleColors[i];
-            final isSelected = _selectedColorValue == i;
+  Widget _buildColorSelectionBar(bool isDark, AppStrings s) {
+    final currentColor = MedicineVisual.resolveColor(_selectedColorValue);
+    final isWhiteSelected = currentColor == Colors.white || currentColor.computeLuminance() > 0.88;
 
-            return GestureDetector(
-              onTap: () => setState(() => _selectedColorValue = i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkCard : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? pair[0]
-                        : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                    width: isSelected ? 2.4 : 1,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: pair[0].withValues(alpha: 0.45),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: DualToneCapsule(
-                    size: 34,
-                    primaryColor: pair[0],
-                    secondaryColor: pair[1],
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 54,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: AppColors.pillColors.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
-        itemBuilder: (context, i) {
-          final color = AppColors.pillColors[i];
-          final colorVal = color.toARGB32();
-          final isSelected =
-              MedicineVisual.resolveColor(_selectedColorValue).toARGB32() == colorVal;
-
-          return GestureDetector(
-            onTap: () => setState(() => _selectedColorValue = colorVal),
+    return Row(
+      children: [
+        // 1. White Option Bar (Selected by Default)
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedColorValue = Colors.white.toARGB32();
+              });
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 52,
-              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkCard : Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                color: isWhiteSelected
+                    ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.10)
+                    : (isDark ? AppColors.darkCard : Colors.white),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: isSelected
-                      ? color
+                  color: isWhiteSelected
+                      ? AppColors.primary
                       : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                  width: isSelected ? 2.4 : 1,
+                  width: isWhiteSelected ? 2.2 : 1.2,
                 ),
-                boxShadow: isSelected
+                boxShadow: isWhiteSelected
                     ? [
                         BoxShadow(
-                          color: color.withValues(alpha: 0.45),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: AppColors.primary.withValues(alpha: 0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
                       ]
                     : null,
               ),
-              child: Center(
-                child: MedicineVisual(
-                  type: _selectedType,
-                  colorValue: colorVal,
-                  size: 30,
-                  hasGlow: false,
-                ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFCBD5E1),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1.5),
+                        ),
+                      ],
+                    ),
+                    child: isWhiteSelected
+                        ? const Center(
+                            child: Icon(
+                              Icons.check_rounded,
+                              size: 20,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          s.colorWhite,
+                          style: GoogleFonts.outfit(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            color: isWhiteSelected
+                                ? AppColors.primary
+                                : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+                          ),
+                        ),
+                        Text(
+                          s.defaultColor,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          );
-        },
-      ),
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // 2. Color Wheel Option Bar (Opens Full Pop-up Dialog)
+        Expanded(
+          child: GestureDetector(
+            onTap: () async {
+              final picked = await ColorWheelDialog.show(
+                context,
+                initialColor: isWhiteSelected ? const Color(0xFF0D9488) : currentColor,
+                previewType: _selectedType,
+              );
+              if (picked != null) {
+                setState(() {
+                  _selectedColorValue = picked.toARGB32();
+                });
+              }
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: !isWhiteSelected
+                    ? currentColor.withValues(alpha: isDark ? 0.22 : 0.10)
+                    : (isDark ? AppColors.darkCard : Colors.white),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: !isWhiteSelected
+                      ? currentColor
+                      : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                  width: !isWhiteSelected ? 2.2 : 1.2,
+                ),
+                boxShadow: !isWhiteSelected
+                    ? [
+                        BoxShadow(
+                          color: currentColor.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: isWhiteSelected
+                          ? const SweepGradient(
+                              colors: [
+                                Colors.red,
+                                Colors.yellow,
+                                Colors.green,
+                                Colors.cyan,
+                                Colors.blue,
+                                Color(0xFFFF00FF),
+                                Colors.red,
+                              ],
+                            )
+                          : null,
+                      color: !isWhiteSelected ? currentColor : null,
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1.5),
+                        ),
+                      ],
+                    ),
+                    child: isWhiteSelected
+                        ? Center(
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkCard : Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          )
+                        : const Center(
+                            child: Icon(
+                              Icons.palette_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          !isWhiteSelected ? s.customColor : s.colorWheel,
+                          style: GoogleFonts.outfit(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            color: !isWhiteSelected
+                                ? currentColor
+                                : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          !isWhiteSelected ? s.tapToChange : s.pickAnyColor,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

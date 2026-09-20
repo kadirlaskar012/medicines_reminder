@@ -48,7 +48,7 @@ class AppStrings {
   String get allDoneSub => code == 'bn' ? 'আপনার স্বাস্থ্যের যত্ন নেওয়ার জন্য চমৎকার কাজ।' : (code == 'hi' ? 'अपने स्वास्थ्य का ध्यान रखने के लिए बहुत बढ़िया।' : 'Great job staying on track with your health.');
   String get dosesRemaining => code == 'bn' ? 'ওষুধ বাকি আছে' : (code == 'hi' ? 'दवाइयां बाकी हैं' : 'doses remaining');
   String get morning => code == 'bn' ? 'সকাল' : (code == 'hi' ? 'सुबह' : 'Morning');
-  String get afternoon => code == 'bn' ? 'দুপুর' : (code == 'hi' ? 'दोपहर' : 'Afternoon');
+  String get afternoon => code == 'bn' ? 'বিকাল' : (code == 'hi' ? 'अपराह्न' : 'Afternoon');
   String get evening => code == 'bn' ? 'সন্ধ্যা' : (code == 'hi' ? 'शाम' : 'Evening');
   String get night => code == 'bn' ? 'রাত' : (code == 'hi' ? 'रात' : 'Night');
   String get noDosesScheduled => code == 'bn' ? 'এই দিনের জন্য কোনো ওষুধ নেই' : (code == 'hi' ? 'इस दिन के लिए कोई दवा नहीं है' : 'No medicines scheduled for this day');
@@ -708,6 +708,18 @@ class AppStrings {
   String get statusUpdatedMsg => code == 'bn' ? 'স্ট্যাটাস সফলভাবে আপডেট করা হয়েছে' : (code == 'hi' ? 'स्थिति सफलतापूर्वक अपडेट की गई' : 'Status updated successfully');
   String get cancelBtn => code == 'bn' ? 'বাতিল' : (code == 'hi' ? 'रद्द करें' : 'Cancel');
   String get confirmBtn => code == 'bn' ? 'নিশ্চিত' : (code == 'hi' ? 'पुष्टि करें' : 'Confirm');
+
+  // Medicine Color Theme & Color Wheel
+  String get colorWhite => code == 'bn' ? 'সাদা' : (code == 'hi' ? 'सफेद' : 'White');
+  String get defaultColor => code == 'bn' ? 'ডিফল্ট' : (code == 'hi' ? 'डिफ़ॉल्ट' : 'Default');
+  String get colorWheel => code == 'bn' ? 'কালার হুইল' : (code == 'hi' ? 'कलर व्हील' : 'Color Wheel');
+  String get customColor => code == 'bn' ? 'কাস্টম কালার' : (code == 'hi' ? 'कस्टम रंग' : 'Custom Color');
+  String get pickAnyColor => code == 'bn' ? 'পছন্দের যেকোনো রঙ বেছে নিন' : (code == 'hi' ? 'अपनी पसंद का कोई भी रंग चुनें' : 'Pick any color');
+  String get tapToChange => code == 'bn' ? 'পরিবর্তন করতে চাপুন' : (code == 'hi' ? 'बदलने के लिए टैप करें' : 'Tap to change');
+  String get selectColor => code == 'bn' ? 'কালার নির্বাচন করুন' : (code == 'hi' ? 'रंग चुनें' : 'Select Color');
+  String get applyColor => code == 'bn' ? 'বাছাই করুন' : (code == 'hi' ? 'लागू करें' : 'Apply Color');
+  String get brightness => code == 'bn' ? 'উজ্জ্বলতা' : (code == 'hi' ? 'चमक' : 'Brightness');
+  String get popularColors => code == 'bn' ? 'জনপ্রিয় কালারসমূহ' : (code == 'hi' ? 'लोकप्रिय रंग' : 'Popular Colors');
 }
 
 

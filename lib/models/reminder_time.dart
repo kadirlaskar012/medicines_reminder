@@ -3,10 +3,11 @@ import 'package:intl/intl.dart';
 import '../core/localization/app_strings.dart';
 
 enum TimeSlot {
-  morning('Morning', '06:00 AM - 12:00 PM', Icons.wb_sunny_rounded, Color(0xFFF59E0B)),
-  afternoon('Afternoon', '12:00 PM - 05:00 PM', Icons.light_mode_rounded, Color(0xFF3B82F6)),
-  evening('Evening', '05:00 PM - 09:00 PM', Icons.wb_twilight_rounded, Color(0xFFF97316)),
-  night('Night', '09:00 PM - 06:00 AM', Icons.bedtime_rounded, Color(0xFF6366F1));
+  morning('Morning', '05:00 AM - 12:00 PM', Icons.wb_sunny_rounded, Color(0xFFF59E0B)),
+  lunch('Lunch', '12:00 PM - 03:30 PM', Icons.lunch_dining_rounded, Color(0xFF3B82F6)),
+  afternoon('Afternoon', '03:30 PM - 06:00 PM', Icons.coffee_rounded, Color(0xFF10B981)),
+  evening('Evening', '06:00 PM - 08:30 PM', Icons.wb_twilight_rounded, Color(0xFF8B5CF6)),
+  night('Night', '08:30 PM - 05:00 AM', Icons.bedtime_rounded, Color(0xFF6366F1));
 
   final String title;
   final String timeRange;
@@ -41,11 +42,14 @@ class ReminderTime {
   }
 
   TimeSlot get timeSlot {
-    if (hour >= 6 && hour < 12) {
+    final totalMinutes = hour * 60 + minute;
+    if (totalMinutes >= 300 && totalMinutes < 720) {
       return TimeSlot.morning;
-    } else if (hour >= 12 && hour < 17) {
+    } else if (totalMinutes >= 720 && totalMinutes < 930) {
+      return TimeSlot.lunch;
+    } else if (totalMinutes >= 930 && totalMinutes < 1080) {
       return TimeSlot.afternoon;
-    } else if (hour >= 17 && hour < 21) {
+    } else if (totalMinutes >= 1080 && totalMinutes < 1230) {
       return TimeSlot.evening;
     } else {
       return TimeSlot.night;

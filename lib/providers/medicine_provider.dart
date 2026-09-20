@@ -33,6 +33,7 @@ class MedicineProvider extends ChangeNotifier {
   final Map<String, IntakeRecord> _recordsByDoseKey = {};
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = true;
+  List<ScheduledDose>? _cachedMissedDoses;
 
   // Getters
   List<UserProfile> get profiles => _profiles;
@@ -42,6 +43,7 @@ class MedicineProvider extends ChangeNotifier {
   DateTime get selectedDate => _selectedDate;
   bool get isLoading => _isLoading;
   List<IntakeRecord> get intakeRecords => _recordsByDoseKey.values.toList();
+  List<ScheduledDose> get missedDoses => getMissedDoses();
 
   String get selectedDateStr => DateFormat('yyyy-MM-dd').format(_selectedDate);
 
@@ -105,6 +107,9 @@ class MedicineProvider extends ChangeNotifier {
   // Grouped by time slots
   List<ScheduledDose> get morningDoses =>
       dosesForSelectedDate.where((d) => d.reminder.timeSlot == TimeSlot.morning).toList();
+
+  List<ScheduledDose> get lunchDoses =>
+      dosesForSelectedDate.where((d) => d.reminder.timeSlot == TimeSlot.lunch).toList();
 
   List<ScheduledDose> get afternoonDoses =>
       dosesForSelectedDate.where((d) => d.reminder.timeSlot == TimeSlot.afternoon).toList();
@@ -180,7 +185,6 @@ class MedicineProvider extends ChangeNotifier {
     final isTargetPast = targetDate.isBefore(today);
 
     final takenCount = doses.where((d) => d.isTaken).length;
-    final skippedCount = doses.where((d) => d.isSkipped).length;
     final totalCount = doses.length;
 
     // 1. All scheduled doses taken -> Green
@@ -188,37 +192,26 @@ class MedicineProvider extends ChangeNotifier {
       return DateComplianceStatus.allTaken;
     }
 
-    // 2. Explicitly skipped dose -> Red
-    if (skippedCount > 0) {
+    // 2. Some taken, some not (e.g. 3 of 4, 2 of 4, 1 of 4) -> Yellow (Partial)
+    if (takenCount > 0) {
+      return DateComplianceStatus.partialTaken;
+    }
+
+    // 3. Past dates: zero taken -> Red (All Missed / Skipped)
+    if (isTargetPast) {
       return DateComplianceStatus.hasMissed;
     }
 
-    // 3. Past dates: if some taken -> Yellow (Partial), if none taken -> Red (Missed)
-    if (isTargetPast) {
-      if (takenCount > 0) {
-        return DateComplianceStatus.partialTaken;
-      } else {
-        return DateComplianceStatus.hasMissed;
-      }
-    }
-
-    // 4. Today: if some taken -> Yellow (Partial)
+    // 4. Today: zero taken so far, check if any is already overdue or skipped
     if (isTargetToday) {
-      if (takenCount > 0) {
-        return DateComplianceStatus.partialTaken;
-      }
-      // Any dose whose scheduled time has passed and not taken -> Red
-      final hasOverdue = doses.any((d) => d.isOverdue);
-      if (hasOverdue) {
+      final hasOverdueOrSkipped = doses.any((d) => d.isOverdue || d.isSkipped);
+      if (hasOverdueOrSkipped) {
         return DateComplianceStatus.hasMissed;
       }
       return DateComplianceStatus.futurePending;
     }
 
     // 5. Future dates
-    if (takenCount > 0) {
-      return DateComplianceStatus.partialTaken;
-    }
     return DateComplianceStatus.futurePending;
   }
 
@@ -324,13 +317,28 @@ class MedicineProvider extends ChangeNotifier {
       await _refreshMedicinesAndReminders();
       await rescheduleAllActiveReminders();
       await _refreshRecords();
-      await autoSkipPastDueDoses();
+      await autoSkipPastDueDoses(checkPastDays: true);
     } catch (e) {
       debugPrint('SQLite notice: loading initial fallback: $e');
       _seedInMemoryFallback();
     } finally {
       _isLoading = false;
+      _cachedMissedDoses = null;
       notifyListeners();
+    }
+  }
+
+  /// Silently refreshes local medicines, reminders, and intake records
+  /// without resetting _isLoading or re-scheduling all system alarms.
+  Future<void> reloadDataSilently() async {
+    try {
+      _profiles = await _db.getAllProfiles();
+      await _refreshMedicinesAndReminders();
+      await _refreshRecords();
+      _cachedMissedDoses = null;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Silent reload notice: $e');
     }
   }
 
@@ -459,6 +467,7 @@ class MedicineProvider extends ChangeNotifier {
       final key = '${r.medicineId}_${r.reminderTimeId}_${r.scheduledDate}';
       _recordsByDoseKey[key] = r;
     }
+    _cachedMissedDoses = null;
   }
 
   // ==================== ACTIONS ====================
@@ -688,6 +697,7 @@ class MedicineProvider extends ChangeNotifier {
       }
     }
     _recordsByDoseKey[key] = record;
+    _cachedMissedDoses = null;
 
     // Dismiss active reminders & cancel pre-dose warning alarm for this dose
     await _notifications.dismissActiveReminderNotification(reminder: reminder);
@@ -717,6 +727,7 @@ class MedicineProvider extends ChangeNotifier {
       await _refreshMedicinesAndReminders();
     } catch (_) {}
     _recordsByDoseKey[key] = record;
+    _cachedMissedDoses = null;
 
     // Dismiss active reminders & cancel pre-dose warning alarm for this dose
     await _notifications.dismissActiveReminderNotification(reminder: reminder);
@@ -735,6 +746,7 @@ class MedicineProvider extends ChangeNotifier {
       await _refreshMedicinesAndReminders();
     } catch (_) {}
     _recordsByDoseKey.remove(key);
+    _cachedMissedDoses = null;
 
     if (medicine.isActive) {
       await _notifications.scheduleMedicineReminder(medicine, reminder);
@@ -850,51 +862,55 @@ class MedicineProvider extends ChangeNotifier {
     switch (slot) {
       case TimeSlot.morning:
         return DateTime(date.year, date.month, date.day, 12, 0);
+      case TimeSlot.lunch:
+        return DateTime(date.year, date.month, date.day, 15, 30);
       case TimeSlot.afternoon:
-        return DateTime(date.year, date.month, date.day, 17, 0);
+        return DateTime(date.year, date.month, date.day, 18, 0);
       case TimeSlot.evening:
-        return DateTime(date.year, date.month, date.day, 21, 0);
+        return DateTime(date.year, date.month, date.day, 20, 30);
       case TimeSlot.night:
-        return DateTime(date.year, date.month, date.day, 6, 0).add(const Duration(days: 1));
+        return DateTime(date.year, date.month, date.day, 5, 0).add(const Duration(days: 1));
     }
   }
 
   /// Automatically marks past unrecorded doses as skipped:
-  /// 1. Past unrecorded doses from earlier dates (up to 7 days prior).
+  /// 1. Past unrecorded doses from earlier dates (up to 7 days prior) when [checkPastDays] is true.
   /// 2. Today's doses whose time slot has ended, OR where a subsequent scheduled dose's time has arrived.
-  Future<void> autoSkipPastDueDoses() async {
+  Future<void> autoSkipPastDueDoses({bool checkPastDays = false}) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     bool changed = false;
 
-    // 1. Sweep past dates (yesterday and earlier unrecorded doses)
-    for (int i = 1; i <= 7; i++) {
-      final pastDate = today.subtract(Duration(days: i));
-      final pastDoses = getDosesForDate(pastDate);
-      for (final dose in pastDoses) {
-        if (dose.isTaken || dose.isSkipped) continue;
+    // 1. Sweep past dates (yesterday and earlier unrecorded doses) only on initial launch / date change
+    if (checkPastDays) {
+      for (int i = 1; i <= 7; i++) {
+        final pastDate = today.subtract(Duration(days: i));
+        final pastDoses = getDosesForDate(pastDate);
+        for (final dose in pastDoses) {
+          if (dose.isTaken || dose.isSkipped) continue;
 
-        final dateStr = DateFormat('yyyy-MM-dd').format(pastDate);
-        final key = '${dose.medicine.id}_${dose.reminder.id}_$dateStr';
-        final record = IntakeRecord(
-          id: _uuid.v4(),
-          medicineId: dose.medicine.id,
-          reminderTimeId: dose.reminder.id,
-          scheduledDate: dateStr,
-          scheduledHour: dose.reminder.hour,
-          scheduledMinute: dose.reminder.minute,
-          status: IntakeStatus.missed,
-          notes: 'auto_missed',
-          recordedAt: now,
-        );
+          final dateStr = DateFormat('yyyy-MM-dd').format(pastDate);
+          final key = '${dose.medicine.id}_${dose.reminder.id}_$dateStr';
+          final record = IntakeRecord(
+            id: _uuid.v4(),
+            medicineId: dose.medicine.id,
+            reminderTimeId: dose.reminder.id,
+            scheduledDate: dateStr,
+            scheduledHour: dose.reminder.hour,
+            scheduledMinute: dose.reminder.minute,
+            status: IntakeStatus.missed,
+            notes: 'auto_missed',
+            recordedAt: now,
+          );
 
-        try {
-          await _db.recordIntake(record);
-        } catch (_) {}
-        _recordsByDoseKey[key] = record;
-        await _notifications.dismissActiveReminderNotification(reminder: dose.reminder);
-        await _notifications.cancelPreDoseWarningNotification(dose.reminder, pastDate.weekday);
-        changed = true;
+          try {
+            await _db.recordIntake(record);
+          } catch (_) {}
+          _recordsByDoseKey[key] = record;
+          await _notifications.dismissActiveReminderNotification(reminder: dose.reminder);
+          await _notifications.cancelPreDoseWarningNotification(dose.reminder, pastDate.weekday);
+          changed = true;
+        }
       }
     }
 
@@ -912,29 +928,7 @@ class MedicineProvider extends ChangeNotifier {
       if (dose.isTaken || dose.isSkipped || dose.isAutoMissed) continue;
 
       final slotEnd = getSlotEndTime(dose.reminder.timeSlot, today);
-      bool shouldAutoSkip = now.isAfter(slotEnd);
-
-      // Check if a subsequent scheduled dose's time has arrived
-      if (!shouldAutoSkip) {
-        final doseMinutes = dose.reminder.hour * 60 + dose.reminder.minute;
-        for (int j = i + 1; j < todayDoses.length; j++) {
-          final nextDose = todayDoses[j];
-          final nextMinutes = nextDose.reminder.hour * 60 + nextDose.reminder.minute;
-          if (nextMinutes > doseMinutes) {
-            final nextDoseTime = DateTime(
-              today.year,
-              today.month,
-              today.day,
-              nextDose.reminder.hour,
-              nextDose.reminder.minute,
-            );
-            if (now.isAfter(nextDoseTime)) {
-              shouldAutoSkip = true;
-              break;
-            }
-          }
-        }
-      }
+      final shouldAutoSkip = now.isAfter(slotEnd);
 
       if (shouldAutoSkip) {
         final dateStr = DateFormat('yyyy-MM-dd').format(today);
@@ -962,13 +956,18 @@ class MedicineProvider extends ChangeNotifier {
     }
 
     if (changed) {
+      _cachedMissedDoses = null;
       notifyListeners();
     }
   }
 
   /// Returns all missed doses across the past 7 days and today (elapsed/missed doses)
-  /// that have not been manually taken or skipped.
+  /// that have not been manually taken or skipped. Memoized for high performance during build.
   List<ScheduledDose> getMissedDoses({int daysBack = 7}) {
+    if (daysBack == 7 && _cachedMissedDoses != null) {
+      return _cachedMissedDoses!;
+    }
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final List<ScheduledDose> missed = [];
@@ -1003,6 +1002,9 @@ class MedicineProvider extends ChangeNotifier {
       return b.reminder.minute.compareTo(a.reminder.minute);
     });
 
+    if (daysBack == 7) {
+      _cachedMissedDoses = missed;
+    }
     return missed;
   }
 }

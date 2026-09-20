@@ -32,9 +32,12 @@ class _TodayScreenState extends State<TodayScreen> {
 
   static TimeSlot get currentLiveTimeSlot {
     final hour = DateTime.now().hour;
-    if (hour >= 6 && hour < 12) return TimeSlot.morning;
-    if (hour >= 12 && hour < 17) return TimeSlot.afternoon;
-    if (hour >= 17 && hour < 21) return TimeSlot.evening;
+    final minute = DateTime.now().minute;
+    final totalMinutes = hour * 60 + minute;
+    if (totalMinutes >= 300 && totalMinutes < 720) return TimeSlot.morning;
+    if (totalMinutes >= 720 && totalMinutes < 930) return TimeSlot.lunch;
+    if (totalMinutes >= 930 && totalMinutes < 1080) return TimeSlot.afternoon;
+    if (totalMinutes >= 1080 && totalMinutes < 1230) return TimeSlot.evening;
     return TimeSlot.night;
   }
 
@@ -100,6 +103,8 @@ class _TodayScreenState extends State<TodayScreen> {
     switch (slot) {
       case TimeSlot.morning:
         return s.morning;
+      case TimeSlot.lunch:
+        return s.lunchSlot;
       case TimeSlot.afternoon:
         return s.afternoon;
       case TimeSlot.evening:
@@ -134,6 +139,7 @@ class _TodayScreenState extends State<TodayScreen> {
     }
 
     final morningDoses = provider.morningDoses;
+    final lunchDoses = provider.lunchDoses;
     final afternoonDoses = provider.afternoonDoses;
     final eveningDoses = provider.eveningDoses;
     final nightDoses = provider.nightDoses;
@@ -163,7 +169,7 @@ class _TodayScreenState extends State<TodayScreen> {
       }
     }
 
-    final missedDoses = provider.getMissedDoses();
+    final missedDoses = provider.missedDoses;
 
     final now = DateTime.now();
     final isViewingToday = DateUtils.isSameDay(provider.selectedDate, now);
@@ -465,10 +471,11 @@ class _TodayScreenState extends State<TodayScreen> {
               ),
             ),
 
-            // Sleek Daily Prescription Routine Bar (1 - 0 - 0 - 1)
+            // Sleek Daily Prescription Routine Bar (1 - 0 - 0 - 0 - 1)
             SliverToBoxAdapter(
               child: _buildPrescriptionRoutineBar(
                 morningCount: morningDoses.length,
+                lunchCount: lunchDoses.length,
                 afternoonCount: afternoonDoses.length,
                 eveningCount: eveningDoses.length,
                 nightCount: nightDoses.length,
@@ -1029,8 +1036,11 @@ class _TodayScreenState extends State<TodayScreen> {
         case TimeSlot.morning:
           slotHeading = 'সকালের ওষুধ';
           break;
-        case TimeSlot.afternoon:
+        case TimeSlot.lunch:
           slotHeading = 'দুপুরের ওষুধ';
+          break;
+        case TimeSlot.afternoon:
+          slotHeading = 'বিকেলের ওষুধ';
           break;
         case TimeSlot.evening:
           slotHeading = 'সন্ধ্যার ওষুধ';
@@ -1506,6 +1516,7 @@ class _TodayScreenState extends State<TodayScreen> {
 
   Widget _buildPrescriptionRoutineBar({
     required int morningCount,
+    required int lunchCount,
     required int afternoonCount,
     required int eveningCount,
     required int nightCount,
@@ -1513,11 +1524,14 @@ class _TodayScreenState extends State<TodayScreen> {
     required AppStrings s,
   }) {
     final liveSlot = currentLiveTimeSlot;
+    final routinePattern = lunchCount > 0
+        ? '$morningCount-$lunchCount-$afternoonCount-$eveningCount-$nightCount'
+        : '$morningCount-$afternoonCount-$eveningCount-$nightCount';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 2, 20, 4),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -1544,7 +1558,7 @@ class _TodayScreenState extends State<TodayScreen> {
               },
               borderRadius: BorderRadius.circular(9),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4.5),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF0D9488), Color(0xFF06B6D4)],
@@ -1563,24 +1577,24 @@ class _TodayScreenState extends State<TodayScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('💊', style: TextStyle(fontSize: 11)),
-                    const SizedBox(width: 4),
+                    const Text('💊', style: TextStyle(fontSize: 10.5)),
+                    const SizedBox(width: 3),
                     Text(
-                      '$morningCount-$afternoonCount-$eveningCount-$nightCount',
+                      routinePattern,
                       style: GoogleFonts.outfit(
-                        fontSize: 12,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.4,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
 
-            // Right: 4 Slot Chips with Connectors
+            // Right: 5 Slot Chips with Connectors
             Expanded(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1596,8 +1610,18 @@ class _TodayScreenState extends State<TodayScreen> {
                   ),
                   _buildRoutineConnector(isDark),
                   _buildRoutineSlotChip(
+                    emoji: '🍽️',
+                    label: s.code == 'bn' ? 'দুপুর' : 'Lunch',
+                    count: lunchCount,
+                    slot: TimeSlot.lunch,
+                    isLive: liveSlot == TimeSlot.lunch,
+                    isSelected: _selectedSlotFilter == TimeSlot.lunch,
+                    isDark: isDark,
+                  ),
+                  _buildRoutineConnector(isDark),
+                  _buildRoutineSlotChip(
                     emoji: '☀️',
-                    label: s.code == 'bn' ? 'দুপুর' : 'Noon',
+                    label: s.code == 'bn' ? 'বিকাল' : 'Aft',
                     count: afternoonCount,
                     slot: TimeSlot.afternoon,
                     isLive: liveSlot == TimeSlot.afternoon,
@@ -1714,6 +1738,9 @@ class _TodayScreenState extends State<TodayScreen> {
     final isSkipped = dose.isSkipped;
     final med = dose.medicine;
     final rem = dose.reminder;
+    final provider = context.read<MedicineProvider>();
+    final isViewingToday = DateUtils.isSameDay(provider.selectedDate, DateTime.now());
+    final isCurrentSlot = isViewingToday && (dose.reminder.timeSlot == currentLiveTimeSlot);
 
     // Subtle tactile feedback on trigger
     HapticFeedback.lightImpact();
@@ -1928,30 +1955,31 @@ class _TodayScreenState extends State<TodayScreen> {
                     },
                   ),
                 ],
-                const SizedBox(height: 10),
-
-                // Reset to Pending Option
-                _buildStatusActionButton(
-                  context: context,
-                  icon: Icons.restart_alt_rounded,
-                  title: s.resetToPendingOption,
-                  subtitle: s.code == 'bn'
-                      ? 'স্ট্যাটাস মুছে দিয়ে আবার পেন্ডিং তালিকায় ফিরিয়ে নিন'
-                      : 'Clear status and return to pending schedule',
-                  color: const Color(0xFF4F46E5),
-                  isDark: isDark,
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _confirmAndExecuteStatusChange(
-                      context: context,
-                      dose: dose,
-                      actionType: 'reset',
-                      title: s.confirmChangeTitle,
-                      message: s.confirmResetMsg(med.name),
-                      confirmColor: const Color(0xFF4F46E5),
-                    );
-                  },
-                ),
+                // Reset to Pending Option (Strictly available only for current live session)
+                if (isCurrentSlot) ...[
+                  const SizedBox(height: 10),
+                  _buildStatusActionButton(
+                    context: context,
+                    icon: Icons.restart_alt_rounded,
+                    title: s.resetToPendingOption,
+                    subtitle: s.code == 'bn'
+                        ? 'স্ট্যাটাস মুছে দিয়ে বর্তমান পেন্ডিং তালিকায় ফিরিয়ে নিন'
+                        : 'Clear status and return to current pending schedule',
+                    color: const Color(0xFF4F46E5),
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _confirmAndExecuteStatusChange(
+                        context: context,
+                        dose: dose,
+                        actionType: 'reset',
+                        title: s.confirmChangeTitle,
+                        message: s.confirmResetMsg(med.name),
+                        confirmColor: const Color(0xFF4F46E5),
+                      );
+                    },
+                  ),
+                ],
                 const SizedBox(height: 14),
 
                 // Cancel Button
@@ -2161,6 +2189,11 @@ class _TodayScreenState extends State<TodayScreen> {
                     await provider.markAsSkipped(dose.medicine, dose.reminder, dose.scheduledDate);
                   } else if (actionType == 'reset') {
                     await provider.resetDoseToPending(dose.medicine, dose.reminder, dose.scheduledDate);
+                    if (_selectedSlotFilter != null && _selectedSlotFilter != dose.reminder.timeSlot) {
+                      setState(() {
+                        _selectedSlotFilter = null;
+                      });
+                    }
                   }
 
                   if (context.mounted) {

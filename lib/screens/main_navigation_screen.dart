@@ -28,7 +28,6 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
-  Timer? _sessionValidationTimer;
 
   final List<Widget> _screens = const [
     TodayScreen(),
@@ -44,10 +43,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     _setupNotificationHandler();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkCloudSession();
-      // Periodically check if account was deleted by admin (every 25 seconds while app is in foreground)
-      _sessionValidationTimer = Timer.periodic(const Duration(seconds: 25), (_) {
-        _checkCloudSession();
-      });
     });
   }
 
@@ -63,14 +58,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkCloudSession();
-      // Reload medicine data so any dose recorded in the background is immediately updated in the UI
-      context.read<MedicineProvider>().loadInitialData();
+      // Silently reload medicine data so any dose recorded in background is immediately updated without spinner
+      context.read<MedicineProvider>().reloadDataSilently();
     }
   }
 
   @override
   void dispose() {
-    _sessionValidationTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

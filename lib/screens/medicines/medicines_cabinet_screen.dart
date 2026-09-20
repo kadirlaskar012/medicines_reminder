@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/localization/app_strings.dart';
@@ -316,7 +315,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                       final med = filtered[idx];
                       final reminders = provider.getRemindersForMedicine(med.id);
 
-                      return Container(
+                      final itemWidget = Container(
                         margin: const EdgeInsets.only(bottom: 14),
                         decoration: BoxDecoration(
                           color: isDark ? AppColors.darkCard : Colors.white,
@@ -695,7 +694,8 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                             ),
                           ),
                         ),
-                      ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.04, end: 0, duration: 250.ms);
+                      );
+                      return RepaintBoundary(child: itemWidget);
                     },
                   ),
           ),

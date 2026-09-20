@@ -12,8 +12,8 @@ class DualToneCapsule extends StatelessWidget {
   const DualToneCapsule({
     super.key,
     this.size = 48,
-    this.primaryColor = AppColors.primary,
-    this.secondaryColor = AppColors.secondary,
+    this.primaryColor = Colors.white,
+    this.secondaryColor = const Color(0xFFE2E8F0),
     this.angle = -math.pi / 4, // 45 degree tilt
     this.hasGlow = false,
   });
@@ -106,26 +106,30 @@ class _CapsulePainter extends CustomPainter {
     canvas.rotate(angle);
 
     final capsuleRect = Rect.fromCenter(center: Offset.zero, width: width, height: height);
+    final isWhiteOrLight = primaryColor.computeLuminance() > 0.82;
 
     // 1. Drop shadow / Glow
     if (hasGlow) {
       final glowPaint = Paint()
-        ..color = primaryColor.withValues(alpha: 0.5)
+        ..color = isWhiteOrLight
+            ? Colors.black.withValues(alpha: 0.22)
+            : primaryColor.withValues(alpha: 0.5)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
       canvas.drawRRect(RRect.fromRectAndRadius(capsuleRect, Radius.circular(radius)), glowPaint);
     } else {
       final shadowPaint = Paint()
-        ..color = Colors.black.withValues(alpha: 0.12)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+        ..color = Colors.black.withValues(alpha: isWhiteOrLight ? 0.18 : 0.12)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.5);
       canvas.drawRRect(
-        RRect.fromRectAndRadius(capsuleRect.shift(const Offset(2, 3)), Radius.circular(radius)),
+        RRect.fromRectAndRadius(capsuleRect.shift(const Offset(1.5, 2.5)), Radius.circular(radius)),
         shadowPaint,
       );
     }
 
     // Clip to capsule shape for 3D dual split
-    final capsulePath = Path()..addRRect(RRect.fromRectAndRadius(capsuleRect, Radius.circular(radius)));
-    canvas.clipPath(capsulePath);
+    final capsuleRRect = RRect.fromRectAndRadius(capsuleRect, Radius.circular(radius));
+    canvas.save();
+    canvas.clipRRect(capsuleRRect);
 
     // 2. Draw Top Half (Primary)
     final topRect = Rect.fromLTRB(
@@ -138,13 +142,19 @@ class _CapsulePainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          primaryColor.withValues(alpha: 0.9),
-          primaryColor,
-          HSLColor.fromColor(primaryColor).withLightness(
-            (HSLColor.fromColor(primaryColor).lightness - 0.15).clamp(0.0, 1.0)
-          ).toColor(),
-        ],
+        colors: isWhiteOrLight
+            ? [
+                Colors.white,
+                Colors.white,
+                const Color(0xFFF1F5F9),
+              ]
+            : [
+                primaryColor.withValues(alpha: 0.9),
+                primaryColor,
+                HSLColor.fromColor(primaryColor).withLightness(
+                  (HSLColor.fromColor(primaryColor).lightness - 0.15).clamp(0.0, 1.0),
+                ).toColor(),
+              ],
       ).createShader(topRect);
     canvas.drawRect(Rect.fromLTRB(-width, -height, width, 0), topPaint);
 
@@ -159,20 +169,28 @@ class _CapsulePainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          secondaryColor.withValues(alpha: 0.9),
-          secondaryColor,
-          HSLColor.fromColor(secondaryColor).withLightness(
-            (HSLColor.fromColor(secondaryColor).lightness - 0.15).clamp(0.0, 1.0)
-          ).toColor(),
-        ],
+        colors: isWhiteOrLight
+            ? [
+                const Color(0xFFF1F5F9),
+                const Color(0xFFE2E8F0),
+                const Color(0xFFCBD5E1),
+              ]
+            : [
+                secondaryColor.withValues(alpha: 0.9),
+                secondaryColor,
+                HSLColor.fromColor(secondaryColor).withLightness(
+                  (HSLColor.fromColor(secondaryColor).lightness - 0.15).clamp(0.0, 1.0),
+                ).toColor(),
+              ],
       ).createShader(bottomRect);
     canvas.drawRect(Rect.fromLTRB(-width, 0, width, height), bottomPaint);
 
     // 4. Center seam line
     final seamPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.2)
-      ..strokeWidth = 1.0
+      ..color = isWhiteOrLight
+          ? const Color(0xFF94A3B8)
+          : Colors.black.withValues(alpha: 0.22)
+      ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
     canvas.drawLine(Offset(-width / 2, 0), Offset(width / 2, 0), seamPaint);
 
@@ -186,13 +204,24 @@ class _CapsulePainter extends CustomPainter {
         height * 0.42,
       );
     final highlightPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.55)
+      ..color = Colors.white.withValues(alpha: isWhiteOrLight ? 0.75 : 0.55)
       ..style = PaintingStyle.stroke
       ..strokeWidth = width * 0.14
       ..strokeCap = StrokeCap.round;
     canvas.drawPath(highlightPath, highlightPaint);
 
-    canvas.restore();
+    canvas.restore(); // Restore clip
+
+    // 6. Perimeter Outline / Border (Ensures crisp contrast against any background)
+    final borderPaint = Paint()
+      ..color = isWhiteOrLight
+          ? const Color(0xFFCBD5E1)
+          : primaryColor.withValues(alpha: 0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    canvas.drawRRect(capsuleRRect, borderPaint);
+
+    canvas.restore(); // Restore transform
   }
 
   @override
