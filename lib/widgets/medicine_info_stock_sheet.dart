@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -34,12 +35,15 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
   String? _photoPath;
   DateTime? _expiryDate;
   late TextEditingController _notesController;
+  late TextEditingController _stockController;
+  final FocusNode _stockFocusNode = FocusNode();
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     _stock = widget.medicine.currentStock;
+    _stockController = TextEditingController(text: '$_stock');
     _threshold = widget.medicine.refillThreshold;
     _unit = widget.medicine.displayUnit;
     _photoPath = widget.medicine.photoPath;
@@ -49,8 +53,21 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
 
   @override
   void dispose() {
+    _stockController.dispose();
+    _stockFocusNode.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  void _setStock(int val) {
+    final newStock = val < 0 ? 0 : val;
+    setState(() {
+      _stock = newStock;
+      _stockController.text = '$newStock';
+      _stockController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _stockController.text.length),
+      );
+    });
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -134,6 +151,9 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
   }
 
   Future<void> _saveUpdates() async {
+    final enteredStock = int.tryParse(_stockController.text.trim()) ?? _stock;
+    _stock = enteredStock < 0 ? 0 : enteredStock;
+
     final provider = context.read<MedicineProvider>();
     final updated = widget.medicine.copyWith(
       currentStock: _stock,
@@ -395,7 +415,7 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
 
                         // Interactive Counter
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
                             color: isDark ? AppColors.darkCardElevated : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(16),
@@ -407,40 +427,112 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.remove_circle_outline_rounded, size: 28),
+                                icon: const Icon(Icons.remove_circle_outline_rounded, size: 30),
                                 color: _stock > 0 ? AppColors.accentRose : Colors.grey,
-                                onPressed: _stock > 0 ? () => setState(() => _stock--) : null,
+                                onPressed: _stock > 0 ? () => _setStock(_stock - 1) : null,
                               ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '$_stock',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w900,
-                                      color: _stock <= _threshold
-                                          ? (_stock <= 0 ? AppColors.accentRose : AppColors.accentAmber)
-                                          : AppColors.accentEmerald,
+                              Expanded(
+                                child: Center(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      _stockFocusNode.requestFocus();
+                                      _stockController.selection = TextSelection(
+                                        baseOffset: 0,
+                                        extentOffset: _stockController.text.length,
+                                      );
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? AppColors.darkCard : Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: isDark
+                                              ? AppColors.darkBorder
+                                              : (_stock <= _threshold
+                                                  ? AppColors.accentAmber.withValues(alpha: 0.5)
+                                                  : AppColors.primaryTeal.withValues(alpha: 0.35)),
+                                          width: 1.4,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          ConstrainedBox(
+                                            constraints: const BoxConstraints(minWidth: 44, maxWidth: 90),
+                                            child: TextField(
+                                              controller: _stockController,
+                                              focusNode: _stockFocusNode,
+                                              keyboardType: TextInputType.number,
+                                              textAlign: TextAlign.center,
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 28,
+                                                fontWeight: FontWeight.w900,
+                                                color: _stock <= _threshold
+                                                    ? (_stock <= 0 ? AppColors.accentRose : AppColors.accentAmber)
+                                                    : AppColors.accentEmerald,
+                                              ),
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter.digitsOnly,
+                                                LengthLimitingTextInputFormatter(6),
+                                              ],
+                                              decoration: const InputDecoration(
+                                                isDense: true,
+                                                contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                                                border: InputBorder.none,
+                                                focusedBorder: InputBorder.none,
+                                                enabledBorder: InputBorder.none,
+                                              ),
+                                              onTap: () {
+                                                _stockController.selection = TextSelection(
+                                                  baseOffset: 0,
+                                                  extentOffset: _stockController.text.length,
+                                                );
+                                              },
+                                              onChanged: (val) {
+                                                final n = int.tryParse(val);
+                                                setState(() {
+                                                  _stock = n ?? 0;
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            _unit,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: isDark ? AppColors.darkTextMuted : AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            Icons.edit_rounded,
+                                            size: 14,
+                                            color: isDark
+                                                ? AppColors.darkTextMuted.withValues(alpha: 0.6)
+                                                : AppColors.textMuted.withValues(alpha: 0.8),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _unit,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? AppColors.darkTextMuted : AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.add_circle_outline_rounded, size: 28),
+                                icon: const Icon(Icons.add_circle_outline_rounded, size: 30),
                                 color: AppColors.accentEmerald,
-                                onPressed: () => setState(() => _stock++),
+                                onPressed: () => _setStock(_stock + 1),
                               ),
                             ],
                           ),
@@ -473,7 +565,7 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
                                   backgroundColor: AppColors.primaryTeal.withValues(alpha: 0.12),
                                   side: BorderSide(color: AppColors.primaryTeal.withValues(alpha: 0.25)),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  onPressed: () => setState(() => _stock += add),
+                                  onPressed: () => _setStock(_stock + add),
                                 ),
                               );
                             }),
