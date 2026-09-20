@@ -12,6 +12,7 @@ import '../models/medicine.dart';
 import '../models/reminder_time.dart';
 import '../models/intake_record.dart';
 import '../models/scheduled_dose.dart';
+import '../models/app_notification.dart';
 
 enum DateComplianceStatus {
   allTaken,      // 🟢 All scheduled medicines taken on this date
@@ -39,6 +40,7 @@ class MedicineProvider extends ChangeNotifier {
   int? _cachedCurrentStreak;
   int? _cachedBestStreak;
   DateTime? _lastNotificationHubViewedAt;
+  List<AppNotification> _notificationsList = [];
 
   void _invalidateCaches() {
     _cachedDosesForSelectedDate = null;
@@ -57,6 +59,8 @@ class MedicineProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   List<IntakeRecord> get intakeRecords => _recordsByDoseKey.values.toList();
   List<ScheduledDose> get missedDoses => getMissedDoses();
+  List<AppNotification> get notificationsList => _notificationsList;
+  int get unreadNotificationsCount => _notificationsList.where((n) => !n.isRead).length;
 
   String get selectedDateStr => DateFormat('yyyy-MM-dd').format(_selectedDate);
 
@@ -122,6 +126,7 @@ class MedicineProvider extends ChangeNotifier {
 
   /// Whether there are new unread notification alerts since the user last visited the notification hub
   bool get hasUnreadNotificationAlerts {
+    if (_notificationsList.any((n) => !n.isRead)) return true;
     final now = DateTime.now();
     final todayDoses = getDosesForDate(now);
 
@@ -350,6 +355,7 @@ class MedicineProvider extends ChangeNotifier {
 
       await _refreshMedicinesAndReminders();
       await _refreshRecords();
+      await refreshNotifications();
       _invalidateCaches();
     } catch (e) {
       debugPrint('SQLite notice: loading initial fallback: $e');
@@ -379,6 +385,7 @@ class MedicineProvider extends ChangeNotifier {
       _profiles = await _db.getAllProfiles();
       await _refreshMedicinesAndReminders();
       await _refreshRecords();
+      await refreshNotifications();
       _cachedMissedDoses = null;
       notifyListeners();
     } catch (e) {
@@ -425,12 +432,145 @@ class MedicineProvider extends ChangeNotifier {
     _invalidateCaches();
   }
 
-  // ==================== ACTIONS ====================
+  // ==================== APP NOTIFICATIONS & ACTIVITY HUB ====================
+  Future<void> refreshNotifications({String? filterType}) async {
+    try {
+      var notifs = await _db.getAllNotifications(limit: 300, filterType: filterType);
+      if (notifs.isEmpty && (filterType == null || filterType == 'all')) {
+        await _backfillNotificationsIfEmpty();
+        notifs = await _db.getAllNotifications(limit: 300);
+      }
+      _notificationsList = notifs;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Notice refreshing notifications: $e');
+    }
+  }
+
+  Future<void> _backfillNotificationsIfEmpty() async {
+    try {
+      final existingNotifs = await _db.getAllNotifications(limit: 1);
+      if (existingNotifs.isNotEmpty) return;
+
+      // Backfill from medicines
+      for (final med in _medicines) {
+        final addNotif = AppNotification(
+          id: _uuid.v4(),
+          type: NotificationType.medicineAdded,
+          title: '${med.name} যোগ করা হয়েছে',
+          message: 'ডোজ: ${med.dosage} • ${med.instruction.title} • মজুদ: ${med.currentStock} ${med.unit}',
+          medicineId: med.id,
+          medicineName: med.name,
+          timestamp: med.createdAt,
+          isRead: true,
+        );
+        await _db.insertNotification(addNotif);
+
+        if (med.isLowStock || med.isOutOfStock) {
+          final lowStockNotif = AppNotification(
+            id: _uuid.v4(),
+            type: NotificationType.lowStock,
+            title: '${med.name} এর মজুদ প্রায় শেষ',
+            message: 'বর্তমান মজুদ মাত্র ${med.currentStock} ${med.unit}। দ্রুত রিফিল করুন।',
+            medicineId: med.id,
+            medicineName: med.name,
+            timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+            isRead: true,
+          );
+          await _db.insertNotification(lowStockNotif);
+        }
+      }
+
+      // Backfill from intake records
+      final allRecords = _recordsByDoseKey.values.toList();
+      for (final rec in allRecords) {
+        final med = _medicines.cast<Medicine?>().firstWhere(
+          (m) => m?.id == rec.medicineId,
+          orElse: () => null,
+        );
+        final medName = med?.name ?? 'ওষুধ';
+        final timeStr = '${rec.scheduledHour.toString().padLeft(2, '0')}:${rec.scheduledMinute.toString().padLeft(2, '0')}';
+
+        if (rec.status == IntakeStatus.taken) {
+          final n = AppNotification(
+            id: _uuid.v4(),
+            type: NotificationType.doseTaken,
+            title: '$medName গ্রহণ সম্পন্ন',
+            message: '${med?.dosage ?? ""} • $timeStr এর ডোজ গ্রহণ করা হয়েছে',
+            medicineId: rec.medicineId,
+            medicineName: medName,
+            timestamp: rec.recordedAt,
+            isRead: true,
+          );
+          await _db.insertNotification(n);
+        } else if (rec.status == IntakeStatus.skipped) {
+          final n = AppNotification(
+            id: _uuid.v4(),
+            type: NotificationType.doseSkipped,
+            title: '$medName বাদ দেওয়া হয়েছে',
+            message: '${med?.dosage ?? ""} • $timeStr এর ডোজ বাদ দেওয়া হয়েছে',
+            medicineId: rec.medicineId,
+            medicineName: medName,
+            timestamp: rec.recordedAt,
+            isRead: true,
+          );
+          await _db.insertNotification(n);
+        } else if (rec.status == IntakeStatus.missed) {
+          final n = AppNotification(
+            id: _uuid.v4(),
+            type: NotificationType.doseMissed,
+            title: '$medName ডোজ মিস হয়েছে',
+            message: '${med?.dosage ?? ""} • $timeStr এর ডোজ মিস হয়েছে',
+            medicineId: rec.medicineId,
+            medicineName: medName,
+            timestamp: rec.recordedAt,
+            isRead: true,
+          );
+          await _db.insertNotification(n);
+        }
+      }
+    } catch (e) {
+      debugPrint('Backfill notice: $e');
+    }
+  }
+
+  Future<void> logAppNotification({
+    required NotificationType type,
+    required String title,
+    required String message,
+    String? medicineId,
+    String? medicineName,
+    String? profileName,
+    DateTime? timestamp,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      final notif = AppNotification(
+        id: _uuid.v4(),
+        type: type,
+        title: title,
+        message: message,
+        medicineId: medicineId,
+        medicineName: medicineName,
+        profileName: profileName ?? _activeProfile?.name,
+        timestamp: timestamp ?? DateTime.now(),
+        isRead: false,
+        metadata: metadata,
+      );
+      await _db.insertNotification(notif);
+      _notificationsList.insert(0, notif);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error logging notification: $e');
+    }
+  }
+
   /// Mark notification hub as viewed/read, resetting the notification bell alert dot
   Future<void> markNotificationHubAsRead() async {
     _lastNotificationHubViewedAt = DateTime.now();
-    notifyListeners();
     try {
+      await _db.markAllNotificationsAsRead();
+      _notificationsList = _notificationsList.map((n) => n.copyWith(isRead: true)).toList();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
         'last_notification_hub_viewed_at',
@@ -439,7 +579,20 @@ class MedicineProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Notice persisting notification hub viewed timestamp: $e');
     }
+    notifyListeners();
   }
+
+  Future<void> clearAllNotifications() async {
+    try {
+      await _db.clearAllNotifications();
+      _notificationsList.clear();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error clearing notifications: $e');
+    }
+  }
+
+  // ==================== ACTIONS ====================
 
   void switchProfile(UserProfile? profile) {
     _activeProfile = profile;
@@ -529,6 +682,13 @@ class MedicineProvider extends ChangeNotifier {
 
     await _refreshMedicinesAndReminders();
     await _refreshRecords();
+    await logAppNotification(
+      type: NotificationType.medicineAdded,
+      title: '$name যোগ করা হয়েছে',
+      message: 'ডোজ: $dosage • $currentStock ${unit ?? type.defaultUnit} মজুদ • ${instruction.title}',
+      medicineId: medId,
+      medicineName: name,
+    );
     notifyListeners();
   }
 
@@ -563,6 +723,13 @@ class MedicineProvider extends ChangeNotifier {
 
     await _refreshMedicinesAndReminders();
     await _refreshRecords();
+    await logAppNotification(
+      type: NotificationType.medicineUpdated,
+      title: '${medicine.name} আপডেট করা হয়েছে',
+      message: 'ডোজ: ${medicine.dosage} • মজুদ: ${medicine.currentStock} ${medicine.unit}',
+      medicineId: medicine.id,
+      medicineName: medicine.name,
+    );
     notifyListeners();
   }
 
@@ -655,6 +822,13 @@ class MedicineProvider extends ChangeNotifier {
       final updatedMed = await _db.getMedicineById(medicine.id);
       if (updatedMed != null && updatedMed.isLowStock) {
         await _notifications.showRefillAlert(updatedMed);
+        await logAppNotification(
+          type: NotificationType.lowStock,
+          title: '${updatedMed.name} এর মজুদ প্রায় শেষ',
+          message: 'বর্তমান মজুদ মাত্র ${updatedMed.currentStock} ${updatedMed.unit}। দ্রুত রিফিল করুন।',
+          medicineId: updatedMed.id,
+          medicineName: updatedMed.name,
+        );
       }
       await _refreshMedicinesAndReminders();
     } catch (_) {
@@ -670,6 +844,14 @@ class MedicineProvider extends ChangeNotifier {
 
     // Dismiss active reminders for this dose
     await _notifications.dismissActiveReminderNotification(reminder: reminder);
+
+    await logAppNotification(
+      type: NotificationType.doseTaken,
+      title: '${medicine.name} গ্রহণ সম্পন্ন',
+      message: '${medicine.dosage} • ${reminder.formattedTime} এর ডোজ গ্রহণ করা হয়েছে',
+      medicineId: medicine.id,
+      medicineName: medicine.name,
+    );
 
     notifyListeners();
   }
@@ -699,6 +881,14 @@ class MedicineProvider extends ChangeNotifier {
 
     // Dismiss active reminders for this dose
     await _notifications.dismissActiveReminderNotification(reminder: reminder);
+
+    await logAppNotification(
+      type: NotificationType.doseSkipped,
+      title: '${medicine.name} বাদ দেওয়া হয়েছে',
+      message: '${medicine.dosage} • ${reminder.formattedTime} এর ডোজ বাদ দেওয়া হয়েছে',
+      medicineId: medicine.id,
+      medicineName: medicine.name,
+    );
 
     notifyListeners();
   }
@@ -731,6 +921,13 @@ class MedicineProvider extends ChangeNotifier {
         'snooze_${medicine.id}',
         minutes: minutes,
       );
+      await logAppNotification(
+        type: NotificationType.doseSnoozed,
+        title: '${medicine.name} স্থগিত (স্নুজ)',
+        message: '$minutes মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে (${reminder.formattedTime})',
+        medicineId: medicine.id,
+        medicineName: medicine.name,
+      );
     } catch (_) {}
   }
 
@@ -741,6 +938,13 @@ class MedicineProvider extends ChangeNotifier {
       if (med != null) {
         final newStock = med.currentStock + addedQuantity;
         await _db.updateStock(medicineId, newStock);
+        await logAppNotification(
+          type: NotificationType.refillAdded,
+          title: '${med.name} রিফিল করা হয়েছে',
+          message: '+$addedQuantity ${med.unit} যোগ করা হয়েছে (মোট মজুদ: $newStock ${med.unit})',
+          medicineId: med.id,
+          medicineName: med.name,
+        );
         await _refreshMedicinesAndReminders();
       }
     } catch (_) {
@@ -915,6 +1119,13 @@ class MedicineProvider extends ChangeNotifier {
         } catch (_) {}
         _recordsByDoseKey[key] = record;
         await _notifications.dismissActiveReminderNotification(reminder: dose.reminder);
+        await logAppNotification(
+          type: NotificationType.doseMissed,
+          title: '${dose.medicine.name} ডোজ মিস হয়েছে',
+          message: '${dose.medicine.dosage} • ${dose.reminder.formattedTime} এর ডোজ সময়মতো নেওয়া হয়নি',
+          medicineId: dose.medicine.id,
+          medicineName: dose.medicine.name,
+        );
         changed = true;
       }
     }

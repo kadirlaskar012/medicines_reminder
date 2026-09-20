@@ -647,9 +647,13 @@ class AppStrings {
   String get notifFilterAction => code == 'bn' ? 'অ্যাকশন চাই' : (code == 'hi' ? 'कार्रवाई आवश्यक' : 'Action Needed');
   String get notifFilterUpcoming => code == 'bn' ? 'আসন্ন' : (code == 'hi' ? 'आगामी' : 'Upcoming');
   String get notifFilterStock => code == 'bn' ? 'স্টক এলার্ট' : (code == 'hi' ? 'स्टॉक अलर्ट' : 'Stock Alert');
+  String get notifFilterStockRefill => code == 'bn' ? 'স্টক ও রিফিল' : (code == 'hi' ? 'स्टॉक व रीफ़िल' : 'Stock & Refills');
+  String get notifFilterDoses => code == 'bn' ? 'ওষুধ ডোজ' : (code == 'hi' ? 'दवा खुराक' : 'Doses');
+  String get notifFilterMedicines => code == 'bn' ? 'ওষুধ তথ্য' : (code == 'hi' ? 'दवा जानकारी' : 'Medicines');
+  String get notifFilterBoxTitle => code == 'bn' ? 'ফিল্টার নির্বাচন' : (code == 'hi' ? 'फ़िल्टर चुनें' : 'Filter Categories');
   String get notifFilterCompleted => code == 'bn' ? 'নেওয়া ওষুধ' : (code == 'hi' ? 'पूर्ण' : 'Completed');
-  String get notifAllCaughtUpTitle => code == 'bn' ? 'কোন নতুন নোটিফিকেশন নেই' : (code == 'hi' ? 'सब कुछ अपडेट है!' : 'All Caught Up!');
-  String get notifAllCaughtUpSub => code == 'bn' ? 'আপনার সব ওষুধের সময়সূচী ঠিকমতো চলছে।' : (code == 'hi' ? 'आपकी सभी दवाएं समय पर चल रही हैं।' : 'All scheduled medicines and stock alerts are up to date.');
+  String get notifAllCaughtUpTitle => code == 'bn' ? 'কোন নোটিফিকেশন নেই' : (code == 'hi' ? 'कोई सूचना नहीं है' : 'No Notifications Yet');
+  String get notifAllCaughtUpSub => code == 'bn' ? 'অ্যাপে ওষুধ যোগ, ডোজ গ্রহণ, রিফিল বা পরিবর্তনের সকল নোটিফিকেশন এখানে জমা হবে।' : (code == 'hi' ? 'ऐप में दवा जोड़ने, खुराक लेने, रीफिल या बदलाव की सभी सूचनाएं यहां दिखेंगी।' : 'All medicine activities, dose logs, and refill alerts will appear here.');
   String get notifOverdueBadge => code == 'bn' ? 'বাকি রয়েছে' : (code == 'hi' ? 'अतिदेय' : 'OVERDUE');
   String get notifTakeNowBtn => code == 'bn' ? 'খেয়েছি' : (code == 'hi' ? 'दवा ली' : 'Take Now');
   String get notifSnooze10mBtn => code == 'bn' ? '১০ মি. পরে' : (code == 'hi' ? '১০ मि. बाद' : 'Snooze 10m');
@@ -659,6 +663,10 @@ class AppStrings {
   String notifLowStockDosesLeft(int stock) => code == 'bn' ? 'মাত্র $stock টি ওষুধ অবশিষ্ট আছে।' : (code == 'hi' ? 'केवल $stock खुराक बची हैं। जल्द रीफिल करें।' : 'Only $stock doses left! Refill soon.');
   String get notifRefillBtn => code == 'bn' ? 'রিফিল' : (code == 'hi' ? 'रीफिल' : 'Refill');
   String get notifCompletedDose => code == 'bn' ? 'সম্পন্ন ডোজ' : (code == 'hi' ? 'पूर्ण खुराक' : 'Dose Completed');
+  String get notifClearAll => code == 'bn' ? 'সব মুছুন' : (code == 'hi' ? 'सभी साफ़ करें' : 'Clear All');
+  String get notifClearAllConfirm => code == 'bn' ? 'আপনি কি সমস্ত নোটিফিকেশন ইতিহাস মুছে ফেলতে চান?' : (code == 'hi' ? 'क्या आप सभी सूचनाएं हटाना चाहते हैं?' : 'Are you sure you want to clear all notification history?');
+  String get notifClearBtn => code == 'bn' ? 'মুছে ফেলুন' : (code == 'hi' ? 'हटाएं' : 'Clear');
+  String get notifCancelBtn => code == 'bn' ? 'বাতিল' : (code == 'hi' ? 'रद्द करें' : 'Cancel');
   String get ok => code == 'bn' ? 'ঠিক আছে' : (code == 'hi' ? 'ठीक है' : 'OK');
 
   // Sorting & Filtering in Medicines

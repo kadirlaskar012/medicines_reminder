@@ -4,6 +4,7 @@ import '../../models/user_profile.dart';
 import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
 import '../../models/intake_record.dart';
+import '../../models/app_notification.dart';
 
 class DBHelper {
   static final DBHelper instance = DBHelper._init();
@@ -31,6 +32,21 @@ class DBHelper {
           await db.execute('CREATE INDEX IF NOT EXISTS idx_reminder_medicine ON reminder_times (medicineId)');
           await db.execute('CREATE INDEX IF NOT EXISTS idx_intake_date ON intake_records (scheduledDate)');
           await db.execute('CREATE INDEX IF NOT EXISTS idx_intake_lookup ON intake_records (medicineId, reminderTimeId, scheduledDate)');
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS app_notifications (
+              id TEXT PRIMARY KEY,
+              type TEXT NOT NULL,
+              title TEXT NOT NULL,
+              message TEXT NOT NULL,
+              medicineId TEXT,
+              medicineName TEXT,
+              profileName TEXT,
+              timestamp TEXT NOT NULL,
+              isRead INTEGER NOT NULL DEFAULT 0,
+              metadata TEXT
+            )
+          ''');
+          await db.execute('CREATE INDEX IF NOT EXISTS idx_notif_time ON app_notifications (timestamp)');
         } catch (_) {}
       },
     );
@@ -134,10 +150,27 @@ class DBHelper {
       )
     ''');
 
+    // 5. App Notifications Table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS app_notifications (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        medicineId TEXT,
+        medicineName TEXT,
+        profileName TEXT,
+        timestamp TEXT NOT NULL,
+        isRead INTEGER NOT NULL DEFAULT 0,
+        metadata TEXT
+      )
+    ''');
+
     // Indexes for fast querying
     await db.execute('CREATE INDEX IF NOT EXISTS idx_reminder_medicine ON reminder_times (medicineId)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_intake_date ON intake_records (scheduledDate)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_intake_lookup ON intake_records (medicineId, reminderTimeId, scheduledDate)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_notif_time ON app_notifications (timestamp)');
 
     // Insert Default Profile
     await db.insert('profiles', UserProfile.defaultProfile.toMap());
@@ -354,7 +387,59 @@ class DBHelper {
       await txn.delete('reminder_times');
       await txn.delete('medicines');
       await txn.delete('profiles', where: 'id != ?', whereArgs: ['default_me']);
+      await txn.delete('app_notifications');
     });
+  }
+
+  // ==================== APP NOTIFICATIONS ====================
+  Future<int> insertNotification(AppNotification notif) async {
+    final db = await database;
+    return await db.insert(
+      'app_notifications',
+      notif.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<AppNotification>> getAllNotifications({int limit = 300, String? filterType}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> res;
+    if (filterType != null && filterType.isNotEmpty && filterType != 'all') {
+      res = await db.query(
+        'app_notifications',
+        where: 'type = ?',
+        whereArgs: [filterType],
+        orderBy: 'timestamp DESC',
+        limit: limit,
+      );
+    } else {
+      res = await db.query(
+        'app_notifications',
+        orderBy: 'timestamp DESC',
+        limit: limit,
+      );
+    }
+    return res.map((m) => AppNotification.fromMap(m)).toList();
+  }
+
+  Future<int> markNotificationAsRead(String id) async {
+    final db = await database;
+    return await db.update(
+      'app_notifications',
+      {'isRead': 1},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> markAllNotificationsAsRead() async {
+    final db = await database;
+    return await db.update('app_notifications', {'isRead': 1});
+  }
+
+  Future<int> clearAllNotifications() async {
+    final db = await database;
+    return await db.delete('app_notifications');
   }
 
   Future<void> close() async {

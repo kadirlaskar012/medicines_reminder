@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
-import '../../models/medicine.dart';
-import '../../models/scheduled_dose.dart';
+import '../../models/app_notification.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
-import '../medicines/add_edit_medicine_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -17,7 +16,8 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  String _selectedFilter = 'all'; // all, action, upcoming, stock, completed
+  // Filters: all, doses, stock, medicines
+  String _selectedFilter = 'all';
 
   @override
   void initState() {
@@ -36,20 +36,45 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final s = AppStrings.of(lang);
     final medProvider = context.watch<MedicineProvider>();
 
-    final now = DateTime.now();
-    final todayDoses = medProvider.dosesForSelectedDate;
-    final lowStockMeds = medProvider.lowStockMedicines;
+    final allNotifs = medProvider.notificationsList;
 
-    // Categorize today's doses
-    final overdueDoses = todayDoses.where((d) => d.isOverdue).toList();
-    final upcomingDoses = todayDoses.where((d) {
-      if (d.isTaken || d.isSkipped) return false;
-      final doseTime = DateTime(now.year, now.month, now.day, d.reminder.hour, d.reminder.minute);
-      return doseTime.isAfter(now);
+    // Filter counts
+    final dosesCount = allNotifs.where((n) =>
+        n.type == NotificationType.doseTaken ||
+        n.type == NotificationType.doseSkipped ||
+        n.type == NotificationType.doseSnoozed ||
+        n.type == NotificationType.doseMissed ||
+        n.type == NotificationType.reminderDue
+    ).length;
+
+    final stockCount = allNotifs.where((n) =>
+        n.type == NotificationType.refillAdded ||
+        n.type == NotificationType.lowStock
+    ).length;
+
+    final medsCount = allNotifs.where((n) =>
+        n.type == NotificationType.medicineAdded ||
+        n.type == NotificationType.medicineUpdated
+    ).length;
+
+    // Filtered list
+    final List<AppNotification> filteredNotifs = allNotifs.where((n) {
+      if (_selectedFilter == 'doses') {
+        return n.type == NotificationType.doseTaken ||
+            n.type == NotificationType.doseSkipped ||
+            n.type == NotificationType.doseSnoozed ||
+            n.type == NotificationType.doseMissed ||
+            n.type == NotificationType.reminderDue;
+      } else if (_selectedFilter == 'stock') {
+        return n.type == NotificationType.refillAdded ||
+            n.type == NotificationType.lowStock;
+      } else if (_selectedFilter == 'medicines') {
+        return n.type == NotificationType.medicineAdded ||
+            n.type == NotificationType.medicineUpdated;
+      }
+      return true; // 'all'
     }).toList();
-    final completedDoses = todayDoses.where((d) => d.isTaken).toList();
 
-    final totalAlerts = overdueDoses.length + lowStockMeds.length + upcomingDoses.length;
     final totalDoses = medProvider.todayTotalCount;
     final adherenceRate = totalDoses > 0 ? (medProvider.todayTakenCount / totalDoses) : 0.0;
     final adherencePercent = (adherenceRate * 100).toInt();
@@ -76,7 +101,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 color: textPrimary,
               ),
             ),
-            if (totalAlerts > 0) ...[
+            if (allNotifs.isNotEmpty) ...[
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -87,7 +112,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '$totalAlerts',
+                  '${allNotifs.length}',
                   style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
                 ),
               ),
@@ -109,6 +134,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             onPressed: () async {
               await NotificationService.instance.showTestNotification();
+              await medProvider.logAppNotification(
+                type: NotificationType.testAlarm,
+                title: lang == 'bn' ? 'টেস্ট নোটিফিকেশন' : 'Test Notification',
+                message: lang == 'bn'
+                    ? 'লকস্ক্রিন ও সিস্টেম নোটিফিকেশন টেস্ট সফলভাবে যাচাই করা হয়েছে।'
+                    : 'Lock screen & system notification test triggered successfully.',
+              );
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -132,7 +164,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               }
             },
           ),
-          const SizedBox(width: 8),
+          // Clear All Button
+          if (allNotifs.isNotEmpty)
+            IconButton(
+              tooltip: s.notifClearAll,
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 20),
+              ),
+              onPressed: () => _confirmClearAll(context, s, medProvider),
+            ),
+          const SizedBox(width: 6),
         ],
       ),
       body: CustomScrollView(
@@ -141,7 +187,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           // 1. HERO ADHERENCE & STREAK CARD
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 6),
               child: _buildHeroAdherenceCard(
                 context,
                 isDark: isDark,
@@ -155,68 +201,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ),
 
-          // 2. FILTER PILLS
+          // 2. NON-SLIDING COMPACT FILTER BOX (Zero Horizontal Scrolling)
           SliverToBoxAdapter(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              child: Row(
-                children: [
-                  _buildFilterPill(
-                    label: s.notifFilterAll,
-                    count: totalAlerts + completedDoses.length,
-                    filterKey: 'all',
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFilterPill(
-                    label: s.notifFilterAction,
-                    count: overdueDoses.length,
-                    filterKey: 'action',
-                    isDark: isDark,
-                    badgeColor: const Color(0xFFEF4444),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFilterPill(
-                    label: s.notifFilterUpcoming,
-                    count: upcomingDoses.length,
-                    filterKey: 'upcoming',
-                    isDark: isDark,
-                    badgeColor: const Color(0xFF2563EB),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFilterPill(
-                    label: s.notifFilterStock,
-                    count: lowStockMeds.length,
-                    filterKey: 'stock',
-                    isDark: isDark,
-                    badgeColor: const Color(0xFFF59E0B),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFilterPill(
-                    label: s.notifFilterCompleted,
-                    count: completedDoses.length,
-                    filterKey: 'completed',
-                    isDark: isDark,
-                    badgeColor: const Color(0xFF10B981),
-                  ),
-                ],
-              ),
+            child: _buildFilterBox(
+              isDark: isDark,
+              s: s,
+              allCount: allNotifs.length,
+              dosesCount: dosesCount,
+              stockCount: stockCount,
+              medsCount: medsCount,
+              textPrimary: textPrimary,
             ),
           ),
 
-          // 3. NOTIFICATION LIST CONTENT
+          // 3. PURE NOTIFICATION & ACTIVITY FEED ITEMS
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 30),
             sliver: _buildNotificationItems(
               context,
-              medProvider: medProvider,
+              notifs: filteredNotifs,
               isDark: isDark,
+              lang: lang,
               s: s,
-              overdueDoses: overdueDoses,
-              upcomingDoses: upcomingDoses,
-              lowStockMeds: lowStockMeds,
-              completedDoses: completedDoses,
               textPrimary: textPrimary,
             ),
           ),
@@ -239,9 +245,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final progress = totalCount > 0 ? (takenCount / totalCount).clamp(0.0, 1.0) : 0.0;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -252,8 +258,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.12 : 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
         border: Border.all(
@@ -267,11 +273,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 74,
-                height: 74,
+                width: 68,
+                height: 68,
                 child: CircularProgressIndicator(
                   value: progress,
-                  strokeWidth: 8,
+                  strokeWidth: 7.5,
                   backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     adherencePercent >= 80
@@ -281,22 +287,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   strokeCap: StrokeCap.round,
                 ),
               ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$adherencePercent%',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 17,
-                      color: textPrimary,
-                    ),
-                  ),
-                ],
+              Text(
+                '$adherencePercent%',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  color: textPrimary,
+                ),
               ),
             ],
           ),
-          const SizedBox(width: 18),
+          const SizedBox(width: 16),
 
           // Title & Streak
           Expanded(
@@ -306,7 +307,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Text(
                   s.notifAdherenceTitle,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: textPrimary,
                   ),
@@ -315,30 +316,32 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Text(
                   s.notifDosesCompletedOf(takenCount, totalCount),
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12.5,
                     color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 // Streak Pill
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBEB),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFFDE68A)),
+                    color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF6366F1).withValues(alpha: 0.4) : const Color(0xFFFDE68A),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('🔥', style: TextStyle(fontSize: 13)),
+                      const Text('🔥', style: TextStyle(fontSize: 12)),
                       const SizedBox(width: 4),
                       Text(
                         s.notifStreakDays(streakDays),
-                        style: const TextStyle(
-                          color: Color(0xFFB45309),
-                          fontSize: 12,
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFFA5B4FC) : const Color(0xFFB45309),
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -353,34 +356,147 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  // ==================== FILTER PILL ====================
-  Widget _buildFilterPill({
+  // ==================== NON-SLIDING COMPACT FILTER BOX ====================
+  Widget _buildFilterBox({
+    required bool isDark,
+    required AppStrings s,
+    required int allCount,
+    required int dosesCount,
+    required int stockCount,
+    required int medsCount,
+    required Color textPrimary,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.tune_rounded,
+                size: 16,
+                color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                s.notifFilterBoxTitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Row 1: All & Doses
+          Row(
+            children: [
+              Expanded(
+                child: _buildFilterBoxItem(
+                  label: s.notifFilterAll,
+                  count: allCount,
+                  filterKey: 'all',
+                  icon: Icons.all_inbox_rounded,
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildFilterBoxItem(
+                  label: s.notifFilterDoses,
+                  count: dosesCount,
+                  filterKey: 'doses',
+                  icon: Icons.medication_rounded,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Row 2: Stock & Refill + Medicines Info
+          Row(
+            children: [
+              Expanded(
+                child: _buildFilterBoxItem(
+                  label: s.notifFilterStockRefill,
+                  count: stockCount,
+                  filterKey: 'stock',
+                  icon: Icons.inventory_2_rounded,
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildFilterBoxItem(
+                  label: s.notifFilterMedicines,
+                  count: medsCount,
+                  filterKey: 'medicines',
+                  icon: Icons.edit_note_rounded,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterBoxItem({
     required String label,
     required int count,
     required String filterKey,
+    required IconData icon,
     required bool isDark,
-    Color? badgeColor,
   }) {
     final isSelected = _selectedFilter == filterKey;
-    return GestureDetector(
+    return InkWell(
       onTap: () => setState(() => _selectedFilter = filterKey),
+      borderRadius: BorderRadius.circular(14),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
           color: isSelected
-              ? AppColors.primary
-              : (isDark ? AppColors.darkCard : Colors.white),
-          borderRadius: BorderRadius.circular(20),
+              ? null
+              : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
-                ? AppColors.primary
-                : (isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
+                ? const Color(0xFF3B82F6)
+                : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+            width: 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.25),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -388,38 +504,49 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               : null,
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isSelected
-                    ? Colors.white
-                    : (isDark ? AppColors.darkTextMuted : const Color(0xFF475569)),
+            Icon(
+              icon,
+              size: 15,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? AppColors.darkTextMuted : const Color(0xFF64748B)),
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? AppColors.darkTextPrimary : const Color(0xFF334155)),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (count > 0) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                decoration: BoxDecoration(
+            const SizedBox(width: 5),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
                   color: isSelected
-                      ? Colors.white.withValues(alpha: 0.25)
-                      : (badgeColor ?? const Color(0xFF64748B)).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$count',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: isSelected ? Colors.white : (badgeColor ?? const Color(0xFF64748B)),
-                  ),
+                      ? Colors.white
+                      : (isDark ? Colors.white70 : const Color(0xFF334155)),
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -429,50 +556,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   // ==================== NOTIFICATION ITEMS LIST ====================
   Widget _buildNotificationItems(
     BuildContext context, {
-    required MedicineProvider medProvider,
+    required List<AppNotification> notifs,
     required bool isDark,
+    required String lang,
     required AppStrings s,
-    required List<ScheduledDose> overdueDoses,
-    required List<ScheduledDose> upcomingDoses,
-    required List<Medicine> lowStockMeds,
-    required List<ScheduledDose> completedDoses,
     required Color textPrimary,
   }) {
-    final List<Widget> items = [];
-
-    // 1. Overdue / Action Needed Cards
-    if (_selectedFilter == 'all' || _selectedFilter == 'action') {
-      for (final dose in overdueDoses) {
-        items.add(_buildOverdueCard(context, dose, medProvider, isDark: isDark, s: s, textPrimary: textPrimary));
-      }
-    }
-
-    // 2. Low Stock Alerts
-    if (_selectedFilter == 'all' || _selectedFilter == 'stock') {
-      for (final med in lowStockMeds) {
-        items.add(_buildStockAlertCard(context, med, isDark: isDark, s: s, textPrimary: textPrimary));
-      }
-    }
-
-    // 3. Upcoming Cards
-    if (_selectedFilter == 'all' || _selectedFilter == 'upcoming') {
-      for (final dose in upcomingDoses) {
-        items.add(_buildUpcomingCard(context, dose, isDark: isDark, s: s, textPrimary: textPrimary));
-      }
-    }
-
-    // 4. Completed Cards
-    if (_selectedFilter == 'all' || _selectedFilter == 'completed') {
-      for (final dose in completedDoses) {
-        items.add(_buildCompletedCard(context, dose, isDark: isDark, s: s, textPrimary: textPrimary));
-      }
-    }
-
-    // Empty state
-    if (items.isEmpty) {
+    if (notifs.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.only(top: 40),
+          padding: const EdgeInsets.only(top: 40, bottom: 40),
           child: Center(
             child: Column(
               children: [
@@ -498,13 +591,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  s.notifAllCaughtUpSub,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    s.notifAllCaughtUpSub,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -516,241 +612,57 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
+          final notif = notifs[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: items[index],
+            child: _buildNotificationCard(
+              context,
+              notif,
+              isDark: isDark,
+              lang: lang,
+              textPrimary: textPrimary,
+            ),
           );
         },
-        childCount: items.length,
+        childCount: notifs.length,
       ),
     );
   }
 
-  // ==================== OVERDUE / ACTION NEEDED CARD ====================
-  Widget _buildOverdueCard(
+  // ==================== PURE ACTIVITY / NOTIFICATION CARD ====================
+  // Strictly notification and activity info: NO TAKE, SNOOZE, or SKIP buttons
+  Widget _buildNotificationCard(
     BuildContext context,
-    ScheduledDose dose,
-    MedicineProvider medProvider, {
+    AppNotification notif, {
     required bool isDark,
-    required AppStrings s,
+    required String lang,
     required Color textPrimary,
   }) {
-    final med = dose.medicine;
-    final rem = dose.reminder;
+    final formattedTime = _formatNotificationTimestamp(notif.timestamp, lang);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.6), width: 1.5),
+        border: Border.all(
+          color: !notif.isRead
+              ? const Color(0xFF3B82F6).withValues(alpha: 0.5)
+              : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          width: !notif.isRead ? 1.5 : 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.12 : 0.08),
-            blurRadius: 14,
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Warning Icon Avatar
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 24),
-              ),
-              const SizedBox(width: 12),
-
-              // Title & Details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            s.notifOverdueBadge,
-                            style: const TextStyle(
-                              color: Color(0xFFDC2626),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          rem.formattedTime,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${med.name} • ${med.dosage}',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Text(
-                          '${med.type.label} • ${med.instruction.title}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Action Buttons: [Take Now] and [Snooze 10m]
-          Row(
-            children: [
-              // Take Now Button
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    await medProvider.markAsTaken(dose.medicine, dose.reminder, dose.scheduledDate);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: const Color(0xFF0F172A),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          content: Row(
-                            children: [
-                              const Icon(Icons.check_circle_rounded, color: AppColors.accentMint, size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  s.notifDoseTakenSuccess(med.name),
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.check_rounded, size: 18, color: Colors.white),
-                  label: Text(
-                    s.notifTakeNowBtn,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-
-              // Snooze 10m Button
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await medProvider.snoozeDose(dose.medicine, dose.reminder, minutes: 10);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: const Color(0xFF0F172A),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          content: Text(
-                            s.notifSnoozeSuccess,
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  icon: Icon(Icons.schedule_rounded, size: 18, color: isDark ? Colors.white70 : const Color(0xFF475569)),
-                  label: Text(
-                    s.notifSnooze10mBtn,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: isDark ? Colors.white70 : const Color(0xFF475569),
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    elevation: 0,
-                    side: BorderSide(color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== UPCOMING CARD ====================
-  Widget _buildUpcomingCard(
-    BuildContext context,
-    ScheduledDose dose, {
-    required bool isDark,
-    required AppStrings s,
-    required Color textPrimary,
-  }) {
-    final med = dose.medicine;
-    final rem = dose.reminder;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.medication_rounded, color: Color(0xFF2563EB), size: 24),
-          ),
+          _buildTypeIcon(notif.type),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -758,215 +670,260 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      s.notifFilterUpcoming,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2563EB),
-                      ),
-                    ),
+                    _buildTypeBadge(notif.type, lang),
                     const Spacer(),
                     Text(
-                      rem.formattedTime,
+                      formattedTime,
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${med.name} (${med.dosage})',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    color: textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  med.instruction.title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== STOCK ALERT CARD ====================
-  Widget _buildStockAlertCard(
-    BuildContext context,
-    Medicine med, {
-    required bool isDark,
-    required AppStrings s,
-    required Color textPrimary,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFFDE68A),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.inventory_2_rounded, color: Color(0xFFD97706), size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  s.notifLowStockWarning,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFFD97706),
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  med.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    color: textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  s.notifLowStockDosesLeft(med.currentStock),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.darkTextMuted : const Color(0xFF78350F),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AddEditMedicineScreen(medicineToEdit: med),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD97706),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: Text(
-              s.notifRefillBtn,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== COMPLETED CARD ====================
-  Widget _buildCompletedCard(
-    BuildContext context,
-    ScheduledDose dose, {
-    required bool isDark,
-    required AppStrings s,
-    required Color textPrimary,
-  }) {
-    final med = dose.medicine;
-    final rem = dose.reminder;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFF10B981).withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      s.notifCompletedDose,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF10B981),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      rem.formattedTime,
-                      style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 7),
                 Text(
-                  '${med.name} (${med.dosage})',
+                  notif.title,
                   style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
                     color: textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  s.notifConfirmedTaken,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                if (notif.message.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    notif.message,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
+                      height: 1.3,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  // ==================== 3D SQUIRCLE ICON CONTAINER ====================
+  Widget _buildTypeIcon(NotificationType type) {
+    final List<Color> gradientColors;
+    final IconData iconData;
+
+    switch (type) {
+      case NotificationType.doseTaken:
+        gradientColors = [const Color(0xFF10B981), const Color(0xFF059669)];
+        iconData = Icons.check_circle_rounded;
+        break;
+      case NotificationType.doseSkipped:
+        gradientColors = [const Color(0xFFF59E0B), const Color(0xFFD97706)];
+        iconData = Icons.remove_circle_outline_rounded;
+        break;
+      case NotificationType.doseSnoozed:
+        gradientColors = [const Color(0xFF8B5CF6), const Color(0xFF6D28D9)];
+        iconData = Icons.snooze_rounded;
+        break;
+      case NotificationType.doseMissed:
+        gradientColors = [const Color(0xFFEF4444), const Color(0xFFB91C1C)];
+        iconData = Icons.alarm_off_rounded;
+        break;
+      case NotificationType.refillAdded:
+        gradientColors = [const Color(0xFF2563EB), const Color(0xFF0284C7)];
+        iconData = Icons.add_shopping_cart_rounded;
+        break;
+      case NotificationType.lowStock:
+        gradientColors = [const Color(0xFFF97316), const Color(0xFFEA580C)];
+        iconData = Icons.warning_amber_rounded;
+        break;
+      case NotificationType.medicineAdded:
+        gradientColors = [const Color(0xFF0D9488), const Color(0xFF14B8A6)];
+        iconData = Icons.add_circle_outline_rounded;
+        break;
+      case NotificationType.medicineUpdated:
+        gradientColors = [const Color(0xFF4F46E5), const Color(0xFF6366F1)];
+        iconData = Icons.edit_note_rounded;
+        break;
+      case NotificationType.reminderDue:
+      case NotificationType.testAlarm:
+        gradientColors = [const Color(0xFF7C3AED), const Color(0xFF9333EA)];
+        iconData = Icons.notifications_active_rounded;
+        break;
+    }
+
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: gradientColors[0].withValues(alpha: 0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Icon(iconData, color: Colors.white, size: 22),
+    );
+  }
+
+  // ==================== TYPE BADGE ====================
+  Widget _buildTypeBadge(NotificationType type, String lang) {
+    String label;
+    Color bg;
+    Color fg;
+
+    switch (type) {
+      case NotificationType.doseTaken:
+        label = lang == 'bn' ? 'সম্পন্ন' : 'Taken';
+        bg = const Color(0xFF10B981).withValues(alpha: 0.15);
+        fg = const Color(0xFF059669);
+        break;
+      case NotificationType.doseSkipped:
+        label = lang == 'bn' ? 'স্কিপ' : 'Skipped';
+        bg = const Color(0xFFF59E0B).withValues(alpha: 0.15);
+        fg = const Color(0xFFD97706);
+        break;
+      case NotificationType.doseSnoozed:
+        label = lang == 'bn' ? 'স্থগিত' : 'Snoozed';
+        bg = const Color(0xFF8B5CF6).withValues(alpha: 0.15);
+        fg = const Color(0xFF7C3AED);
+        break;
+      case NotificationType.doseMissed:
+        label = lang == 'bn' ? 'মিসড' : 'Missed';
+        bg = const Color(0xFFEF4444).withValues(alpha: 0.15);
+        fg = const Color(0xFFDC2626);
+        break;
+      case NotificationType.refillAdded:
+        label = lang == 'bn' ? 'রিফিল' : 'Refill';
+        bg = const Color(0xFF3B82F6).withValues(alpha: 0.15);
+        fg = const Color(0xFF2563EB);
+        break;
+      case NotificationType.lowStock:
+        label = lang == 'bn' ? 'সতর্কতা' : 'Low Stock';
+        bg = const Color(0xFFEA580C).withValues(alpha: 0.15);
+        fg = const Color(0xFFC2410C);
+        break;
+      case NotificationType.medicineAdded:
+        label = lang == 'bn' ? 'নতুন ওষুধ' : 'Added';
+        bg = const Color(0xFF0D9488).withValues(alpha: 0.15);
+        fg = const Color(0xFF0F766E);
+        break;
+      case NotificationType.medicineUpdated:
+        label = lang == 'bn' ? 'আপডেট' : 'Updated';
+        bg = const Color(0xFF6366F1).withValues(alpha: 0.15);
+        fg = const Color(0xFF4F46E5);
+        break;
+      case NotificationType.reminderDue:
+      case NotificationType.testAlarm:
+        label = lang == 'bn' ? 'অ্যালার্ম' : 'Alarm';
+        bg = const Color(0xFFEC4899).withValues(alpha: 0.15);
+        fg = const Color(0xFFDB2777);
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: fg,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  // ==================== TIMESTAMP FORMATTER ====================
+  String _formatNotificationTimestamp(DateTime dt, String lang) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final notifDay = DateTime(dt.year, dt.month, dt.day);
+    final diffDays = today.difference(notifDay).inDays;
+
+    final hour = dt.hour;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final isPm = hour >= 12;
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final displayHourStr = displayHour.toString().padLeft(2, '0');
+
+    if (lang == 'bn') {
+      final period = hour < 6 ? 'রাত' : (hour < 12 ? 'সকাল' : (hour < 16 ? 'দুপুর' : (hour < 19 ? 'বিকাল' : 'রাত')));
+      final bnTime = '$period $displayHourStr:$minute'
+          .replaceAll('0', '০')
+          .replaceAll('1', '১')
+          .replaceAll('2', '২')
+          .replaceAll('3', '৩')
+          .replaceAll('4', '৪')
+          .replaceAll('5', '৫')
+          .replaceAll('6', '৬')
+          .replaceAll('7', '৭')
+          .replaceAll('8', '৮')
+          .replaceAll('9', '৯');
+      if (diffDays == 0) {
+        return 'আজ, $bnTime';
+      } else if (diffDays == 1) {
+        return 'গতকাল, $bnTime';
+      } else {
+        final dateFormatted = DateFormat('dd MMM').format(dt);
+        return '$dateFormatted, $bnTime';
+      }
+    } else {
+      final period = isPm ? 'PM' : 'AM';
+      final enTime = '$displayHourStr:$minute $period';
+      if (diffDays == 0) {
+        return 'Today, $enTime';
+      } else if (diffDays == 1) {
+        return 'Yesterday, $enTime';
+      } else {
+        return '${DateFormat('dd MMM').format(dt)}, $enTime';
+      }
+    }
+  }
+
+  // ==================== CLEAR ALL CONFIRMATION ====================
+  Future<void> _confirmClearAll(BuildContext context, AppStrings s, MedicineProvider medProvider) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(s.notifClearAll, style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(s.notifClearAllConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(s.notifCancelBtn),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(s.notifClearBtn, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await medProvider.clearAllNotifications();
+    }
   }
 }

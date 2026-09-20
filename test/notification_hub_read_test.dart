@@ -3,6 +3,7 @@ import 'package:medicines_reminder/models/intake_record.dart';
 import 'package:medicines_reminder/models/medicine.dart';
 import 'package:medicines_reminder/models/reminder_time.dart';
 import 'package:medicines_reminder/models/scheduled_dose.dart';
+import 'package:medicines_reminder/models/app_notification.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -151,5 +152,69 @@ void main() {
     });
 
     expect(hasAlertAfterRevisiting, false);
+  });
+
+  test('AppNotification toMap and fromMap serialization maintains integrity', () {
+    final now = DateTime.now();
+    final notif = AppNotification(
+      id: 'notif_test_1',
+      type: NotificationType.doseTaken,
+      title: 'প্যারাসিটামল গ্রহণ সম্পন্ন',
+      message: '৫০০ মিগ্রা • সকাল ০৯:৩০ এর ডোজ গ্রহণ করা হয়েছে',
+      medicineId: 'med_test_1',
+      medicineName: 'Paracetamol',
+      profileName: 'Myself',
+      timestamp: now,
+      isRead: false,
+      metadata: {'doseKey': 'med_1_rem_1_2026-09-20'},
+    );
+
+    final map = notif.toMap();
+    expect(map['id'], 'notif_test_1');
+    expect(map['type'], 'doseTaken');
+    expect(map['isRead'], 0);
+
+    final restored = AppNotification.fromMap(map);
+    expect(restored.id, notif.id);
+    expect(restored.type, NotificationType.doseTaken);
+    expect(restored.title, notif.title);
+    expect(restored.message, notif.message);
+    expect(restored.medicineId, notif.medicineId);
+    expect(restored.medicineName, notif.medicineName);
+    expect(restored.isRead, false);
+    expect(restored.metadata?['doseKey'], 'med_1_rem_1_2026-09-20');
+
+    final updated = restored.copyWith(isRead: true);
+    expect(updated.isRead, true);
+    expect(updated.toMap()['isRead'], 1);
+  });
+
+  test('Notification category filtering correctly partitions activity types', () {
+    final notifs = [
+      AppNotification(id: '1', type: NotificationType.doseTaken, title: 'Taken', message: '', timestamp: DateTime.now()),
+      AppNotification(id: '2', type: NotificationType.doseSkipped, title: 'Skipped', message: '', timestamp: DateTime.now()),
+      AppNotification(id: '3', type: NotificationType.refillAdded, title: 'Refilled', message: '', timestamp: DateTime.now()),
+      AppNotification(id: '4', type: NotificationType.lowStock, title: 'Low Stock', message: '', timestamp: DateTime.now()),
+      AppNotification(id: '5', type: NotificationType.medicineAdded, title: 'Added', message: '', timestamp: DateTime.now()),
+      AppNotification(id: '6', type: NotificationType.medicineUpdated, title: 'Updated', message: '', timestamp: DateTime.now()),
+    ];
+
+    final doses = notifs.where((n) =>
+        n.type == NotificationType.doseTaken ||
+        n.type == NotificationType.doseSkipped ||
+        n.type == NotificationType.doseSnoozed ||
+        n.type == NotificationType.doseMissed ||
+        n.type == NotificationType.reminderDue).toList();
+    expect(doses.length, 2);
+
+    final stock = notifs.where((n) =>
+        n.type == NotificationType.refillAdded ||
+        n.type == NotificationType.lowStock).toList();
+    expect(stock.length, 2);
+
+    final medicines = notifs.where((n) =>
+        n.type == NotificationType.medicineAdded ||
+        n.type == NotificationType.medicineUpdated).toList();
+    expect(medicines.length, 2);
   });
 }
