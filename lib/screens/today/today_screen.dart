@@ -408,54 +408,9 @@ class _TodayScreenState extends State<TodayScreen> {
                       ),
                     ),
 
-                    // Right Actions (Date Picker + Bell)
+                    // Right Action (Bell)
                     Row(
                       children: [
-                        InkWell(
-                          onTap: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: provider.selectedDate,
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2035),
-                            );
-                            if (picked != null) {
-                              provider.selectDate(picked);
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(14),
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: isDark
-                                    ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                                    : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: const Color(0xFF0D9488).withValues(alpha: isDark ? 0.35 : 0.3),
-                                width: 1.2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF0D9488).withValues(alpha: isDark ? 0.2 : 0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.calendar_month_rounded,
-                              size: 21,
-                              color: Color(0xFF0D9488),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
                         InkWell(
                           onTap: () async {
                             context.read<MedicineProvider>().markNotificationHubAsRead();
