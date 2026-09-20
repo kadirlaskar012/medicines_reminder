@@ -20,6 +20,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   String _selectedFilter = 'all'; // all, action, upcoming, stock, completed
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<MedicineProvider>().markNotificationHubAsRead();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = context.watch<LanguageProvider>().languageCode;

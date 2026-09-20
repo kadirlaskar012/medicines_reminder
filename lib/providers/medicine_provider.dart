@@ -38,6 +38,7 @@ class MedicineProvider extends ChangeNotifier {
   final Map<String, List<ScheduledDose>> _dosesByDateCache = {};
   int? _cachedCurrentStreak;
   int? _cachedBestStreak;
+  DateTime? _lastNotificationHubViewedAt;
 
   void _invalidateCaches() {
     _cachedDosesForSelectedDate = null;
@@ -117,6 +118,33 @@ class MedicineProvider extends ChangeNotifier {
 
   int get todayTakenCount => dosesForSelectedDate.where((d) => d.isTaken).length;
   int get todayTotalCount => dosesForSelectedDate.length;
+  DateTime? get lastNotificationHubViewedAt => _lastNotificationHubViewedAt;
+
+  /// Whether there are new unread notification alerts since the user last visited the notification hub
+  bool get hasUnreadNotificationAlerts {
+    final now = DateTime.now();
+    final todayDoses = getDosesForDate(now);
+
+    // If user has never visited the notification hub, show dot if any dose is overdue/elapsed today
+    if (_lastNotificationHubViewedAt == null) {
+      return todayDoses.any(
+        (d) => d.isOverdue || (!d.isTaken && !d.isSkipped && d.doseDateTime.isBefore(now)),
+      );
+    }
+
+    // Defensive check: if last viewed timestamp is somehow in the future, reset to now
+    final lastViewed = _lastNotificationHubViewedAt!.isAfter(now) ? now : _lastNotificationHubViewedAt!;
+
+    // If user visited the notification hub before, only show the dot if a new dose alert arrived
+    // after their last visit (i.e. doseDateTime > lastViewed and <= now)
+    // and is still pending (not taken, not skipped)
+    return todayDoses.any((d) {
+      if (d.isTaken || d.isSkipped) return false;
+      final doseTime = d.doseDateTime;
+      return doseTime.isAfter(lastViewed) &&
+          (doseTime.isBefore(now) || doseTime.isAtSameMomentAs(now));
+    });
+  }
 
   /// Get scheduled doses for any specific date (memoized for O(1) repeated queries)
   List<ScheduledDose> getDosesForDate(DateTime date) {
@@ -294,6 +322,12 @@ class MedicineProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedHubViewedStr = prefs.getString('last_notification_hub_viewed_at');
+      if (savedHubViewedStr != null) {
+        _lastNotificationHubViewedAt = DateTime.tryParse(savedHubViewedStr);
+      }
+
       _profiles = await _db.getAllProfiles();
       if (_profiles.isEmpty) {
         final prefs = await SharedPreferences.getInstance();
@@ -392,6 +426,21 @@ class MedicineProvider extends ChangeNotifier {
   }
 
   // ==================== ACTIONS ====================
+  /// Mark notification hub as viewed/read, resetting the notification bell alert dot
+  Future<void> markNotificationHubAsRead() async {
+    _lastNotificationHubViewedAt = DateTime.now();
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'last_notification_hub_viewed_at',
+        _lastNotificationHubViewedAt!.toIso8601String(),
+      );
+    } catch (e) {
+      debugPrint('Notice persisting notification hub viewed timestamp: $e');
+    }
+  }
+
   void switchProfile(UserProfile? profile) {
     _activeProfile = profile;
     _invalidateCaches();

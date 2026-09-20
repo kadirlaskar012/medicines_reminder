@@ -286,9 +286,7 @@ class _TodayScreenState extends State<TodayScreen> {
         ? (activeProfile.id == 'default_me' || activeProfile.name.toLowerCase() == 'myself' ? 'Kadir Laskar' : activeProfile.name)
         : 'Kadir Laskar';
 
-    final hasAlerts = provider.dosesForSelectedDate.any(
-      (d) => d.isOverdue || (!d.isTaken && !d.isSkipped && d.scheduledDate.isBefore(now)),
-    );
+    final hasAlerts = provider.hasUnreadNotificationAlerts;
 
     return Scaffold(
       body: SafeArea(
@@ -459,11 +457,15 @@ class _TodayScreenState extends State<TodayScreen> {
                         ),
                         const SizedBox(width: 8),
                         InkWell(
-                          onTap: () {
-                            Navigator.push(
+                          onTap: () async {
+                            context.read<MedicineProvider>().markNotificationHubAsRead();
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const NotificationsScreen()),
                             );
+                            if (context.mounted) {
+                              context.read<MedicineProvider>().markNotificationHubAsRead();
+                            }
                           },
                           borderRadius: BorderRadius.circular(14),
                           child: Container(

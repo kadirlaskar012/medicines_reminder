@@ -21,17 +21,18 @@ class ScheduledDose {
   bool get isAutoMissed => record?.status == IntakeStatus.missed || record?.notes == 'auto_missed';
   bool get isPending => record == null;
 
+  DateTime get doseDateTime => DateTime(
+        scheduledDate.year,
+        scheduledDate.month,
+        scheduledDate.day,
+        reminder.hour,
+        reminder.minute,
+      );
+
   bool get isOverdue {
     if (isTaken || isSkipped || isAutoMissed) return false;
     final now = DateTime.now();
-    final doseTime = DateTime(
-      scheduledDate.year,
-      scheduledDate.month,
-      scheduledDate.day,
-      reminder.hour,
-      reminder.minute,
-    );
-    return now.isAfter(doseTime);
+    return now.isAfter(doseDateTime);
   }
 
   /// Whether the scheduled time has arrived/passed or the dose was already recorded
