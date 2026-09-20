@@ -728,6 +728,29 @@ class AppStrings {
   String get applyColor => code == 'bn' ? 'বাছাই করুন' : (code == 'hi' ? 'लागू करें' : 'Apply Color');
   String get brightness => code == 'bn' ? 'উজ্জ্বলতা' : (code == 'hi' ? 'चमक' : 'Brightness');
   String get popularColors => code == 'bn' ? 'জনপ্রিয় কালারসমূহ' : (code == 'hi' ? 'लोकप्रिय रंग' : 'Popular Colors');
+
+  // Export Data & Reports PDF
+  String get exportReportTitle => code == 'bn' ? 'মেডিকেল রিপোর্ট এক্সপোর্ট (PDF)' : (code == 'hi' ? 'मेडिकल रिपोर्ट निर्यात (PDF)' : 'Export Medical Report (PDF)');
+  String get exportReportSub => code == 'bn'
+      ? 'তারিখ ও ওষুধ ফিল্টার করে ডাক্তার বা নিজের ব্যবহারের জন্য সুন্দর ও প্রামাণ্য PDF রিপোর্ট তৈরি করুন।'
+      : (code == 'hi'
+          ? 'तारीख व दवाएं फिल्टर करके डॉक्टर या अपने रिकॉर्ड के लिए सुंदर PDF रिपोर्ट तैयार करें।'
+          : 'Filter by date & medicines to generate a verified, clinical-grade adherence PDF report.');
+  String get exportOptionsTitle => code == 'bn' ? 'রিপোর্ট ফিল্টার ও কাস্টমাইজেশন' : (code == 'hi' ? 'रिपोर्ट फिल्टर व कस्टमाइज़ेशन' : 'Report Filters & Customization');
+  String get dateRangeFilter => code == 'bn' ? 'তারিখের পরিসর (Date Range)' : (code == 'hi' ? 'तारीख सीमा (Date Range)' : 'Date Range');
+  String get medicineFilterTitle => code == 'bn' ? 'ওষুধ নির্বাচন (Medicines)' : (code == 'hi' ? 'दवा चयन (Medicines)' : 'Select Medicines');
+  String get selectAllMeds => code == 'bn' ? 'সকল ওষুধ' : (code == 'hi' ? 'सभी दवाएं' : 'All Medicines');
+  String get selectedMedsSummary => code == 'bn' ? 'টি ওষুধ নির্বাচিত' : (code == 'hi' ? 'दवाएं चयनित' : 'medicines selected');
+  String get includeSections => code == 'bn' ? 'রিপোর্টে কী কী তথ্য থাকবে?' : (code == 'hi' ? 'रिपोर्ट में कौन-सी जानकारी शामिल करें?' : 'Include in Report:');
+  String get secAdherenceStats => code == 'bn' ? 'অনুপালন পরিসংখ্যান ও স্কোর (Adherence KPI)' : (code == 'hi' ? 'अनुपालन आंकड़े व स्कोर' : 'Adherence Statistics & KPI');
+  String get secPrescriptions => code == 'bn' ? 'প্রেসক্রিপশন ও ওষুধের বিবরণ (Prescriptions)' : (code == 'hi' ? 'पर्चे की दवाएं व विवरण' : 'Prescription & Dosage Details');
+  String get secIntakeLog => code == 'bn' ? 'দৈনিক সেবন ইতিহাস লগ (Intake Log)' : (code == 'hi' ? 'दैनिक दवा सेवन लॉग' : 'Daily Dose Intake Log');
+  String get secDoctorNotes => code == 'bn' ? 'ডাক্তারের পরামর্শ ও নোটস বক্স (Doctor Notes)' : (code == 'hi' ? 'डॉक्टर परामर्श व नोट्स बॉक्स' : 'Doctor Notes & Signature Box');
+  String get generateAndSharePdf => code == 'bn' ? 'PDF তৈরি ও শেয়ার করুন' : (code == 'hi' ? 'PDF बनाएं व साझा करें' : 'Generate & Share PDF');
+  String get generatingPdfPrompt => code == 'bn' ? 'PDF তৈরি হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...' : (code == 'hi' ? 'PDF तैयार हो रहा है, कृपया प्रतीक्षा करें...' : 'Generating PDF, please wait...');
+  String get exportReportCardBtn => code == 'bn' ? 'রিপোর্ট ডাউনলোড / প্রিন্ট' : (code == 'hi' ? 'रिपोर्ट डाउनलोड / प्रिंट' : 'Download / Print Report');
+  String get customDateRangePrompt => code == 'bn' ? 'কাস্টম তারিখ বেছে নিন' : (code == 'hi' ? 'कस्टम तारीख चुनें' : 'Custom Date Range');
+  String get noMedsSelectedWarning => code == 'bn' ? 'অনুগ্রহ করে অন্তত একটি ওষুধ নির্বাচন করুন' : (code == 'hi' ? 'कृपया कम से कम एक दवा चुनें' : 'Please select at least one medicine');
 }
 
 

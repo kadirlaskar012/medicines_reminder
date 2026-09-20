@@ -9,6 +9,7 @@ import '../../models/reminder_time.dart';
 import '../../models/scheduled_dose.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
+import 'export_report_sheet.dart';
 
 class ReportsAnalyticsScreen extends StatefulWidget {
   const ReportsAnalyticsScreen({super.key});
@@ -163,6 +164,28 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        actions: [
+          IconButton(
+            tooltip: s.exportReportTitle,
+            icon: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                ),
+              ),
+              child: const Icon(
+                Icons.picture_as_pdf_rounded,
+                color: Color(0xFF7C3AED),
+                size: 20,
+              ),
+            ),
+            onPressed: () => ExportReportSheet.show(context),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: ListView(
         physics: const BouncingScrollPhysics(),
@@ -629,6 +652,133 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Export Report Banner Card
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF1E1B4B), const Color(0xFF0F172A)]
+                    : [const Color(0xFFF5F3FF), Colors.white],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: const Color(0xFF7C3AED).withValues(alpha: isDark ? 0.35 : 0.25),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF7C3AED).withValues(alpha: isDark ? 0.15 : 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                s.exportReportTitle,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'PDF',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF7C3AED),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            s.exportReportSub,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton.icon(
+                    onPressed: () => ExportReportSheet.show(context),
+                    icon: const Icon(Icons.file_download_outlined, size: 20),
+                    label: Text(
+                      s.exportReportCardBtn,
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7C3AED),
+                      foregroundColor: Colors.white,
+                      elevation: 2,
+                      shadowColor: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
                   ),
                 ),
               ],
