@@ -18,6 +18,7 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   // Filters: all, doses, stock, medicines
   String _selectedFilter = 'all';
+  bool _isFilterExpanded = false;
 
   @override
   void initState() {
@@ -75,10 +76,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return true; // 'all'
     }).toList();
 
-    final totalDoses = medProvider.todayTotalCount;
-    final adherenceRate = totalDoses > 0 ? (medProvider.todayTakenCount / totalDoses) : 0.0;
-    final adherencePercent = (adherenceRate * 100).toInt();
-
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
 
     return Scaffold(
@@ -90,34 +87,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              s.notifHubTitle,
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-                color: textPrimary,
-              ),
-            ),
-            if (allNotifs.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${allNotifs.length}',
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
-          ],
+        title: Text(
+          s.notifHubTitle,
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: textPrimary,
+          ),
         ),
         centerTitle: true,
         actions: [
@@ -184,24 +160,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // 1. HERO ADHERENCE & STREAK CARD
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 6),
-              child: _buildHeroAdherenceCard(
-                context,
-                isDark: isDark,
-                s: s,
-                adherencePercent: adherencePercent,
-                takenCount: medProvider.todayTakenCount,
-                totalCount: medProvider.todayTotalCount,
-                streakDays: medProvider.currentStreakDays,
-                textPrimary: textPrimary,
-              ),
-            ),
-          ),
-
-          // 2. NON-SLIDING COMPACT FILTER BOX (Zero Horizontal Scrolling)
+          // 1. NON-SLIDING COMPACT FILTER BOX (Collapsed by default)
           SliverToBoxAdapter(
             child: _buildFilterBox(
               isDark: isDark,
@@ -214,9 +173,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ),
 
-          // 3. PURE NOTIFICATION & ACTIVITY FEED ITEMS
+          // 2. PURE NOTIFICATION & ACTIVITY FEED ITEMS
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(18, 8, 18, 30),
+            padding: const EdgeInsets.fromLTRB(18, 4, 18, 30),
             sliver: _buildNotificationItems(
               context,
               notifs: filteredNotifs,
@@ -224,131 +183,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               lang: lang,
               s: s,
               textPrimary: textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== HERO ADHERENCE & STREAK CARD ====================
-  Widget _buildHeroAdherenceCard(
-    BuildContext context, {
-    required bool isDark,
-    required AppStrings s,
-    required int adherencePercent,
-    required int takenCount,
-    required int totalCount,
-    required int streakDays,
-    required Color textPrimary,
-  }) {
-    final progress = totalCount > 0 ? (takenCount / totalCount).clamp(0.0, 1.0) : 0.0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-              : [Colors.white, const Color(0xFFF0FDF4)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.12 : 0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-        border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Circular Adherence Ring
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 68,
-                height: 68,
-                child: CircularProgressIndicator(
-                  value: progress,
-                  strokeWidth: 7.5,
-                  backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    adherencePercent >= 80
-                        ? const Color(0xFF10B981)
-                        : (adherencePercent >= 50 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444)),
-                  ),
-                  strokeCap: StrokeCap.round,
-                ),
-              ),
-              Text(
-                '$adherencePercent%',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                  color: textPrimary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 16),
-
-          // Title & Streak
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  s.notifAdherenceTitle,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  s.notifDosesCompletedOf(takenCount, totalCount),
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Streak Pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFFFFBEB),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isDark ? const Color(0xFF6366F1).withValues(alpha: 0.4) : const Color(0xFFFDE68A),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('🔥', style: TextStyle(fontSize: 12)),
-                      const SizedBox(width: 4),
-                      Text(
-                        s.notifStreakDays(streakDays),
-                        style: TextStyle(
-                          color: isDark ? const Color(0xFFA5B4FC) : const Color(0xFFB45309),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ),
           ),
         ],
@@ -366,12 +200,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required int medsCount,
     required Color textPrimary,
   }) {
+    // Determine active filter name & count
+    String activeLabel = s.notifFilterAll;
+    int activeCount = allCount;
+    if (_selectedFilter == 'doses') {
+      activeLabel = s.notifFilterDoses;
+      activeCount = dosesCount;
+    } else if (_selectedFilter == 'stock') {
+      activeLabel = s.notifFilterStockRefill;
+      activeCount = stockCount;
+    } else if (_selectedFilter == 'medicines') {
+      activeLabel = s.notifFilterMedicines;
+      activeCount = medsCount;
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
           width: 1.2,
@@ -379,83 +226,138 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.tune_rounded,
-                size: 16,
-                color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+          // Expandable / Collapsible Header Tile
+          InkWell(
+            onTap: () => setState(() => _isFilterExpanded = !_isFilterExpanded),
+            borderRadius: BorderRadius.circular(18),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.tune_rounded,
+                    size: 16,
+                    color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    s.notifFilterBoxTitle,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const Spacer(),
+                  // Active Filter Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: _selectedFilter == 'all'
+                          ? (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9))
+                          : AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _selectedFilter == 'all'
+                            ? (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1))
+                            : AppColors.primary.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Text(
+                      '$activeLabel ($activeCount)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _selectedFilter == 'all'
+                            ? (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary)
+                            : AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: _isFilterExpanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 20,
+                      color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 6),
-              Text(
-                s.notifFilterBoxTitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 10),
-          // Row 1: All & Doses
-          Row(
-            children: [
-              Expanded(
-                child: _buildFilterBoxItem(
-                  label: s.notifFilterAll,
-                  count: allCount,
-                  filterKey: 'all',
-                  icon: Icons.all_inbox_rounded,
-                  isDark: isDark,
-                ),
+
+          // Collapsible Categories Grid
+          if (_isFilterExpanded) ...[
+            const Divider(height: 1, indent: 12, endIndent: 12),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  // Row 1: All & Doses
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildFilterBoxItem(
+                          label: s.notifFilterAll,
+                          count: allCount,
+                          filterKey: 'all',
+                          icon: Icons.all_inbox_rounded,
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildFilterBoxItem(
+                          label: s.notifFilterDoses,
+                          count: dosesCount,
+                          filterKey: 'doses',
+                          icon: Icons.medication_rounded,
+                          isDark: isDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Row 2: Stock & Refill + Medicines Info
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildFilterBoxItem(
+                          label: s.notifFilterStockRefill,
+                          count: stockCount,
+                          filterKey: 'stock',
+                          icon: Icons.inventory_2_rounded,
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildFilterBoxItem(
+                          label: s.notifFilterMedicines,
+                          count: medsCount,
+                          filterKey: 'medicines',
+                          icon: Icons.edit_note_rounded,
+                          isDark: isDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildFilterBoxItem(
-                  label: s.notifFilterDoses,
-                  count: dosesCount,
-                  filterKey: 'doses',
-                  icon: Icons.medication_rounded,
-                  isDark: isDark,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Row 2: Stock & Refill + Medicines Info
-          Row(
-            children: [
-              Expanded(
-                child: _buildFilterBoxItem(
-                  label: s.notifFilterStockRefill,
-                  count: stockCount,
-                  filterKey: 'stock',
-                  icon: Icons.inventory_2_rounded,
-                  isDark: isDark,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildFilterBoxItem(
-                  label: s.notifFilterMedicines,
-                  count: medsCount,
-                  filterKey: 'medicines',
-                  icon: Icons.edit_note_rounded,
-                  isDark: isDark,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
