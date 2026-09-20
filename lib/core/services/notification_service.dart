@@ -568,7 +568,6 @@ class NotificationService {
   Future<void> cancelReminder(ReminderTime reminder) async {
     for (int day = 1; day <= 7; day++) {
       await _notificationsPlugin.cancel(id: reminder.notificationId * 10 + day);
-      await cancelPreDoseWarningNotification(reminder, day);
     }
   }
 
@@ -578,116 +577,6 @@ class NotificationService {
     } catch (e) {
       debugPrint('Error cancelling notification id $notificationId: $e');
     }
-  }
-
-  int getPreDoseWarningNotificationId(ReminderTime prevReminder, int dayOfWeek) {
-    return (prevReminder.notificationId * 10 + dayOfWeek + 600000) % 1000000;
-  }
-
-  Future<void> schedulePreDoseWarningNotification({
-    required Medicine prevMedicine,
-    required ReminderTime prevReminder,
-    required Medicine nextMedicine,
-    required ReminderTime nextReminder,
-    required int dayOfWeek,
-    required int nextDayOfWeek,
-  }) async {
-    final nextScheduledDate = _nextInstanceOfDayAndTime(nextDayOfWeek, nextReminder.hour, nextReminder.minute);
-    final warningDate = nextScheduledDate.subtract(const Duration(hours: 1));
-
-    int daysDifference = (nextDayOfWeek - dayOfWeek + 7) % 7;
-    if (dayOfWeek == nextDayOfWeek && (prevReminder.hour * 60 + prevReminder.minute) >= (nextReminder.hour * 60 + nextReminder.minute)) {
-      daysDifference = 7;
-    }
-    final prevDateTime = tz.TZDateTime(
-      tz.local,
-      nextScheduledDate.year,
-      nextScheduledDate.month,
-      nextScheduledDate.day,
-      prevReminder.hour,
-      prevReminder.minute,
-    ).subtract(Duration(days: daysDifference));
-
-    final now = tz.TZDateTime.now(tz.local);
-    if (warningDate.isBefore(now)) return;
-    if (warningDate.isBefore(prevDateTime.add(const Duration(minutes: 30)))) return;
-
-    final warningId = getPreDoseWarningNotificationId(prevReminder, dayOfWeek);
-    final smallIcon = getSmallIconForType(prevMedicine.type);
-    final largeIcon = getLargeIconForType(prevMedicine.type);
-
-    final payload = jsonEncode({
-      'medicineId': prevMedicine.id,
-      'medicineName': prevMedicine.name,
-      'dosage': prevMedicine.dosage,
-      'medicineType': prevMedicine.type.name,
-      'instruction': prevMedicine.instruction.title,
-      'reminderTimeId': prevReminder.id,
-      'notificationId': warningId,
-      'dayOfWeek': dayOfWeek,
-      'scheduledHour': prevReminder.hour,
-      'scheduledMinute': prevReminder.minute,
-      'isPreDoseWarning': true,
-      'reminderBaseNotificationId': prevReminder.notificationId,
-    });
-
-    final androidDetails = AndroidNotificationDetails(
-      gentleChannelId,
-      gentleChannelName,
-      channelDescription: gentleChannelDesc,
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: smallIcon,
-      largeIcon: DrawableResourceAndroidBitmap(largeIcon),
-      color: brandPrimaryColor,
-      subText: '⚠️ Pending Dose Check',
-      ticker: 'Reminder: Did you take ${prevMedicine.name}?',
-      styleInformation: BigTextStyleInformation(
-        'Your next dose (<b>${nextMedicine.name} ${nextMedicine.dosage}</b>) is scheduled at <b>${nextReminder.formattedTime}</b>.<br>Have you taken your previous dose of <b>${prevMedicine.name}</b> (${prevMedicine.dosage})?',
-        htmlFormatBigText: true,
-        contentTitle: '⚠️ <b>Previous Dose Pending?</b>',
-        htmlFormatContentTitle: true,
-        summaryText: 'Action Required',
-        htmlFormatSummaryText: true,
-      ),
-      actions: const [
-        AndroidNotificationAction(
-          actionTaken,
-          '✓ TAKE',
-          showsUserInterface: true,
-          cancelNotification: true,
-        ),
-        AndroidNotificationAction(
-          actionSkip,
-          '✕ SKIP',
-          showsUserInterface: true,
-          cancelNotification: true,
-        ),
-      ],
-    );
-
-    try {
-      await _notificationsPlugin.zonedSchedule(
-        id: warningId,
-        title: '⚠️ Previous Dose Pending?',
-        body: 'Did you take ${prevMedicine.name}? Next dose (${nextMedicine.name}) is at ${nextReminder.formattedTime}.',
-        scheduledDate: warningDate,
-        notificationDetails: NotificationDetails(android: androidDetails),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: payload,
-      );
-      debugPrint('Scheduled pre-dose warning id=$warningId for ${prevMedicine.name} at $warningDate');
-    } catch (e) {
-      debugPrint('Error scheduling pre-dose warning: $e');
-    }
-  }
-
-  Future<void> cancelPreDoseWarningNotification(ReminderTime prevReminder, int dayOfWeek) async {
-    final warningId = getPreDoseWarningNotificationId(prevReminder, dayOfWeek);
-    try {
-      await _notificationsPlugin.cancel(id: warningId);
-      debugPrint('Cancelled pre-dose warning id=$warningId');
-    } catch (_) {}
   }
 
   Future<void> dismissActiveReminderNotification({
@@ -703,9 +592,10 @@ class NotificationService {
     try {
       await _notificationsPlugin.cancel(id: reminder.notificationId * 10 + todayWeekday);
     } catch (_) {}
-    await cancelPreDoseWarningNotification(reminder, todayWeekday);
     final yesterdayWeekday = (todayWeekday == 1) ? 7 : todayWeekday - 1;
-    await cancelPreDoseWarningNotification(reminder, yesterdayWeekday);
+    try {
+      await _notificationsPlugin.cancel(id: reminder.notificationId * 10 + yesterdayWeekday);
+    } catch (_) {}
     try {
       await _notificationsPlugin.cancel(id: 999999); // Snooze ID
     } catch (_) {}

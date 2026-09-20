@@ -41,17 +41,17 @@ void main() {
     expect(rem.recurrenceSummary, 'Everyday');
   });
 
-  test('Pre-dose warning notification ID calculation test', () {
+  test('ReminderTime isDaily and recurrenceSummary test', () {
     final rem = ReminderTime(
-      id: 'rem_warning_test',
+      id: 'rem_custom',
       medicineId: 'med_test_1',
-      hour: 22,
+      hour: 20,
       minute: 0,
-      daysOfWeek: [1],
+      daysOfWeek: [1, 3, 5],
       notificationId: 5432,
     );
 
-    final warningId = (rem.notificationId * 10 + 1 + 600000) % 1000000;
-    expect(warningId, 654321);
+    expect(rem.isDaily, false);
+    expect(rem.recurrenceSummary, 'Mon, Wed, Fri');
   });
 }

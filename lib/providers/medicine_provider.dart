@@ -379,96 +379,6 @@ class MedicineProvider extends ChangeNotifier {
         await _notifications.scheduleMedicineReminder(med, rem);
       }
     }
-    await _scheduleAllPreDoseWarnings();
-  }
-
-  /// Schedules 1-hour pre-dose warning notifications before subsequent scheduled doses.
-  /// If the previous dose is taken or skipped prior to the warning, the warning alarm is cancelled.
-  Future<void> _scheduleAllPreDoseWarnings() async {
-    final activeMeds = _medicines.where((m) => m.isActive).toList();
-    if (activeMeds.isEmpty) return;
-
-    final Map<int, List<({Medicine med, ReminderTime rem})>> dosesByWeekday = {};
-    for (int day = 1; day <= 7; day++) {
-      dosesByWeekday[day] = [];
-    }
-
-    for (final med in activeMeds) {
-      final reminders = _remindersByMedicine[med.id] ?? [];
-      for (final rem in reminders) {
-        for (final day in rem.daysOfWeek) {
-          if (day >= 1 && day <= 7) {
-            dosesByWeekday[day]!.add((med: med, rem: rem));
-          }
-        }
-      }
-    }
-
-    for (int day = 1; day <= 7; day++) {
-      dosesByWeekday[day]!.sort((a, b) {
-        final compHour = a.rem.hour.compareTo(b.rem.hour);
-        if (compHour != 0) return compHour;
-        return a.rem.minute.compareTo(b.rem.minute);
-      });
-    }
-
-    for (int day = 1; day <= 7; day++) {
-      final todayList = dosesByWeekday[day]!;
-      if (todayList.isEmpty) continue;
-
-      final Map<int, List<({Medicine med, ReminderTime rem})>> groupedByTime = {};
-      for (final item in todayList) {
-        final timeMinutes = item.rem.hour * 60 + item.rem.minute;
-        groupedByTime.putIfAbsent(timeMinutes, () => []).add(item);
-      }
-      final sortedTimes = groupedByTime.keys.toList()..sort();
-
-      for (int i = 0; i < sortedTimes.length; i++) {
-        final currentGroup = groupedByTime[sortedTimes[i]]!;
-
-        if (i < sortedTimes.length - 1) {
-          final nextGroup = groupedByTime[sortedTimes[i + 1]]!;
-          final nextTarget = nextGroup.first;
-
-          for (final prev in currentGroup) {
-            await _notifications.schedulePreDoseWarningNotification(
-              prevMedicine: prev.med,
-              prevReminder: prev.rem,
-              nextMedicine: nextTarget.med,
-              nextReminder: nextTarget.rem,
-              dayOfWeek: day,
-              nextDayOfWeek: day,
-            );
-          }
-        } else {
-          int? targetNextDay;
-          ({Medicine med, ReminderTime rem})? nextTarget;
-
-          for (int step = 1; step <= 7; step++) {
-            final checkDay = ((day - 1 + step) % 7) + 1;
-            final candidateList = dosesByWeekday[checkDay]!;
-            if (candidateList.isNotEmpty) {
-              targetNextDay = checkDay;
-              nextTarget = candidateList.first;
-              break;
-            }
-          }
-
-          if (targetNextDay != null && nextTarget != null) {
-            for (final prev in currentGroup) {
-              await _notifications.schedulePreDoseWarningNotification(
-                prevMedicine: prev.med,
-                prevReminder: prev.rem,
-                nextMedicine: nextTarget.med,
-                nextReminder: nextTarget.rem,
-                dayOfWeek: day,
-                nextDayOfWeek: targetNextDay,
-              );
-            }
-          }
-        }
-      }
-    }
   }
 
   Future<void> _refreshRecords() async {
@@ -569,7 +479,6 @@ class MedicineProvider extends ChangeNotifier {
     }
 
     await _refreshMedicinesAndReminders();
-    await _scheduleAllPreDoseWarnings();
     await _refreshRecords();
     notifyListeners();
   }
@@ -604,7 +513,6 @@ class MedicineProvider extends ChangeNotifier {
     }
 
     await _refreshMedicinesAndReminders();
-    await _scheduleAllPreDoseWarnings();
     await _refreshRecords();
     notifyListeners();
   }
@@ -636,7 +544,6 @@ class MedicineProvider extends ChangeNotifier {
     }
 
     await _refreshMedicinesAndReminders();
-    await _scheduleAllPreDoseWarnings();
     await _refreshRecords();
     notifyListeners();
   }
@@ -712,9 +619,8 @@ class MedicineProvider extends ChangeNotifier {
     _recordsByDoseKey[key] = record;
     _cachedMissedDoses = null;
 
-    // Dismiss active reminders & cancel pre-dose warning alarm for this dose
+    // Dismiss active reminders for this dose
     await _notifications.dismissActiveReminderNotification(reminder: reminder);
-    await _notifications.cancelPreDoseWarningNotification(reminder, date.weekday);
 
     notifyListeners();
   }
@@ -742,9 +648,8 @@ class MedicineProvider extends ChangeNotifier {
     _recordsByDoseKey[key] = record;
     _cachedMissedDoses = null;
 
-    // Dismiss active reminders & cancel pre-dose warning alarm for this dose
+    // Dismiss active reminders for this dose
     await _notifications.dismissActiveReminderNotification(reminder: reminder);
-    await _notifications.cancelPreDoseWarningNotification(reminder, date.weekday);
 
     notifyListeners();
   }
@@ -763,7 +668,6 @@ class MedicineProvider extends ChangeNotifier {
 
     if (medicine.isActive) {
       await _notifications.scheduleMedicineReminder(medicine, reminder);
-      await _scheduleAllPreDoseWarnings();
     }
 
     notifyListeners();
@@ -921,7 +825,6 @@ class MedicineProvider extends ChangeNotifier {
           } catch (_) {}
           _recordsByDoseKey[key] = record;
           await _notifications.dismissActiveReminderNotification(reminder: dose.reminder);
-          await _notifications.cancelPreDoseWarningNotification(dose.reminder, pastDate.weekday);
           changed = true;
         }
       }
@@ -963,7 +866,6 @@ class MedicineProvider extends ChangeNotifier {
         } catch (_) {}
         _recordsByDoseKey[key] = record;
         await _notifications.dismissActiveReminderNotification(reminder: dose.reminder);
-        await _notifications.cancelPreDoseWarningNotification(dose.reminder, today.weekday);
         changed = true;
       }
     }
