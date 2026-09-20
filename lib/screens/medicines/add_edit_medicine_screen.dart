@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -855,6 +856,423 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     });
   }
 
+  Future<({int stock, int threshold})?> _showInitialStockSheet(
+    BuildContext context,
+    AppStrings s,
+  ) async {
+    int currentStock = 10; // Standard single strip (১০টি ট্যাবলেট/পাতা) default
+    int threshold = 3;
+    final stockController = TextEditingController(text: '$currentStock');
+    final focusNode = FocusNode();
+
+    final result = await showModalBottomSheet<({int stock, int threshold})>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            final isDarkModal = Theme.of(ctx).brightness == Brightness.dark;
+            final medName = _nameController.text.trim();
+            final medDose = _dosageController.text.trim();
+            final effectiveUnit = _selectedUnit.isNotEmpty ? _selectedUnit : _selectedType.defaultUnit;
+
+            void updateStock(int val) {
+              final n = val < 0 ? 0 : val;
+              setModalState(() {
+                currentStock = n;
+                stockController.text = '$n';
+                stockController.selection = TextSelection.fromPosition(
+                  TextPosition(offset: stockController.text.length),
+                );
+              });
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                decoration: BoxDecoration(
+                  color: isDarkModal ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDarkModal ? 0.5 : 0.15),
+                      blurRadius: 25,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Drag Handle
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isDarkModal ? Colors.white24 : Colors.black12,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Header with 3D medicine icon
+                      Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppColors.primaryTeal.withValues(alpha: 0.35),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Center(
+                              child: MedicineVisual(
+                                type: _selectedType,
+                                photoPath: _photoPath,
+                                size: 40,
+                                hasGlow: true,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryTeal.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    s.code == 'bn' ? 'স্টক ও রিফিল ট্র্যাকিং' : 'STOCK & REFILL',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.primaryTealLight,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  s.code == 'bn'
+                                      ? 'আপনার কাছে কতগুলো ওষুধ আছে?'
+                                      : (s.code == 'hi' ? 'दवा का वर्तमान स्टॉक कितना है?' : 'How much stock do you have?'),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    color: isDarkModal ? Colors.white : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '$medName ${medDose.isNotEmpty ? "($medDose)" : ""}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Interactive Counter Container
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isDarkModal ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove_circle_outline_rounded, size: 32),
+                              color: currentStock > 0 ? AppColors.accentRose : Colors.grey,
+                              onPressed: currentStock > 0 ? () => updateStock(currentStock - 1) : null,
+                            ),
+                            Expanded(
+                              child: Center(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    focusNode.requestFocus();
+                                    stockController.selection = TextSelection(
+                                      baseOffset: 0,
+                                      extentOffset: stockController.text.length,
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: isDarkModal ? const Color(0xFF1E293B) : Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: AppColors.primaryTeal.withValues(alpha: 0.4),
+                                        width: 1.4,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: isDarkModal ? 0.2 : 0.04),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        ConstrainedBox(
+                                          constraints: const BoxConstraints(minWidth: 48, maxWidth: 100),
+                                          child: TextField(
+                                            controller: stockController,
+                                            focusNode: focusNode,
+                                            keyboardType: TextInputType.number,
+                                            textAlign: TextAlign.center,
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 30,
+                                              fontWeight: FontWeight.w900,
+                                              color: currentStock > 0 ? AppColors.accentEmerald : AppColors.accentRose,
+                                            ),
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter.digitsOnly,
+                                              LengthLimitingTextInputFormatter(6),
+                                            ],
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                                              border: InputBorder.none,
+                                              focusedBorder: InputBorder.none,
+                                              enabledBorder: InputBorder.none,
+                                            ),
+                                            onTap: () {
+                                              stockController.selection = TextSelection(
+                                                baseOffset: 0,
+                                                extentOffset: stockController.text.length,
+                                              );
+                                            },
+                                            onChanged: (val) {
+                                              final n = int.tryParse(val);
+                                              setModalState(() {
+                                                currentStock = n ?? 0;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          s.unitName(effectiveUnit),
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Icon(
+                                          Icons.edit_rounded,
+                                          size: 14,
+                                          color: isDarkModal ? Colors.white38 : Colors.black38,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline_rounded, size: 32),
+                              color: AppColors.accentEmerald,
+                              onPressed: () => updateStock(currentStock + 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Quick Preset Chips (e.g. 10 (1 strip), 15, 20, 30, 50)
+                      Text(
+                        s.code == 'bn' ? 'কুইক স্টক সিলেক্ট করুন:' : 'Quick Select:',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          {'label': s.code == 'bn' ? '১০টি (১ পাতা)' : '10 (1 strip)', 'val': 10},
+                          {'label': s.code == 'bn' ? '১৫টি' : '15 units', 'val': 15},
+                          {'label': s.code == 'bn' ? '২০টি (২ পাতা)' : '20 (2 strips)', 'val': 20},
+                          {'label': s.code == 'bn' ? '৩০টি' : '30 units', 'val': 30},
+                          {'label': s.code == 'bn' ? '৫০টি' : '50 units', 'val': 50},
+                        ].map((chip) {
+                          final int chipVal = chip['val'] as int;
+                          final bool isSelected = currentStock == chipVal;
+                          return ActionChip(
+                            label: Text(chip['label'] as String),
+                            labelStyle: GoogleFonts.outfit(
+                              fontSize: 11.5,
+                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                              color: isSelected ? Colors.white : AppColors.primaryTealLight,
+                            ),
+                            backgroundColor: isSelected
+                                ? AppColors.primaryTeal
+                                : AppColors.primaryTeal.withValues(alpha: 0.12),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.primaryTeal
+                                  : AppColors.primaryTeal.withValues(alpha: 0.25),
+                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            onPressed: () => updateStock(chipVal),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Low-stock Refill Threshold Indicator
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.notifications_active_outlined, size: 16, color: AppColors.accentAmber),
+                                const SizedBox(width: 8),
+                                Text(
+                                  s.code == 'bn'
+                                      ? 'কতটিতে নামলে সতর্কবার্তা চান?'
+                                      : 'Refill alert when below:',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDarkModal ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: threshold > 1 ? () => setModalState(() => threshold--) : null,
+                                ),
+                                Text(
+                                  '$threshold ${s.unitName(effectiveUnit)}',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.accentAmber,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () => setModalState(() => threshold++),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+
+                      // Confirm Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            final finalStock = int.tryParse(stockController.text.trim()) ?? currentStock;
+                            Navigator.pop(ctx, (stock: finalStock < 0 ? 0 : finalStock, threshold: threshold));
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 3,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                s.code == 'bn' ? 'স্টক নিশ্চিত করুন ও রিমাইন্ডার সেট করুন' : 'Confirm Stock & Set Reminders',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Skip Option
+                      Center(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(ctx, (stock: 0, threshold: 0)),
+                          child: Text(
+                            s.code == 'bn' ? 'এখন স্টক দেব না (পরে কার্ড থেকে দেব)' : 'Skip stock for now (0 stock)',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    focusNode.dispose();
+    stockController.dispose();
+    return result;
+  }
+
   void _saveMedicine(AppStrings s) async {
     final bool hasName = _nameController.text.trim().isNotEmpty;
     final bool hasDosage = _dosageController.text.trim().isNotEmpty;
@@ -880,15 +1298,19 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     }
 
     final provider = context.read<MedicineProvider>();
-    final stock = _stockController.text.isNotEmpty
-        ? (int.tryParse(_stockController.text) ?? _selectedType.defaultStock)
-        : (widget.medicineToEdit?.currentStock ?? _selectedType.defaultStock);
-    final threshold = _refillThresholdController.text.isNotEmpty
-        ? (int.tryParse(_refillThresholdController.text) ?? _selectedType.defaultThreshold)
-        : (widget.medicineToEdit?.refillThreshold ?? _selectedType.defaultThreshold);
     final effectiveUnit = _selectedUnit.isNotEmpty ? _selectedUnit : _selectedType.defaultUnit;
 
+    int stock;
+    int threshold;
+
     if (isEditing) {
+      stock = _stockController.text.isNotEmpty
+          ? (int.tryParse(_stockController.text) ?? widget.medicineToEdit!.currentStock)
+          : widget.medicineToEdit!.currentStock;
+      threshold = _refillThresholdController.text.isNotEmpty
+          ? (int.tryParse(_refillThresholdController.text) ?? widget.medicineToEdit!.refillThreshold)
+          : widget.medicineToEdit!.refillThreshold;
+
       final updatedMed = widget.medicineToEdit!.copyWith(
         name: _nameController.text.trim(),
         dosage: _dosageController.text.trim(),
@@ -908,6 +1330,15 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       );
       await provider.updateMedicine(medicine: updatedMed, reminders: _reminders);
     } else {
+      // Prompt user for their initial medicine stock so no arbitrary refill is assigned
+      final stockResult = await _showInitialStockSheet(context, s);
+      if (stockResult == null) {
+        // User dismissed the modal without confirming or skipping
+        return;
+      }
+      stock = stockResult.stock;
+      threshold = stockResult.threshold;
+
       await provider.addMedicine(
         name: _nameController.text.trim(),
         dosage: _dosageController.text.trim(),
