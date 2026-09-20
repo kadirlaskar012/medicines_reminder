@@ -250,6 +250,8 @@ class DBHelper {
         whereArgs: [record.medicineId, record.reminderTimeId, record.scheduledDate],
       );
 
+      final String? prevStatus = existing.isNotEmpty ? existing.first['status'] as String? : null;
+
       if (existing.isNotEmpty) {
         await txn.update(
           'intake_records',
@@ -261,17 +263,66 @@ class DBHelper {
         await txn.insert('intake_records', record.toMap());
       }
 
-      // If status is taken, decrement medicine stock if stock > 0
-      if (record.status == IntakeStatus.taken) {
-        final medRes = await txn.query('medicines', where: 'id = ?', whereArgs: [record.medicineId]);
-        if (medRes.isNotEmpty) {
-          final currentStock = medRes.first['currentStock'] as int? ?? 0;
-          if (currentStock > 0) {
+      // Stock adjustment based on transition
+      if (prevStatus != record.status.name) {
+        if (record.status == IntakeStatus.taken && prevStatus != IntakeStatus.taken.name) {
+          // Changed to taken -> decrement medicine stock if stock > 0
+          final medRes = await txn.query('medicines', where: 'id = ?', whereArgs: [record.medicineId]);
+          if (medRes.isNotEmpty) {
+            final currentStock = medRes.first['currentStock'] as int? ?? 0;
+            if (currentStock > 0) {
+              await txn.update(
+                'medicines',
+                {'currentStock': currentStock - 1},
+                where: 'id = ?',
+                whereArgs: [record.medicineId],
+              );
+            }
+          }
+        } else if (prevStatus == IntakeStatus.taken.name && record.status != IntakeStatus.taken) {
+          // Changed from taken to skipped/other -> restore medicine stock (+1)
+          final medRes = await txn.query('medicines', where: 'id = ?', whereArgs: [record.medicineId]);
+          if (medRes.isNotEmpty) {
+            final currentStock = medRes.first['currentStock'] as int? ?? 0;
             await txn.update(
               'medicines',
-              {'currentStock': currentStock - 1},
+              {'currentStock': currentStock + 1},
               where: 'id = ?',
               whereArgs: [record.medicineId],
+            );
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> deleteIntakeRecord(String medicineId, String reminderTimeId, String scheduledDate) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final existing = await txn.query(
+        'intake_records',
+        where: 'medicineId = ? AND reminderTimeId = ? AND scheduledDate = ?',
+        whereArgs: [medicineId, reminderTimeId, scheduledDate],
+      );
+
+      if (existing.isNotEmpty) {
+        final prevStatus = existing.first['status'] as String?;
+        await txn.delete(
+          'intake_records',
+          where: 'id = ?',
+          whereArgs: [existing.first['id']],
+        );
+
+        // If it was marked as taken, restore medicine stock (+1)
+        if (prevStatus == IntakeStatus.taken.name) {
+          final medRes = await txn.query('medicines', where: 'id = ?', whereArgs: [medicineId]);
+          if (medRes.isNotEmpty) {
+            final currentStock = medRes.first['currentStock'] as int? ?? 0;
+            await txn.update(
+              'medicines',
+              {'currentStock': currentStock + 1},
+              where: 'id = ?',
+              whereArgs: [medicineId],
             );
           }
         }

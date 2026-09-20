@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -741,6 +742,7 @@ class _TodayScreenState extends State<TodayScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final dose = currentOrDueDoses[index];
+                      final isCompleted = dose.isTaken || dose.isSkipped;
                       return DoseCard(
                         dose: dose,
                         isActionable: true,
@@ -760,6 +762,8 @@ class _TodayScreenState extends State<TodayScreen> {
                             ),
                           );
                         },
+                        onLongPress: isCompleted ? () => _showDoseStatusCorrectionSheet(context, dose) : null,
+                        onStatusTap: isCompleted ? () => _showDoseStatusCorrectionSheet(context, dose) : null,
                       );
                     },
                     childCount: currentOrDueDoses.length,
@@ -845,6 +849,7 @@ class _TodayScreenState extends State<TodayScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final dose = upcomingDoses[index];
+                      final isCompleted = dose.isTaken || dose.isSkipped;
                       return DoseCard(
                         dose: dose,
                         isActionable: false,
@@ -864,6 +869,8 @@ class _TodayScreenState extends State<TodayScreen> {
                             ),
                           );
                         },
+                        onLongPress: isCompleted ? () => _showDoseStatusCorrectionSheet(context, dose) : null,
+                        onStatusTap: isCompleted ? () => _showDoseStatusCorrectionSheet(context, dose) : null,
                       );
                     },
                     childCount: upcomingDoses.length,
@@ -1466,6 +1473,7 @@ class _TodayScreenState extends State<TodayScreen> {
             (context, index) {
               final dose = doses[index];
               final isActionable = _isDoseActionable(dose, isViewingToday);
+              final isCompleted = dose.isTaken || dose.isSkipped;
               return DoseCard(
                 dose: dose,
                 isActionable: isActionable,
@@ -1485,6 +1493,8 @@ class _TodayScreenState extends State<TodayScreen> {
                     ),
                   );
                 },
+                onLongPress: isCompleted ? () => _showDoseStatusCorrectionSheet(context, dose) : null,
+                onStatusTap: isCompleted ? () => _showDoseStatusCorrectionSheet(context, dose) : null,
               );
             },
             childCount: doses.length,
@@ -1694,6 +1704,517 @@ class _TodayScreenState extends State<TodayScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showDoseStatusCorrectionSheet(BuildContext context, ScheduledDose dose) {
+    final s = context.read<LanguageProvider>().strings;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isTaken = dose.isTaken;
+    final isSkipped = dose.isSkipped;
+    final med = dose.medicine;
+    final rem = dose.reminder;
+
+    // Subtle tactile feedback on trigger
+    HapticFeedback.lightImpact();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Header with icon
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isTaken
+                              ? [const Color(0xFFEA580C), const Color(0xFFF59E0B)]
+                              : [const Color(0xFF0D9488), const Color(0xFF06B6D4)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isTaken ? const Color(0xFFEA580C) : const Color(0xFF0D9488)).withValues(alpha: 0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.published_with_changes_rounded, color: Colors.white, size: 24),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s.changeStatusTitle,
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            s.changeStatusSub,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
+                // Medicine preview badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? Colors.white12 : Colors.grey.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text('💊', style: TextStyle(fontSize: 18)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              med.name,
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                              ),
+                            ),
+                            Text(
+                              '${med.dosage.isNotEmpty ? '${med.dosage} • ' : ''}${DateFormat('h:mm a').format(DateTime(2026, 1, 1, rem.hour, rem.minute))}',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Current status indicator
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isTaken
+                              ? AppColors.accentEmerald.withValues(alpha: isDark ? 0.25 : 0.12)
+                              : AppColors.accentRose.withValues(alpha: isDark ? 0.25 : 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isTaken ? AppColors.accentEmerald : AppColors.accentRose,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isTaken ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                              size: 13,
+                              color: isTaken ? AppColors.accentEmerald : AppColors.accentRose,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isTaken ? s.taken : (s.code == 'bn' ? 'স্কিপড' : 'Skipped'),
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isTaken ? AppColors.accentEmerald : AppColors.accentRose,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Primary Alternate Option Button
+                if (isTaken) ...[
+                  _buildStatusActionButton(
+                    context: context,
+                    icon: Icons.cancel_rounded,
+                    title: s.markAsSkippedOption,
+                    subtitle: s.code == 'bn'
+                        ? 'ওষুধটি গ্রহণ করা হয়নি, স্কিপ হিসেবে চিহ্নিত করুন'
+                        : 'Change status to Skipped and restore 1 stock',
+                    color: const Color(0xFFE11D48),
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _confirmAndExecuteStatusChange(
+                        context: context,
+                        dose: dose,
+                        actionType: 'skip',
+                        title: s.confirmChangeTitle,
+                        message: s.confirmSkipMsg(med.name),
+                        confirmColor: const Color(0xFFE11D48),
+                      );
+                    },
+                  ),
+                ] else if (isSkipped) ...[
+                  _buildStatusActionButton(
+                    context: context,
+                    icon: Icons.check_circle_rounded,
+                    title: s.markAsTakenOption,
+                    subtitle: s.code == 'bn'
+                        ? 'ওষুধটি নেওয়া হয়েছে, সম্পন্ন হিসেবে চিহ্নিত করুন'
+                        : 'Change status to Taken and deduct 1 stock',
+                    color: const Color(0xFF0D9488),
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _confirmAndExecuteStatusChange(
+                        context: context,
+                        dose: dose,
+                        actionType: 'take',
+                        title: s.confirmChangeTitle,
+                        message: s.confirmTakeMsg(med.name),
+                        confirmColor: const Color(0xFF0D9488),
+                      );
+                    },
+                  ),
+                ],
+                const SizedBox(height: 10),
+
+                // Reset to Pending Option
+                _buildStatusActionButton(
+                  context: context,
+                  icon: Icons.restart_alt_rounded,
+                  title: s.resetToPendingOption,
+                  subtitle: s.code == 'bn'
+                      ? 'স্ট্যাটাস মুছে দিয়ে আবার পেন্ডিং তালিকায় ফিরিয়ে নিন'
+                      : 'Clear status and return to pending schedule',
+                  color: const Color(0xFF4F46E5),
+                  isDark: isDark,
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _confirmAndExecuteStatusChange(
+                      context: context,
+                      dose: dose,
+                      actionType: 'reset',
+                      title: s.confirmChangeTitle,
+                      message: s.confirmResetMsg(med.name),
+                      confirmColor: const Color(0xFF4F46E5),
+                    );
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                // Cancel Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    style: TextButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      s.cancelBtn,
+                      style: GoogleFonts.outfit(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusActionButton({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isDark ? 0.12 : 0.07),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: color.withValues(alpha: isDark ? 0.35 : 0.25),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [color, color.withValues(alpha: 0.8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.outfit(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: color.withValues(alpha: 0.7),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmAndExecuteStatusChange({
+    required BuildContext context,
+    required ScheduledDose dose,
+    required String actionType,
+    required String title,
+    required String message,
+    required Color confirmColor,
+  }) {
+    final s = context.read<LanguageProvider>().strings;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+          contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: confirmColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  actionType == 'take'
+                      ? Icons.check_circle_rounded
+                      : (actionType == 'skip' ? Icons.cancel_rounded : Icons.restart_alt_rounded),
+                  color: confirmColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              height: 1.4,
+              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                s.cancelBtn,
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                ),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [confirmColor, confirmColor.withValues(alpha: 0.85)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: confirmColor.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(dialogContext);
+                  final provider = context.read<MedicineProvider>();
+                  if (actionType == 'take') {
+                    await provider.markAsTaken(dose.medicine, dose.reminder, dose.scheduledDate);
+                  } else if (actionType == 'skip') {
+                    await provider.markAsSkipped(dose.medicine, dose.reminder, dose.scheduledDate);
+                  } else if (actionType == 'reset') {
+                    await provider.resetDoseToPending(dose.medicine, dose.reminder, dose.scheduledDate);
+                  }
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(
+                              actionType == 'take'
+                                  ? Icons.check_circle_rounded
+                                  : (actionType == 'skip' ? Icons.cancel_rounded : Icons.replay_rounded),
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                s.statusUpdatedMsg,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: confirmColor,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                  s.confirmBtn,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

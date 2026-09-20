@@ -686,6 +686,28 @@ class AppStrings {
           : 'Select your preferred language for medication reminders. You can change it anytime in Settings.');
   String get notifConfirmedTaken => code == 'bn' ? 'সফলভাবে নেওয়া হয়েছে' : (code == 'hi' ? 'सफलतापूर्वक ली गई' : 'Confirmed taken on time');
   String get continueBtn => code == 'bn' ? 'এগিয়ে যান' : (code == 'hi' ? 'आगे बढ़ें' : 'Continue');
+
+  // Status Correction on Completed Doses
+  String get changeStatusTitle => code == 'bn' ? 'স্ট্যাটাস পরিবর্তন করুন' : (code == 'hi' ? 'स्थिति बदलें' : 'Change Dose Status');
+  String get changeStatusSub => code == 'bn'
+      ? 'ভুলবশত ক্লিক হয়ে থাকলে নিচের অপশন থেকে পরিবর্তন করুন'
+      : (code == 'hi' ? 'गलती से क्लिक हुआ हो तो नीचे से स्थिति बदलें' : 'Choose an alternate option to correct this dose');
+  String get markAsSkippedOption => code == 'bn' ? 'স্কিপ (Skip) হিসেবে চিহ্নিত করুন' : (code == 'hi' ? 'छोड़ दिया (Skip) के रूप में बदलें' : 'Mark as Skipped');
+  String get markAsTakenOption => code == 'bn' ? 'ওষুধ গ্রহণ করেছি (Taken) হিসেবে চিহ্নিত করুন' : (code == 'hi' ? 'दवा ले ली (Taken) के रूप में बदलें' : 'Mark as Taken');
+  String get resetToPendingOption => code == 'bn' ? 'পেন্ডিং তালিকায় ফিরিয়ে নিন (Reset)' : (code == 'hi' ? 'वापस लंबित सूची में लाएं (Reset)' : 'Reset to Pending');
+  String get confirmChangeTitle => code == 'bn' ? 'নিশ্চিত করুন' : (code == 'hi' ? 'पुष्टि करें' : 'Confirm Action');
+  String confirmSkipMsg(String name) => code == 'bn'
+      ? 'আপনি কি নিশ্চিত যে আপনি $name ওষুধটি Skip করতে চান?'
+      : (code == 'hi' ? 'क्या आप वाकई $name दवा को छोड़ना (Skip) चाहते हैं?' : 'Are you sure you want to mark $name as Skipped?');
+  String confirmTakeMsg(String name) => code == 'bn'
+      ? 'আপনি কি নিশ্চিত যে আপনি $name ওষুধটি গ্রহণ করেছেন (Taken)?'
+      : (code == 'hi' ? 'क्या आप वाकई $name दवा ले चुके हैं (Taken)?' : 'Are you sure you want to mark $name as Taken?');
+  String confirmResetMsg(String name) => code == 'bn'
+      ? 'আপনি কি নিশ্চিত যে $name আবার পেন্ডিং তালিকায় ফিরিয়ে নিতে চান?'
+      : (code == 'hi' ? 'क्या आप वाकई $name को वापस पेंडिंग सूची में लाना चाहते हैं?' : 'Are you sure you want to reset $name to Pending?');
+  String get statusUpdatedMsg => code == 'bn' ? 'স্ট্যাটাস সফলভাবে আপডেট করা হয়েছে' : (code == 'hi' ? 'स्थिति सफलतापूर्वक अपडेट की गई' : 'Status updated successfully');
+  String get cancelBtn => code == 'bn' ? 'বাতিল' : (code == 'hi' ? 'रद्द करें' : 'Cancel');
+  String get confirmBtn => code == 'bn' ? 'নিশ্চিত' : (code == 'hi' ? 'पुष्टि करें' : 'Confirm');
 }
 
 

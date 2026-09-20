@@ -18,6 +18,8 @@ class DoseCard extends StatelessWidget {
   final VoidCallback onSkip;
   final VoidCallback onSnooze;
   final bool isActionable;
+  final VoidCallback? onLongPress;
+  final VoidCallback? onStatusTap;
 
   const DoseCard({
     super.key,
@@ -26,6 +28,8 @@ class DoseCard extends StatelessWidget {
     required this.onSkip,
     required this.onSnooze,
     this.isActionable = true,
+    this.onLongPress,
+    this.onStatusTap,
   });
 
   static List<Color> _getGradientForMedicine(MedicineType type) => switch (type) {
@@ -85,6 +89,7 @@ class DoseCard extends StatelessWidget {
           ),
         );
       },
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(22),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -323,77 +328,101 @@ class DoseCard extends StatelessWidget {
 
                 // Right: Status indicator (Taken / Skipped / Missed / Due Now)
                 if (dose.isTaken)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.accentEmerald.withValues(alpha: isDark ? 0.28 : 0.16),
-                          AppColors.accentEmerald.withValues(alpha: isDark ? 0.14 : 0.08),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.accentEmerald.withValues(alpha: 0.4),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.check_circle_rounded, color: AppColors.accentEmerald, size: 14),
-                            const SizedBox(width: 4),
-                            Text(
-                              s.taken,
-                              style: GoogleFonts.outfit(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.accentEmerald,
-                              ),
-                            ),
+                  InkWell(
+                    onTap: onStatusTap ?? onLongPress,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.accentEmerald.withValues(alpha: isDark ? 0.28 : 0.16),
+                            AppColors.accentEmerald.withValues(alpha: isDark ? 0.14 : 0.08),
                           ],
                         ),
-                        if (dose.record?.recordedAt != null)
-                          Text(
-                            DateFormat('h:mm a').format(dose.record!.recordedAt),
-                            style: GoogleFonts.outfit(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.accentEmerald.withValues(alpha: 0.85),
-                            ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.accentEmerald.withValues(alpha: 0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_circle_rounded, color: AppColors.accentEmerald, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                s.taken,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.accentEmerald,
+                                ),
+                              ),
+                              if (onLongPress != null || onStatusTap != null) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.sync_rounded,
+                                  size: 11,
+                                  color: AppColors.accentEmerald.withValues(alpha: 0.8),
+                                ),
+                              ],
+                            ],
                           ),
-                      ],
+                          if (dose.record?.recordedAt != null)
+                            Text(
+                              DateFormat('h:mm a').format(dose.record!.recordedAt),
+                              style: GoogleFonts.outfit(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.accentEmerald.withValues(alpha: 0.85),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   )
                 else if (dose.isSkipped)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF4C0519).withValues(alpha: 0.28) : const Color(0xFFFFF1F2),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFFE11D48).withValues(alpha: isDark ? 0.45 : 0.35),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.cancel_rounded, size: 12, color: Color(0xFFE11D48)),
-                        const SizedBox(width: 4),
-                        Text(
-                          s.code == 'bn' ? 'বাদ দেওয়া হয়েছে' : (s.code == 'hi' ? 'छोड़ दिया' : 'Skipped'),
-                          style: GoogleFonts.outfit(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C),
-                          ),
+                  InkWell(
+                    onTap: onStatusTap ?? onLongPress,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF4C0519).withValues(alpha: 0.28) : const Color(0xFFFFF1F2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFFE11D48).withValues(alpha: isDark ? 0.45 : 0.35),
+                          width: 1,
                         ),
-                      ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.cancel_rounded, size: 12, color: Color(0xFFE11D48)),
+                          const SizedBox(width: 4),
+                          Text(
+                            s.code == 'bn' ? 'বাদ দেওয়া হয়েছে' : (s.code == 'hi' ? 'छोड़ दिया' : 'Skipped'),
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C),
+                            ),
+                          ),
+                          if (onLongPress != null || onStatusTap != null) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.sync_rounded,
+                              size: 11,
+                              color: const Color(0xFFE11D48).withValues(alpha: 0.8),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   )
                 else if (isMissed)
@@ -713,6 +742,41 @@ class DoseCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ],
+            if ((dose.isTaken || dose.isSkipped) && onLongPress != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.035),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
+                    width: 0.7,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.touch_app_rounded,
+                      size: 11.5,
+                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      s.code == 'bn'
+                          ? 'হোল্ড প্রেস করে স্ট্যাটাস সংশোধন করুন'
+                          : (s.code == 'hi' ? 'दबाकर स्थिति बदलें' : 'Hold to change status'),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ],
         ),

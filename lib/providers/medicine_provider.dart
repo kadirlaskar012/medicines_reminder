@@ -714,12 +714,32 @@ class MedicineProvider extends ChangeNotifier {
 
     try {
       await _db.recordIntake(record);
+      await _refreshMedicinesAndReminders();
     } catch (_) {}
     _recordsByDoseKey[key] = record;
 
     // Dismiss active reminders & cancel pre-dose warning alarm for this dose
     await _notifications.dismissActiveReminderNotification(reminder: reminder);
     await _notifications.cancelPreDoseWarningNotification(reminder, date.weekday);
+
+    notifyListeners();
+  }
+
+  Future<void> resetDoseToPending(Medicine medicine, ReminderTime reminder, DateTime date) async {
+    NotificationService.triggerHaptic(isSuccess: true);
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    final key = '${medicine.id}_${reminder.id}_$dateStr';
+
+    try {
+      await _db.deleteIntakeRecord(medicine.id, reminder.id, dateStr);
+      await _refreshMedicinesAndReminders();
+    } catch (_) {}
+    _recordsByDoseKey.remove(key);
+
+    if (medicine.isActive) {
+      await _notifications.scheduleMedicineReminder(medicine, reminder);
+      await _scheduleAllPreDoseWarnings();
+    }
 
     notifyListeners();
   }
