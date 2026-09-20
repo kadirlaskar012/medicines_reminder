@@ -1025,8 +1025,8 @@ class _TodayScreenState extends State<TodayScreen> {
   ) {
     final count = missedDoses.length;
     final label = s.code == 'bn'
-        ? 'ছুটে যাওয়া ($count)'
-        : (s.code == 'hi' ? 'छूटी हुई ($count)' : 'Missed ($count)');
+        ? 'ছুটে যাওয়া'
+        : (s.code == 'hi' ? 'छूटी हुई' : 'Missed');
 
     return Material(
       color: Colors.transparent,
@@ -1034,7 +1034,7 @@ class _TodayScreenState extends State<TodayScreen> {
         onTap: () => MissedMedicinesSheet.show(context),
         borderRadius: BorderRadius.circular(30),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFFE11D48), Color(0xFFF43F5E)],
@@ -1043,7 +1043,7 @@ class _TodayScreenState extends State<TodayScreen> {
             ),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.35),
+              color: Colors.white.withValues(alpha: 0.4),
               width: 1.2,
             ),
             boxShadow: [
@@ -1078,7 +1078,34 @@ class _TodayScreenState extends State<TodayScreen> {
                   letterSpacing: 0.1,
                 ),
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 8),
+              // Dedicated Count Badge Number
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1.5),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '$count',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFFE11D48),
+                    height: 1.1,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
               const Icon(
                 Icons.arrow_forward_ios_rounded,
                 color: Colors.white70,
