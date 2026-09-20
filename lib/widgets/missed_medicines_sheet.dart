@@ -293,7 +293,7 @@ class MissedMedicinesSheet extends StatelessWidget {
     final provider = context.read<MedicineProvider>();
     final med = dose.medicine;
     final rem = dose.reminder;
-    final medColor = Color(med.colorValue);
+    final typeGradients = MedicineVisual.getGradients(med.colorValue, med.type);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -327,15 +327,15 @@ class MissedMedicinesSheet extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      medColor.withValues(alpha: isDark ? 0.35 : 0.2),
-                      medColor.withValues(alpha: isDark ? 0.18 : 0.08),
+                      typeGradients[0].withValues(alpha: isDark ? 0.16 : 0.08),
+                      typeGradients[1].withValues(alpha: isDark ? 0.06 : 0.03),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(13),
                   border: Border.all(
-                    color: medColor.withValues(alpha: 0.4),
+                    color: typeGradients[0].withValues(alpha: isDark ? 0.35 : 0.22),
                     width: 1.2,
                   ),
                 ),
@@ -368,7 +368,7 @@ class MissedMedicinesSheet extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: medColor.withValues(alpha: isDark ? 0.25 : 0.12),
+                              color: typeGradients[0].withValues(alpha: isDark ? 0.25 : 0.12),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -376,7 +376,7 @@ class MissedMedicinesSheet extends StatelessWidget {
                               style: GoogleFonts.outfit(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: medColor,
+                                color: isDark ? typeGradients[1] : typeGradients[0],
                               ),
                             ),
                           ),

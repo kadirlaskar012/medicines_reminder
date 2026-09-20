@@ -775,22 +775,22 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            gradientColors[0].withValues(alpha: isDark ? 0.35 : 0.20),
-            gradientColors[1].withValues(alpha: isDark ? 0.18 : 0.10),
+            gradientColors[0].withValues(alpha: isDark ? 0.16 : 0.08),
+            gradientColors[1].withValues(alpha: isDark ? 0.06 : 0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: gradientColors[0].withValues(alpha: isDark ? 0.55 : 0.35),
-          width: 1.3,
+          color: gradientColors[0].withValues(alpha: isDark ? 0.35 : 0.22),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: gradientColors[0].withValues(alpha: isDark ? 0.3 : 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),

@@ -131,29 +131,29 @@ class DoseCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Left: Medicine Squircle Gradient Badge
+                // Left: Medicine Squircle Frosted Badge
                 Container(
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        medGradients[0].withValues(alpha: isDark ? 0.35 : 0.18),
-                        medGradients[1].withValues(alpha: isDark ? 0.18 : 0.08),
+                        medGradients[0].withValues(alpha: isDark ? 0.16 : 0.08),
+                        medGradients[1].withValues(alpha: isDark ? 0.06 : 0.03),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: medGradients[0].withValues(alpha: isDark ? 0.55 : 0.35),
-                      width: 1.3,
+                      color: medGradients[0].withValues(alpha: isDark ? 0.35 : 0.22),
+                      width: 1.2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: medGradients[0].withValues(alpha: isDark ? 0.3 : 0.15),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+                        color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),

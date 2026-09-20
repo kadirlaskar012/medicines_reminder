@@ -13,7 +13,6 @@ import '../../providers/medicine_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../core/localization/app_strings.dart';
 import '../../widgets/medicine_visual.dart';
-import '../../widgets/color_wheel_dialog.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final Medicine? medicineToEdit;
@@ -1083,8 +1082,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           children: [
                             MedicineVisual(
                               type: type,
-                              colorValue: isSelected ? _selectedColorValue : Colors.white.toARGB32(),
-                              size: 32,
+                              size: 34,
                             ),
                             const SizedBox(height: 6),
                             Text(
@@ -1108,12 +1106,6 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 );
               },
             ),
-            const SizedBox(height: 20),
-
-            // Dynamic Color Theme Swatches based on selected medicine form
-            _buildSectionHeader(_getColorSectionTitle(s)),
-            const SizedBox(height: 10),
-            _buildColorSelectionBar(isDark, s),
             const SizedBox(height: 24),
 
             // 3. Start Date Picker (First)
@@ -2079,7 +2071,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   child: FadeTransition(opacity: animation, child: child),
                 ),
                 child: KeyedSubtree(
-                  key: ValueKey('${_selectedType.name}_${_selectedColorValue}_$_photoPath'),
+                  key: ValueKey('${_selectedType.name}_$_photoPath'),
                   child: _buildLivePreviewIcon(isDark),
                 ),
               ),
@@ -2143,247 +2135,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   Widget _buildLivePreviewIcon(bool isDark) {
     return MedicineVisual(
       type: _selectedType,
-      colorValue: _selectedColorValue,
       photoPath: _photoPath,
-      size: 44,
+      size: 46,
       hasGlow: true,
-    );
-  }
-
-  String _getColorSectionTitle(AppStrings s) {
-    return s.code == 'bn' ? 'কালার থিম' : (s.code == 'hi' ? 'कलर थीम' : 'Color Theme');
-  }
-
-  Widget _buildColorSelectionBar(bool isDark, AppStrings s) {
-    final currentColor = MedicineVisual.resolveColor(_selectedColorValue);
-    final isWhiteSelected = currentColor == Colors.white || currentColor.computeLuminance() > 0.88;
-
-    return Row(
-      children: [
-        // 1. White Option Bar (Selected by Default)
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedColorValue = Colors.white.toARGB32();
-              });
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: isWhiteSelected
-                    ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.10)
-                    : (isDark ? AppColors.darkCard : Colors.white),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isWhiteSelected
-                      ? AppColors.primary
-                      : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                  width: isWhiteSelected ? 2.2 : 1.2,
-                ),
-                boxShadow: isWhiteSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.25),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFCBD5E1),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1.5),
-                        ),
-                      ],
-                    ),
-                    child: isWhiteSelected
-                        ? const Center(
-                            child: Icon(
-                              Icons.check_rounded,
-                              size: 20,
-                              color: AppColors.primary,
-                            ),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          s.colorWhite,
-                          style: GoogleFonts.outfit(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                            color: isWhiteSelected
-                                ? AppColors.primary
-                                : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
-                          ),
-                        ),
-                        Text(
-                          s.defaultColor,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-
-        // 2. Color Wheel Option Bar (Opens Full Pop-up Dialog)
-        Expanded(
-          child: GestureDetector(
-            onTap: () async {
-              final picked = await ColorWheelDialog.show(
-                context,
-                initialColor: isWhiteSelected ? const Color(0xFF0D9488) : currentColor,
-                previewType: _selectedType,
-              );
-              if (picked != null) {
-                setState(() {
-                  _selectedColorValue = picked.toARGB32();
-                });
-              }
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: !isWhiteSelected
-                    ? currentColor.withValues(alpha: isDark ? 0.22 : 0.10)
-                    : (isDark ? AppColors.darkCard : Colors.white),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: !isWhiteSelected
-                      ? currentColor
-                      : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                  width: !isWhiteSelected ? 2.2 : 1.2,
-                ),
-                boxShadow: !isWhiteSelected
-                    ? [
-                        BoxShadow(
-                          color: currentColor.withValues(alpha: 0.35),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: isWhiteSelected
-                          ? const SweepGradient(
-                              colors: [
-                                Colors.red,
-                                Colors.yellow,
-                                Colors.green,
-                                Colors.cyan,
-                                Colors.blue,
-                                Color(0xFFFF00FF),
-                                Colors.red,
-                              ],
-                            )
-                          : null,
-                      color: !isWhiteSelected ? currentColor : null,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1.5),
-                        ),
-                      ],
-                    ),
-                    child: isWhiteSelected
-                        ? Center(
-                            child: Container(
-                              width: 14,
-                              height: 14,
-                              decoration: BoxDecoration(
-                                color: isDark ? AppColors.darkCard : Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          )
-                        : const Center(
-                            child: Icon(
-                              Icons.palette_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          !isWhiteSelected ? s.customColor : s.colorWheel,
-                          style: GoogleFonts.outfit(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                            color: !isWhiteSelected
-                                ? currentColor
-                                : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          !isWhiteSelected ? s.tapToChange : s.pickAnyColor,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
