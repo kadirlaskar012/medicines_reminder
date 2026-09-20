@@ -216,28 +216,9 @@ class NotificationService {
     }
   }
 
-  /// Returns clean monochrome vector stencil for status bar & small badge
+  /// Returns clean monochrome vector stencil for status bar & small badge (Official MediRemind logo)
   static String getSmallIconForType(MedicineType type) {
-    switch (type) {
-      case MedicineType.tablet:
-        return '@drawable/ic_notif_tablet';
-      case MedicineType.capsule:
-        return '@drawable/ic_notif_capsule';
-      case MedicineType.syrup:
-        return '@drawable/ic_notif_syrup';
-      case MedicineType.injection:
-        return '@drawable/ic_notif_injection';
-      case MedicineType.drops:
-        return '@drawable/ic_notif_drops';
-      case MedicineType.inhaler:
-        return '@drawable/ic_notif_inhaler';
-      case MedicineType.ointment:
-        return '@drawable/ic_notif_ointment';
-      case MedicineType.supplement:
-        return '@drawable/ic_notif_supplement';
-      case MedicineType.other:
-        return '@drawable/ic_notification';
-    }
+    return '@drawable/ic_notification';
   }
 
   /// Returns appropriate medicine emoji
@@ -504,9 +485,9 @@ class NotificationService {
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       styleInformation: BigTextStyleInformation(
-        'Take <b>${medicine.dosage}</b> (${medicine.instruction.title})<br>Medicine Type: <b>${medicine.type.label}</b>. Tap to confirm your dose.',
+        '🍽️ <b>${medicine.instruction.title}</b> &nbsp;•&nbsp; ⏰ <b>${reminder.formattedTime}</b><br>Take <b>${medicine.dosage}</b> (${medicine.type.label}). Tap to confirm your dose.',
         htmlFormatBigText: true,
-        contentTitle: '$emoji <b>Time for ${medicine.name}</b> (${medicine.dosage})',
+        contentTitle: '$emoji <b>${medicine.name}</b> (${medicine.dosage})',
         htmlFormatContentTitle: true,
         summaryText: '${medicine.type.label} Reminder',
         htmlFormatSummaryText: true,
@@ -514,19 +495,19 @@ class NotificationService {
       actions: const [
         AndroidNotificationAction(
           actionTaken,
-          'TAKE',
+          '✓ TAKE',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
-          'SNOOZE 10M',
+          '⏱ SNOOZE 10M',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
-          'SKIP',
+          '✕ SKIP',
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -556,8 +537,8 @@ class NotificationService {
       try {
         await _notificationsPlugin.zonedSchedule(
           id: uniqueNotificationId,
-          title: '$emoji Time for ${medicine.name} (${medicine.dosage})',
-          body: 'Instruction: ${medicine.instruction.title}. Tap to confirm your dose.',
+          title: '$emoji ${medicine.name} (${medicine.dosage})',
+          body: '🍽️ ${medicine.instruction.title} • ⏰ ${reminder.formattedTime} • Take ${medicine.dosage}',
           scheduledDate: scheduledDate,
           notificationDetails: notificationDetails,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -569,8 +550,8 @@ class NotificationService {
         try {
           await _notificationsPlugin.zonedSchedule(
             id: uniqueNotificationId,
-            title: '$emoji Time for ${medicine.name} (${medicine.dosage})',
-            body: 'Instruction: ${medicine.instruction.title}. Tap to confirm your dose.',
+            title: '$emoji ${medicine.name} (${medicine.dosage})',
+            body: '🍽️ ${medicine.instruction.title} • ⏰ ${reminder.formattedTime} • Take ${medicine.dosage}',
             scheduledDate: scheduledDate,
             notificationDetails: notificationDetails,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -672,13 +653,13 @@ class NotificationService {
       actions: const [
         AndroidNotificationAction(
           actionTaken,
-          'TAKE',
+          '✓ TAKE',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
-          'SKIP',
+          '✕ SKIP',
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -762,9 +743,9 @@ class NotificationService {
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       styleInformation: BigTextStyleInformation(
-        'Take <b>${medicine.dosage}</b> (${medicine.instruction.title})<br>Medicine Type: <b>${medicine.type.label}</b>. Tap to confirm your dose.',
+        '🍽️ <b>${medicine.instruction.title}</b> &nbsp;•&nbsp; ⏰ <b>${reminder.formattedTime}</b><br>Take <b>${medicine.dosage}</b> (${medicine.type.label}). Tap to confirm your dose.',
         htmlFormatBigText: true,
-        contentTitle: '$emoji <b>Time for ${medicine.name}</b> (${medicine.dosage})',
+        contentTitle: '$emoji <b>${medicine.name}</b> (${medicine.dosage})',
         htmlFormatContentTitle: true,
         summaryText: '${medicine.type.label} Reminder',
         htmlFormatSummaryText: true,
@@ -772,19 +753,19 @@ class NotificationService {
       actions: const [
         AndroidNotificationAction(
           actionTaken,
-          'TAKE',
+          '✓ TAKE',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
-          'SNOOZE 10M',
+          '⏱ SNOOZE 10M',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
-          'SKIP',
+          '✕ SKIP',
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -806,8 +787,8 @@ class NotificationService {
     try {
       await _notificationsPlugin.zonedSchedule(
         id: uniqueNotificationId,
-        title: '$emoji Time for ${medicine.name} (${medicine.dosage})',
-        body: 'Instruction: ${medicine.instruction.title}. Tap to confirm your dose.',
+        title: '$emoji ${medicine.name} (${medicine.dosage})',
+        body: '🍽️ ${medicine.instruction.title} • ⏰ ${reminder.formattedTime} • Take ${medicine.dosage}',
         scheduledDate: scheduledDate,
         notificationDetails: NotificationDetails(android: androidDetails),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -856,7 +837,7 @@ class NotificationService {
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       styleInformation: BigTextStyleInformation(
-        'Snooze time elapsed! Please take <b>$dosage</b> now.<br>Tap to log your dose.',
+        '⏱️ <b>Snooze elapsed!</b> Please take <b>$dosage</b> now.<br>Tap to log your dose.',
         htmlFormatBigText: true,
         contentTitle: '⏰ <b>$emoji Snoozed: $medicineName</b> ($dosage)',
         htmlFormatContentTitle: true,
@@ -866,19 +847,19 @@ class NotificationService {
       actions: const [
         AndroidNotificationAction(
           actionTaken,
-          'TAKE',
+          '✓ TAKE',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
-          'SNOOZE 10M',
+          '⏱ SNOOZE 10M',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
-          'SKIP',
+          '✕ SKIP',
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -949,13 +930,13 @@ class NotificationService {
       actions: const [
         AndroidNotificationAction(
           actionTaken,
-          'TAKE NOW',
+          '✓ TAKE NOW',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
-          'SNOOZE 10M',
+          '⏱ SNOOZE 10M',
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -1099,34 +1080,34 @@ class NotificationService {
       icon: smallIcon,
       largeIcon: DrawableResourceAndroidBitmap(largeIcon),
       color: brandPrimaryColor,
-      subText: '${type.label} Dose Reminder',
+      subText: '${type.label} Reminder',
       ticker: '$emoji Time for $medName ($dosage)',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       styleInformation: BigTextStyleInformation(
-        'Take <b>$dosage</b> ($instruction)<br>Form: <b>${type.label}</b>. Tap to confirm your dose.',
+        '🍽️ <b>$instruction</b> &nbsp;•&nbsp; ⏰ <b>Just Now</b><br>Take <b>$dosage</b> (${type.label}). Tap to confirm your dose.',
         htmlFormatBigText: true,
-        contentTitle: '$emoji <b>Time for $medName</b> ($dosage)',
+        contentTitle: '$emoji <b>$medName</b> ($dosage)',
         htmlFormatContentTitle: true,
-        summaryText: '${type.label} Dose Reminder',
+        summaryText: '${type.label} Reminder',
         htmlFormatSummaryText: true,
       ),
       actions: const [
         AndroidNotificationAction(
           actionTaken,
-          'TAKE',
+          '✓ TAKE',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
-          'SNOOZE 10M',
+          '⏱ SNOOZE 10M',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
-          'SKIP',
+          '✕ SKIP',
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -1135,8 +1116,8 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       id: 99990 + type.index,
-      title: '$emoji Time for $medName ($dosage)',
-      body: 'Instruction: $instruction. Tap to confirm your dose.',
+      title: '$emoji $medName ($dosage)',
+      body: '🍽️ $instruction • Take $dosage (${type.label})',
       notificationDetails: NotificationDetails(android: androidDetails),
       payload: payload,
     );

@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediRemind · Notification Design Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0D9488;
+      --primary-dark: #0F766E;
+      --primary-light: #2DD4BF;
+      --bg: #090E17;
+      --surface: #111827;
+      --surface-card: #1F2937;
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #F9FAFB;
+      --text-muted: #9CA3AF;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at 50% 0%, #132338 0%, #080D1A 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px 60px;
+    }
+
+    /* Top Studio Header */
+    .header {
+      text-align: center;
+      max-width: 840px;
+      margin-bottom: 30px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(13, 148, 136, 0.2);
+      border: 1px solid rgba(13, 148, 136, 0.4);
+      color: #2DD4BF;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .header h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    /* Main Layout Grid */
+    .studio-container {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 36px;
+      max-width: 1100px;
+      width: 100%;
+    }
+
+    @media (max-width: 900px) {
+      .studio-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Phone Shade Mockup */
+    .phone-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .phone-frame {
+      width: 100%;
+      max-width: 440px;
+      background: #000000;
+      border-radius: 46px;
+      padding: 12px;
+      border: 3px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    .phone-screen {
+      border-radius: 36px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #1B382F 0%, #0E201B 15%, #05100D 100%);
+      min-height: 720px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.3s ease;
+    }
+
+    .phone-screen.light-theme {
+      background: linear-gradient(180deg, #E2F0EC 0%, #EBF4F1 20%, #F3F7F6 100%);
+    }
+
+    /* Android Status Bar */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 22px 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #E2E8F0;
+    }
+
+    .phone-screen.light-theme .status-bar {
+      color: #1E293B;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    /* Android Quick Tiles Bar */
+    .quick-tiles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 14px 18px 16px;
+    }
+
+    .quick-tile {
+      background: #89C7FE;
+      color: #003355;
+      padding: 14px 16px;
+      border-radius: 26px;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .quick-tile.inactive {
+      background: #2D3A35;
+      color: #E2E8F0;
+    }
+
+    .phone-screen.light-theme .quick-tile.inactive {
+      background: #D8E2DF;
+      color: #334155;
+    }
+
+    .handle-bar {
+      width: 44px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 4px;
+      margin: 4px auto 14px;
+    }
+
+    /* ================= NOTIFICATION CARD CONTAINER ================= */
+    .notification-wrapper {
+      padding: 0 14px;
+      margin-bottom: 14px;
+    }
+
+    .notification-card {
+      background: #25332F;
+      border-radius: 28px;
+      padding: 16px 18px 16px;
+      color: #FFFFFF;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .phone-screen.light-theme .notification-card {
+      background: #FFFFFF;
+      color: #0F172A;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    /* Notification Header Line */
+    .notif-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .app-icon-img {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      object-fit: cover;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+    }
+
+    .app-title-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #94A3B8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .phone-screen.light-theme .app-title-text {
+      color: #64748B;
+    }
+
+    .app-title-bold {
+      font-weight: 700;
+      color: #E2E8F0;
+    }
+
+    .phone-screen.light-theme .app-title-bold {
+      color: #1E293B;
+    }
+
+    .time-stamp {
+      margin-left: auto;
+      font-size: 11px;
+      color: #94A3B8;
+    }
+
+    .chevron-icon {
+      font-size: 16px;
+      color: #94A3B8;
+      cursor: pointer;
+    }
+
+    /* Notification Body */
+    .notif-body-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .notif-content {
+      flex: 1;
+    }
+
+    .notif-headline {
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      margin-bottom: 5px;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .phone-screen.light-theme .notif-headline {
+      color: #0F172A;
+    }
+
+    .notif-badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+
+    .chip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .badge-meal {
+      background: rgba(245, 158, 11, 0.2);
+      color: #FBBF24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    .phone-screen.light-theme .badge-meal {
+      background: #FEF3C7;
+      color: #B45309;
+      border: 1px solid #FDE68A;
+    }
+
+    .badge-time {
+      background: rgba(99, 102, 241, 0.2);
+      color: #A5B4FC;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+    }
+
+    .phone-screen.light-theme .badge-time {
+      background: #EEF2FF;
+      color: #4338CA;
+      border: 1px solid #C7D2FE;
+    }
+
+    .badge-dosage {
+      background: rgba(13, 148, 136, 0.2);
+      color: #2DD4BF;
+      border: 1px solid rgba(13, 148, 136, 0.35);
+    }
+
+    .phone-screen.light-theme .badge-dosage {
+      background: #CCFBF1;
+      color: #0F766E;
+      border: 1px solid #99F6E4;
+    }
+
+    .notif-subtext {
+      font-size: 12.5px;
+      color: #CBD5E1;
+      line-height: 1.45;
+    }
+
+    .phone-screen.light-theme .notif-subtext {
+      color: #475569;
+    }
+
+    /* Medicine Large Icon */
+    .med-large-icon-box {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0.4));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    .phone-screen.light-theme .med-large-icon-box {
+      background: radial-gradient(circle at 35% 35%, #FFFFFF, #E2E8F0);
+      border: 1px solid #CBD5E1;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .med-large-icon-img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+    }
+
+    /* Action Buttons Bar */
+    .notif-actions-row {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .notif-btn {
+      appearance: none;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 10px 8px;
+      border-radius: 16px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .notif-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* ================= OPTION 1 STYLING (Recommended) ================= */
+    .style-opt1 .btn-take {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #FFFFFF;
+      border: 1px solid #10B981;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+    }
+    .style-opt1 .btn-snooze {
+      background: rgba(99, 102, 241, 0.22);
+      color: #C7D2FE;
+      border: 1px solid rgba(99, 102, 241, 0.5);
+    }
+    .phone-screen.light-theme .style-opt1 .btn-snooze {
+      background: #EEF2FF;
+      color: #4338CA;
+      border: 1px solid #C7D2FE;
+    }
+    .style-opt1 .btn-skip {
+      background: rgba(225, 29, 72, 0.22);
+      color: #FECDD3;
+      border: 1px solid rgba(225, 29, 72, 0.5);
+    }
+    .phone-screen.light-theme .style-opt1 .btn-skip {
+      background: #FFF1F2;
+      color: #BE123C;
+      border: 1px solid #FECDD3;
+    }
+
+    /* ================= OPTION 2 STYLING (Vibrant Cards) ================= */
+    .style-opt2 .btn-take {
+      background: #0D9488;
+      color: #FFFFFF;
+      border: 1px solid #2DD4BF;
+    }
+    .style-opt2 .btn-snooze {
+      background: #D97706;
+      color: #FFFFFF;
+      border: 1px solid #FBBF24;
+    }
+    .style-opt2 .btn-skip {
+      background: #475569;
+      color: #F1F5F9;
+      border: 1px solid #64748B;
+    }
+
+    /* ================= OPTION 3 STYLING (Subtle Pastel Minimal) ================= */
+    .style-opt3 .btn-take {
+      background: rgba(16, 185, 129, 0.16);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .style-opt3 .btn-snooze {
+      background: rgba(245, 158, 11, 0.16);
+      color: #FBBF24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .style-opt3 .btn-skip {
+      background: rgba(244, 63, 94, 0.16);
+      color: #FB7185;
+      border: 1px solid rgba(244, 63, 94, 0.35);
+    }
+
+    /* Toast Response Popup */
+    .toast-popup {
+      position: absolute;
+      bottom: 24px;
+      left: 20px;
+      right: 20px;
+      background: #10B981;
+      color: #FFFFFF;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      transform: translateY(120%);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 100;
+    }
+
+    .toast-popup.visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Controls Panel */
+    .control-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    }
+
+    .panel-section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: #E2E8F0;
+      letter-spacing: 0.2px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .style-selector-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .style-option-card {
+      background: var(--surface-card);
+      border: 2px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .style-option-card:hover {
+      border-color: rgba(45, 212, 191, 0.4);
+    }
+
+    .style-option-card.active {
+      border-color: #2DD4BF;
+      background: rgba(13, 148, 136, 0.15);
+    }
+
+    .style-info h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 2px;
+    }
+
+    .style-info p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .radio-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #64748B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .style-option-card.active .radio-dot {
+      border-color: #2DD4BF;
+    }
+
+    .style-option-card.active .radio-dot::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #2DD4BF;
+    }
+
+    /* Medicine Types Selector */
+    .med-type-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .med-type-chip {
+      background: var(--surface-card);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 10px 4px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #CBD5E1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .med-type-chip:hover {
+      border-color: #2DD4BF;
+      color: #FFFFFF;
+    }
+
+    .med-type-chip.active {
+      background: rgba(13, 148, 136, 0.25);
+      border-color: #2DD4BF;
+      color: #2DD4BF;
+    }
+
+    .med-type-chip img {
+      width: 26px;
+      height: 26px;
+      object-fit: contain;
+    }
+
+    /* Inputs */
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-group label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #94A3B8;
+    }
+
+    .field-group input, .field-group select {
+      background: var(--surface-card);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .field-group input:focus, .field-group select:focus {
+      border-color: #2DD4BF;
+    }
+
+    /* Big Callout Choice Box */
+    .selection-box {
+      background: linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(6, 182, 212, 0.08));
+      border: 1px solid rgba(45, 212, 191, 0.35);
+      border-radius: 20px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .selection-box h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin-bottom: 6px;
+    }
+
+    .selection-box p {
+      font-size: 13px;
+      color: #94A3B8;
+      margin-bottom: 14px;
+    }
+
+    .btn-apply-choice {
+      background: linear-gradient(135deg, #0D9488 0%, #06B6D4 100%);
+      color: #FFFFFF;
+      border: none;
+      outline: none;
+      padding: 12px 24px;
+      border-radius: 14px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(13, 148, 136, 0.4);
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .btn-apply-choice:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(13, 148, 136, 0.55);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="badge">🔔 Live Interactive Notification Studio</div>
+    <h1>Android Notification Redesign</h1>
+    <p>Test the redesigned notifications on the Android notification shade simulator below. Switch medicine types, adjust descriptions, and pick your favorite action styling before mobile installation.</p>
+  </div>
+
+  <div class="studio-container">
+
+    <!-- Left: Phone Simulator -->
+    <div class="phone-column">
+      <div class="phone-frame">
+        <div class="phone-screen" id="phoneScreen">
+
+          <!-- Android Status Bar -->
+          <div class="status-bar">
+            <span>1:05 · Sun, 20 Sept</span>
+            <div class="status-icons">
+              <span>📶 13.4 KB/s</span>
+              <span>4G</span>
+              <span>🔋 88%</span>
+            </div>
+          </div>
+
+          <!-- Quick Settings Tiles -->
+          <div class="quick-tiles">
+            <div class="quick-tile">
+              <span>📶</span>
+              <span>iBall-Baton</span>
+            </div>
+            <div class="quick-tile">
+              <span>⇅</span>
+              <span>Mobile data</span>
+            </div>
+            <div class="quick-tile inactive">
+              <span>ᛒ</span>
+              <span>Bluetooth</span>
+            </div>
+            <div class="quick-tile inactive">
+              <span>🔄</span>
+              <span>Auto-rotate</span>
+            </div>
+          </div>
+
+          <div class="handle-bar"></div>
+
+          <!-- The Notification Card -->
+          <div class="notification-wrapper">
+            <div class="notification-card style-opt1" id="notifCard">
+
+              <!-- App Header -->
+              <div class="notif-header">
+                <img src="assets/app_icon.png" class="app-icon-img" alt="MediRemind" />
+                <div class="app-title-text">
+                  <span class="app-title-bold">MediRemind</span>
+                  <span>•</span>
+                  <span id="notifSubtextHeader">Tablet Reminder</span>
+                  <span>•</span>
+                  <span>Just now</span>
+                </div>
+                <span class="time-stamp">▼</span>
+              </div>
+
+              <!-- Main Content Body -->
+              <div class="notif-body-row">
+                <div class="notif-content">
+                  <div class="notif-headline">
+                    <span id="medEmoji">💊</span>
+                    <span id="medNameHeadline">Paracetamol (500mg)</span>
+                  </div>
+
+                  <!-- Badges for Meal & Time Slot -->
+                  <div class="notif-badges-row">
+                    <span class="chip-badge badge-meal" id="badgeMeal">🍽️ Before Meal</span>
+                    <span class="chip-badge badge-time" id="badgeTime">⏰ 01:00 PM (Lunch)</span>
+                    <span class="chip-badge badge-dosage" id="badgeDosage">1 Tablet</span>
+                  </div>
+
+                  <div class="notif-subtext" id="notifDescriptionText">
+                    Take with a full glass of water. Tap to open MediRemind or use quick actions:
+                  </div>
+                </div>
+
+                <!-- 3D Large Medicine Icon -->
+                <div class="med-large-icon-box">
+                  <img src="assets/ic_med_tablet.png" class="med-large-icon-img" id="medLargeIcon" alt="Medicine" />
+                </div>
+              </div>
+
+              <!-- Quick Action Buttons -->
+              <div class="notif-actions-row">
+                <button class="notif-btn btn-take" onclick="triggerAction('TAKE')">
+                  <span>✓</span>
+                  <span>TAKE</span>
+                </button>
+                <button class="notif-btn btn-snooze" onclick="triggerAction('SNOOZE 10M')">
+                  <span>⏱</span>
+                  <span>SNOOZE 10M</span>
+                </button>
+                <button class="notif-btn btn-skip" onclick="triggerAction('SKIP')">
+                  <span>✕</span>
+                  <span>SKIP</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Live Action Toast Reaction -->
+          <div class="toast-popup" id="toastPopup">
+            <span id="toastIcon">🎉</span>
+            <span id="toastMsg">Dose confirmed as Taken!</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Studio Controls & Variation Chooser -->
+    <div class="control-panel">
+
+      <div>
+        <div class="panel-section-title">🎨 Notification Button Style Option</div>
+        <div class="style-selector-grid">
+
+          <div class="style-option-card active" onclick="setStyle('style-opt1', this)">
+            <div class="style-info">
+              <h4>Option 1: Modern Emerald & Indigo (Recommended)</h4>
+              <p>Emerald Green Take button, Soft Indigo Snooze, Rose Skip.</p>
+            </div>
+            <div class="radio-dot"></div>
+          </div>
+
+          <div class="style-option-card" onclick="setStyle('style-opt2', this)">
+            <div class="style-info">
+              <h4>Option 2: Vibrant Solid Badges</h4>
+              <p>Teal Take, Amber Snooze, Slate Skip.</p>
+            </div>
+            <div class="radio-dot"></div>
+          </div>
+
+          <div class="style-option-card" onclick="setStyle('style-opt3', this)">
+            <div class="style-info">
+              <h4>Option 3: Pastel Soft Glow</h4>
+              <p>Translucent mint, soft amber, and rose borders.</p>
+            </div>
+            <div class="radio-dot"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Medicine Type Switcher -->
+      <div>
+        <div class="panel-section-title">💊 Medicine Type (Actual 3D Icons)</div>
+        <div class="med-type-grid">
+          <div class="med-type-chip active" onclick="setMedType('tablet', 'ic_med_tablet.png', '💊', 'Tablet', this)">
+            <img src="assets/ic_med_tablet.png" alt="Tablet">
+            <span>Tablet</span>
+          </div>
+          <div class="med-type-chip" onclick="setMedType('capsule', 'ic_med_capsule.png', '💊', 'Capsule', this)">
+            <img src="assets/ic_med_capsule.png" alt="Capsule">
+            <span>Capsule</span>
+          </div>
+          <div class="med-type-chip" onclick="setMedType('syrup', 'ic_med_syrup.png', '🧪', 'Syrup', this)">
+            <img src="assets/ic_med_syrup.png" alt="Syrup">
+            <span>Syrup</span>
+          </div>
+          <div class="med-type-chip" onclick="setMedType('drops', 'ic_med_drops.png', '💧', 'Drops', this)">
+            <img src="assets/ic_med_drops.png" alt="Drops">
+            <span>Drops</span>
+          </div>
+          <div class="med-type-chip" onclick="setMedType('inhaler', 'ic_med_inhaler.png', '🫁', 'Inhaler', this)">
+            <img src="assets/ic_med_inhaler.png" alt="Inhaler">
+            <span>Inhaler</span>
+          </div>
+          <div class="med-type-chip" onclick="setMedType('injection', 'ic_med_injection.png', '💉', 'Injection', this)">
+            <img src="assets/ic_med_injection.png" alt="Injection">
+            <span>Injection</span>
+          </div>
+          <div class="med-type-chip" onclick="setMedType('ointment', 'ic_med_ointment.png', '🧴', 'Ointment', this)">
+            <img src="assets/ic_med_ointment.png" alt="Ointment">
+            <span>Ointment</span>
+          </div>
+          <div class="med-type-chip" onclick="setMedType('supplement', 'ic_med_supplement.png', '🌿', 'Supplement', this)">
+            <img src="assets/ic_med_supplement.png" alt="Supplement">
+            <span>Supplement</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Customization Fields -->
+      <div>
+        <div class="panel-section-title">✏️ Medicine Details</div>
+        <div class="input-row">
+          <div class="field-group">
+            <label>Medicine Name</label>
+            <input type="text" id="inputMedName" value="Napa Extra" oninput="updateDetails()">
+          </div>
+          <div class="field-group">
+            <label>Dosage</label>
+            <input type="text" id="inputDosage" value="500mg" oninput="updateDetails()">
+          </div>
+        </div>
+        <div class="input-row" style="margin-top: 10px;">
+          <div class="field-group">
+            <label>Meal Instruction</label>
+            <select id="selectMeal" onchange="updateDetails()">
+              <option value="🍽️ Before Meal">Before Meal (খাওয়ার আগে)</option>
+              <option value="🍽️ After Meal">After Meal (খাওয়ার পরে)</option>
+              <option value="🍽️ With Food">With Food (খাবারের সাথে)</option>
+              <option value="🍽️ Empty Stomach">Empty Stomach (খালি পেটে)</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Time Slot</label>
+            <select id="selectSlot" onchange="updateDetails()">
+              <option value="⏰ 08:00 AM (Morning)">Morning (সকাল)</option>
+              <option value="⏰ 01:00 PM (Lunch)" selected>Lunch (দুপুর)</option>
+              <option value="⏰ 05:00 PM (Afternoon)">Afternoon (বিকাল)</option>
+              <option value="⏰ 08:30 PM (Night)">Night (রাত)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Theme Switcher -->
+      <div>
+        <div class="panel-section-title">🌓 Android Theme Mode</div>
+        <div style="display: flex; gap: 10px;">
+          <button class="notif-btn" style="flex: 1; background: #1E293B; color: #FFFFFF;" onclick="toggleTheme(true)">🌙 Dark Shade</button>
+          <button class="notif-btn" style="flex: 1; background: #E2E8F0; color: #0F172A;" onclick="toggleTheme(false)">☀️ Light Shade</button>
+        </div>
+      </div>
+
+      <!-- Confirm Selection -->
+      <div class="selection-box">
+        <h3 id="currentSelectedLabel">Selected: Option 1 (Modern Emerald & Indigo)</h3>
+        <p>This design will be implemented in the mobile app upon your confirmation.</p>
+        <button class="btn-apply-choice" onclick="copyChoice()">✅ I Prefer This Design (Option 1)</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    let currentStyle = 'style-opt1';
+    let currentTypeName = 'Tablet';
+
+    function setStyle(styleClass, element) {
+      currentStyle = styleClass;
+      const card = document.getElementById('notifCard');
+      card.className = `notification-card ${styleClass}`;
+
+      document.querySelectorAll('.style-option-card').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+
+      const titleMap = {
+        'style-opt1': 'Option 1 (Modern Emerald & Indigo)',
+        'style-opt2': 'Option 2 (Vibrant Solid Badges)',
+        'style-opt3': 'Option 3 (Pastel Soft Glow)'
+      };
+      document.getElementById('currentSelectedLabel').innerText = `Selected: ${titleMap[styleClass]}`;
+      document.querySelector('.btn-apply-choice').innerText = `✅ I Prefer This Design (${titleMap[styleClass].split(':')[0]})`;
+    }
+
+    function setMedType(type, iconSrc, emoji, label, element) {
+      currentTypeName = label;
+      document.getElementById('medEmoji').innerText = emoji;
+      document.getElementById('medLargeIcon').src = 'assets/' + iconSrc;
+      document.getElementById('notifSubtextHeader').innerText = `${label} Reminder`;
+      document.getElementById('badgeDosage').innerText = `1 ${label}`;
+
+      document.querySelectorAll('.med-type-chip').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      updateDetails();
+    }
+
+    function updateDetails() {
+      const name = document.getElementById('inputMedName').value || 'Medicine';
+      const dosage = document.getElementById('inputDosage').value || '';
+      const meal = document.getElementById('selectMeal').value;
+      const slot = document.getElementById('selectSlot').value;
+
+      document.getElementById('medNameHeadline').innerText = dosage ? `${name} (${dosage})` : name;
+      document.getElementById('badgeMeal').innerText = meal;
+      document.getElementById('badgeTime').innerText = slot;
+    }
+
+    function toggleTheme(isDark) {
+      const screen = document.getElementById('phoneScreen');
+      if (isDark) {
+        screen.classList.remove('light-theme');
+      } else {
+        screen.classList.add('light-theme');
+      }
+    }
+
+    function triggerAction(actionName) {
+      const toast = document.getElementById('toastPopup');
+      const msg = document.getElementById('toastMsg');
+      const icon = document.getElementById('toastIcon');
+
+      if (actionName === 'TAKE') {
+        toast.style.background = '#059669';
+        icon.innerText = '🎉';
+        msg.innerText = 'Dose confirmed as TAKEN!';
+      } else if (actionName.includes('SNOOZE')) {
+        toast.style.background = '#4F46E5';
+        icon.innerText = '⏱️';
+        msg.innerText = 'Dose snoozed for 10 minutes!';
+      } else {
+        toast.style.background = '#E11D48';
+        icon.innerText = '⏭️';
+        msg.innerText = 'Dose marked as SKIPPED!';
+      }
+
+      toast.classList.add('visible');
+      setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2500);
+    }
+
+    function copyChoice() {
+      const text = document.getElementById('currentSelectedLabel').innerText;
+      alert(`Great! You selected: ${text}.\n\nTell the assistant in chat to proceed with this option to build and install to your phone!`);
+    }
+  </script>
+</body>
+</html>
