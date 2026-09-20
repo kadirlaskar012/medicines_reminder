@@ -195,6 +195,7 @@ class ProfileSelectorSheet extends StatelessWidget {
                 children: [
                   TextField(
                     controller: nameCtrl,
+                    onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                     decoration: InputDecoration(
                       labelText: s.newMemberName,
                       hintText: s.memberNameHint,

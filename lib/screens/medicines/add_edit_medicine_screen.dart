@@ -187,6 +187,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               controller: textCtrl,
               keyboardType: TextInputType.number,
               autofocus: true,
+              onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
               decoration: InputDecoration(
                 suffixText: s.code == 'bn' ? 'দিন' : 'Days',
                 hintText: 'e.g. 15, 45, 60',
@@ -1052,6 +1053,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                             focusNode: focusNode,
                                             keyboardType: TextInputType.number,
                                             textAlign: TextAlign.center,
+                                            onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+                                            onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                                             style: GoogleFonts.outfit(
                                               fontSize: 30,
                                               fontWeight: FontWeight.w900,
@@ -1061,9 +1064,15 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                               FilteringTextInputFormatter.digitsOnly,
                                               LengthLimitingTextInputFormatter(6),
                                             ],
-                                            decoration: const InputDecoration(
+                                            decoration: InputDecoration(
                                               isDense: true,
-                                              contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                                              hintText: '0',
+                                              hintStyle: GoogleFonts.outfit(
+                                                fontSize: 30,
+                                                fontWeight: FontWeight.w900,
+                                                color: (isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted).withValues(alpha: 0.5),
+                                              ),
+                                              contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
                                               border: InputBorder.none,
                                               focusedBorder: InputBorder.none,
                                               enabledBorder: InputBorder.none,
@@ -1439,6 +1448,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               const SizedBox(height: 10),
               TextFormField(
                 controller: _nameController,
+                onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                 decoration: InputDecoration(
                   labelText: s.medicineName,
                   hintText: s.medicineNameHint,
@@ -1449,6 +1459,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               const SizedBox(height: 14),
               TextFormField(
                 controller: _dosageController,
+                onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                 decoration: InputDecoration(
                   labelText: s.dosageStrength,
                   hintText: s.strengthHint,
@@ -2012,6 +2023,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     child: TextFormField(
                       controller: _stockController,
                       keyboardType: TextInputType.number,
+                      onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                       decoration: InputDecoration(
                         labelText: '${s.currentQuantity} (${s.unitName(_selectedUnit)})',
                         hintText: '${_selectedType.defaultStock}',
@@ -2025,6 +2037,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     child: TextFormField(
                       controller: _refillThresholdController,
                       keyboardType: TextInputType.number,
+                      onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                       decoration: InputDecoration(
                         labelText: '${s.lowAlertLimit} (${s.unitName(_selectedUnit)})',
                         hintText: '${_selectedType.defaultThreshold}',
@@ -2212,6 +2225,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               TextFormField(
                 controller: _notesController,
                 maxLines: 3,
+                onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                 decoration: InputDecoration(
                   hintText: s.notesHint,
                 ),

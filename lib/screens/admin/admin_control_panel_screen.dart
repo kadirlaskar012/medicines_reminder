@@ -154,6 +154,7 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
               const SizedBox(height: 8),
               TextField(
                 controller: pwdController,
+                onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                 decoration: InputDecoration(
                   hintText: _tr('নতুন পাসওয়ার্ড', 'नया पासवर्ड', 'New Password'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -431,6 +432,7 @@ class _AdminControlPanelScreenState extends State<AdminControlPanelScreen>
           padding: const EdgeInsets.all(16),
           child: TextField(
             controller: _searchController,
+            onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
             decoration: InputDecoration(
               hintText: _tr('ইমেল, নাম বা নম্বর দিয়ে খুঁজুন...', 'ईमेल, नाम या फोन से खोजें...', 'Search by email, name or phone...'),
               prefixIcon: const Icon(Icons.search_rounded),

@@ -49,6 +49,13 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
     _photoPath = widget.medicine.photoPath;
     _expiryDate = widget.medicine.expiryDate;
     _notesController = TextEditingController(text: widget.medicine.notes);
+    _stockFocusNode.addListener(() {
+      if (!_stockFocusNode.hasFocus) {
+        if (_stockController.text.trim().isEmpty) {
+          _stockController.text = '$_stock';
+        }
+      }
+    });
   }
 
   @override
@@ -485,9 +492,17 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
                                                 FilteringTextInputFormatter.digitsOnly,
                                                 LengthLimitingTextInputFormatter(6),
                                               ],
-                                              decoration: const InputDecoration(
+                                              onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+                                              onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                                              decoration: InputDecoration(
                                                 isDense: true,
-                                                contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                                                hintText: '0',
+                                                hintStyle: GoogleFonts.outfit(
+                                                  fontSize: 28,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: (isDark ? AppColors.darkTextMuted : AppColors.textMuted).withValues(alpha: 0.5),
+                                                ),
+                                                contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
                                                 border: InputBorder.none,
                                                 focusedBorder: InputBorder.none,
                                                 enabledBorder: InputBorder.none,
@@ -666,6 +681,7 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
                     child: TextField(
                       controller: _notesController,
                       maxLines: 3,
+                      onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,

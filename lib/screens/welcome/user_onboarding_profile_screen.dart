@@ -350,6 +350,7 @@ class _UserOnboardingProfileScreenState extends State<UserOnboardingProfileScree
                           TextFormField(
                             controller: _nameController,
                             textCapitalization: TextCapitalization.words,
+                            onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                             style: TextStyle(
                               fontSize: 15,
                               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
@@ -394,6 +395,7 @@ class _UserOnboardingProfileScreenState extends State<UserOnboardingProfileScree
                           TextFormField(
                             controller: _ageController,
                             keyboardType: TextInputType.number,
+                            onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                             style: TextStyle(
                               fontSize: 15,
                               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,

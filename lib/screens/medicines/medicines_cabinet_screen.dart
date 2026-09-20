@@ -107,6 +107,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
               ),
               child: TextField(
                 onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                 style: GoogleFonts.outfit(
                   fontSize: 14.5,
                   fontWeight: FontWeight.w600,
@@ -829,8 +830,10 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
               controller: qtyCtrl,
               keyboardType: TextInputType.number,
               autofocus: true,
+              onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
               decoration: InputDecoration(
                 labelText: '${s.addedPillsCount} (${s.unitName(med.displayUnit)})',
+                hintText: '0',
                 suffixText: s.unitName(med.displayUnit),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),

@@ -761,6 +761,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with WidgetsBinding
                   keyboardType: TextInputType.number,
                   maxLength: 6,
                   textAlign: TextAlign.center,
+                  onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 4),
                   decoration: InputDecoration(
                     counterText: '',
@@ -1003,6 +1004,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with WidgetsBinding
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
+        onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
         style: TextStyle(
           fontSize: 15,
           color: isDark ? Colors.white : const Color(0xFF0F172A),
