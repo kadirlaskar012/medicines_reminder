@@ -305,22 +305,43 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : Colors.white,
+          color: isDark ? const Color(0xFF0F1728) : Colors.white,
           border: Border(
             top: BorderSide(
-              color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.85),
-              width: 1,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : const Color(0xFFE2E8F0),
+              width: 1.2,
             ),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, -3),
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.45)
+                  : const Color(0xFF0F172A).withValues(alpha: 0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
-        child: SafeArea(
+        child: Stack(
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 14,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: isDark
+                        ? AppColors.glossySheenDark
+                        : AppColors.glossySheenLight,
+                  ),
+                ),
+              ),
+            ),
+            SafeArea(
               top: false,
               child: SizedBox(
                 height: 76,
@@ -363,8 +384,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                 ),
               ),
             ),
-          ),
-        );
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildNavItem({

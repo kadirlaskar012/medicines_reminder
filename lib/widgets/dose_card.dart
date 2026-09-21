@@ -89,14 +89,13 @@ class DoseCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(22),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: dose.isTaken
-              ? (isDark ? const Color(0xFF0D251D) : const Color(0xFFF0FDF4))
+              ? (isDark ? const Color(0xFF0C241C) : const Color(0xFFF0FDF4))
               : isMissed
-                  ? (isDark ? const Color(0xFF280E14) : const Color(0xFFFFF1F2))
+                  ? (isDark ? const Color(0xFF260E14) : const Color(0xFFFFF1F2))
                   : isOverdue
-                      ? (isDark ? const Color(0xFF261808) : const Color(0xFFFFFBEB))
+                      ? (isDark ? const Color(0xFF241608) : const Color(0xFFFFFBEB))
                       : (isDark ? AppColors.darkCard : Colors.white),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
@@ -107,27 +106,45 @@ class DoseCard extends StatelessWidget {
                     : isOverdue
                         ? AppColors.accentAmber.withValues(alpha: 0.55)
                         : (isDark
-                            ? medGradients[0].withValues(alpha: 0.32)
+                            ? Colors.white.withValues(alpha: 0.12)
                             : medGradients[0].withValues(alpha: 0.22)),
             width: 1.3,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: dose.isTaken
-                  ? AppColors.accentEmerald.withValues(alpha: isDark ? 0.2 : 0.12)
-                  : isMissed
-                      ? AppColors.accentRose.withValues(alpha: isDark ? 0.22 : 0.14)
-                      : isOverdue
-                          ? AppColors.accentAmber.withValues(alpha: isDark ? 0.22 : 0.14)
-                          : medGradients[0].withValues(alpha: isDark ? 0.16 : 0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: AppColors.glossyCardShadow(
+            isDark,
+            glowColor: dose.isTaken
+                ? AppColors.accentEmerald
+                : isMissed
+                    ? AppColors.accentRose
+                    : isOverdue
+                        ? AppColors.accentAmber
+                        : medGradients[0],
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 24,
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: isDark
+                          ? AppColors.glossySheenDark
+                          : AppColors.glossySheenLight,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -768,7 +785,11 @@ class DoseCard extends StatelessWidget {
                 ),
               ),
             ],
-          ],
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

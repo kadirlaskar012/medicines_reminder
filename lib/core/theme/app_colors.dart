@@ -43,10 +43,10 @@ class AppColors {
   static const Color alarmGlow = Color(0xFF0D9488);
 
   // Light Mode (Crisp Porcelain & Soft Slate)
-  static const Color lightBackground = Color(0xFFF1F5F9);
+  static const Color lightBackground = Color(0xFFF8FAFC);
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightCard = Color(0xFFFFFFFF);
-  static const Color lightCardElevated = Color(0xFFF8FAFC);
+  static const Color lightCardElevated = Color(0xFFF1F5F9);
   static const Color lightBorder = Color(0xFFE2E8F0);
   static const Color lightTextPrimary = Color(0xFF0F172A);
   static const Color lightTextSecondary = Color(0xFF475569);
@@ -62,12 +62,12 @@ class AppColors {
   static const Color textSecondary = lightTextSecondary;
   static const Color textMuted = lightTextMuted;
 
-  // Dark Mode (Midnight Obsidian #0B1120, Card #151F32, Inner Pill #1E2B42)
-  static const Color darkBackground = Color(0xFF0B1120);
-  static const Color darkSurface = Color(0xFF151F32);
-  static const Color darkCard = Color(0xFF151F32);
-  static const Color darkCardElevated = Color(0xFF1E2B42);
-  static const Color darkBorder = Color(0xFF26334A);
+  // Dark Mode (Deep Obsidian #090D16, Glass Card #131D33, Elevated #1A2640)
+  static const Color darkBackground = Color(0xFF090D16);
+  static const Color darkSurface = Color(0xFF131D33);
+  static const Color darkCard = Color(0xFF131D33);
+  static const Color darkCardElevated = Color(0xFF1A2640);
+  static const Color darkBorder = Color(0xFF23314E);
   static const Color darkPrimary = Color(0xFF14B8A6);
   static const Color darkTextPrimary = Color(0xFFF8FAFC);
   static const Color darkTextSecondary = Color(0xFF94A3B8);
@@ -75,6 +75,43 @@ class AppColors {
   static const Color darkSuccess = Color(0xFF10B981);
   static const Color darkWarning = Color(0xFFF59E0B);
   static const Color darkError = Color(0xFFF43F5E);
+
+  // Glossy Glassmorphic Sheen Gradients
+  static const LinearGradient glossySheenDark = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0x18FFFFFF),
+      Color(0x00FFFFFF),
+    ],
+  );
+
+  static const LinearGradient glossySheenLight = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0x66FFFFFF),
+      Color(0x00FFFFFF),
+    ],
+  );
+
+  static const LinearGradient glassBorderDark = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0x2EFFFFFF),
+      Color(0x0AFFFFFF),
+    ],
+  );
+
+  static const LinearGradient glassBorderLight = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFFFFFFF),
+      Color(0xFFE2E8F0),
+    ],
+  );
 
   // Rich Gradients
   static const LinearGradient primaryGradient = LinearGradient(
@@ -112,6 +149,36 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  // Multi-layered Luxury Atmospheric Shadows
+  static List<BoxShadow> glossyCardShadow(bool isDark, {Color? glowColor}) {
+    if (isDark) {
+      return [
+        BoxShadow(
+          color: (glowColor ?? Colors.black).withValues(alpha: glowColor != null ? 0.22 : 0.45),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.3),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ];
+    }
+    return [
+      BoxShadow(
+        color: (glowColor ?? const Color(0xFF0F172A)).withValues(alpha: glowColor != null ? 0.12 : 0.05),
+        blurRadius: 24,
+        offset: const Offset(0, 8),
+      ),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.02),
+        blurRadius: 4,
+        offset: const Offset(0, 2),
+      ),
+    ];
+  }
 
   // Ambient Glow BoxShadow Helper
   static List<BoxShadow> glowShadow(Color color, {double opacity = 0.28, double blurRadius = 18, Offset offset = const Offset(0, 6)}) {

@@ -174,25 +174,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Color? accentGlow,
   }) {
     return Container(
-      padding: padding,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF131D36) : Colors.white,
+        color: isDark ? const Color(0xFF131D33) : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : (accentGlow != null ? accentGlow.withValues(alpha: 0.14) : const Color(0xFFE2E8F0)),
+              ? (accentGlow != null
+                  ? accentGlow.withValues(alpha: 0.35)
+                  : Colors.white.withValues(alpha: 0.12))
+              : (accentGlow != null
+                  ? accentGlow.withValues(alpha: 0.22)
+                  : const Color(0xFFE2E8F0)),
           width: 1.2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: (accentGlow ?? Colors.black).withValues(alpha: isDark ? 0.25 : 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppColors.glossyCardShadow(isDark, glowColor: accentGlow),
       ),
-      child: child,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Stack(
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 28,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: isDark
+                        ? AppColors.glossySheenDark
+                        : AppColors.glossySheenLight,
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: padding,
+              child: child,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -251,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final hasMissingPermission = !isNotifGranted || !isAlarmGranted || !isBatteryGranted;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           s.settingsAndDiagnostics,
@@ -259,12 +281,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
+        backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
       ),
       body: ListView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
         children: [
+          // 0. APPEARANCE & THEME (Light / Dark Switcher)
+          _buildSectionHeader(
+            s.code == 'bn' ? 'অ্যাপের থিম ও মোড' : 'APPEARANCE & THEME',
+            icon: Icons.palette_rounded,
+            accentColor: const Color(0xFF8B5CF6),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 8),
+          _buildThemeCard(context, themeProvider, s, isDark),
+
+          const SizedBox(height: 24),
+
           // 1. LOCAL DATA BACKUP & RESTORE
           _buildSectionHeader(
             s.code == 'bn' ? 'ডাটা ব্যাকআপ ও রিস্টোর' : 'LOCAL BACKUP & RESTORE',
@@ -420,6 +454,163 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 8),
           _buildAboutCard(context, s, isDark),
+        ],
+      ),
+    );
+  }
+
+  // ================= 0. APPEARANCE & THEME =================
+  Widget _buildThemeCard(
+    BuildContext context,
+    ThemeProvider themeProvider,
+    AppStrings s,
+    bool isDark,
+  ) {
+    final isBn = s.code == 'bn';
+    final currentMode = themeProvider.themeMode;
+
+    Widget buildOption({
+      required String title,
+      required IconData icon,
+      required ThemeMode mode,
+      required List<Color> activeGradient,
+    }) {
+      final isSelected = currentMode == mode;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => themeProvider.setThemeMode(mode),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              gradient: isSelected
+                  ? LinearGradient(
+                      colors: activeGradient,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
+              color: isSelected
+                  ? null
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : const Color(0xFFF1F5F9)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.35)
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : const Color(0xFFE2E8F0)),
+                width: isSelected ? 1.5 : 1.0,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: activeGradient.first.withValues(alpha: isDark ? 0.4 : 0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return _buildCardContainer(
+      isDark: isDark,
+      accentGlow: const Color(0xFF8B5CF6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _buildSquircleIcon(
+                icon: Icons.palette_rounded,
+                gradientColors: const [Color(0xFF8B5CF6), Color(0xFF06B6D4)],
+                size: 46,
+                iconSize: 24,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isBn ? 'অ্যাপের থিম ও মোড' : 'App Theme & Appearance',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isBn
+                          ? 'ক্রিস্টাল লাইট বা অবসিডিয়ান ডার্ক মোড বেছে নিন।'
+                          : 'Select Crystal Light or Obsidian Dark mode.',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              buildOption(
+                title: isBn ? 'লাইট' : 'Light',
+                icon: Icons.wb_sunny_rounded,
+                mode: ThemeMode.light,
+                activeGradient: const [Color(0xFF0D9488), Color(0xFF06B6D4)],
+              ),
+              const SizedBox(width: 8),
+              buildOption(
+                title: isBn ? 'ডার্ক' : 'Dark',
+                icon: Icons.nightlight_round,
+                mode: ThemeMode.dark,
+                activeGradient: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              ),
+              const SizedBox(width: 8),
+              buildOption(
+                title: isBn ? 'অটো' : 'Auto',
+                icon: Icons.brightness_auto_rounded,
+                mode: ThemeMode.system,
+                activeGradient: const [Color(0xFF3B82F6), Color(0xFF0284C7)],
+              ),
+            ],
+          ),
         ],
       ),
     );

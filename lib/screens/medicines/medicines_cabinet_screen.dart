@@ -322,28 +322,43 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                           color: isDark ? AppColors.darkCard : Colors.white,
                           borderRadius: BorderRadius.circular(22),
                           border: Border.all(
-                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.12)
+                                : AppColors.lightBorder,
                             width: 1.2,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-                              blurRadius: 14,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                          boxShadow: AppColors.glossyCardShadow(isDark),
                         ),
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => MedicineDetailsScreen(medicine: med),
-                              ),
-                            );
-                          },
+                        child: ClipRRect(
                           borderRadius: BorderRadius.circular(22),
-                          child: Padding(
+                          child: Stack(
+                            children: [
+                              Positioned(
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: 24,
+                                child: IgnorePointer(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: isDark
+                                          ? AppColors.glossySheenDark
+                                          : AppColors.glossySheenLight,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => MedicineDetailsScreen(medicine: med),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(22),
+                                child: Padding(
                             padding: const EdgeInsets.all(16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -695,8 +710,11 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                             ),
                           ),
                         ),
-                      );
-                      return RepaintBoundary(child: itemWidget);
+                      ],
+                    ),
+                  ),
+                );
+                return RepaintBoundary(child: itemWidget);
                     },
                   ),
           ),

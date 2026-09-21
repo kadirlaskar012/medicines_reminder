@@ -162,11 +162,11 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.darkBackground,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryTealLight,
-        onPrimary: Color(0xFF0B1120),
+        onPrimary: Color(0xFF090D16),
         primaryContainer: Color(0xFF134E4A),
         onPrimaryContainer: Color(0xFFCCFBF1),
         secondary: AppColors.accentEmerald,
-        onSecondary: Color(0xFF0B1120),
+        onSecondary: Color(0xFF090D16),
         surface: AppColors.darkSurface,
         onSurface: AppColors.darkTextPrimary,
         error: AppColors.darkError,
