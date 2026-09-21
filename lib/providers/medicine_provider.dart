@@ -413,6 +413,8 @@ class MedicineProvider extends ChangeNotifier {
   }
 
   Future<void> rescheduleAllActiveReminders() async {
+    // Purge any stale, zombie, or conflicting notifications & alarms from the device first
+    await _notifications.wipeAllDeviceNotificationsAndAlarms();
     for (final med in _medicines) {
       if (!med.isActive) continue;
       final reminders = _remindersByMedicine[med.id] ?? [];

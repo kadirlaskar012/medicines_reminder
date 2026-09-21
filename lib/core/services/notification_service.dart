@@ -371,7 +371,21 @@ class NotificationService {
       );
     }
 
+    // Purge any stale/zombie alarms from previous app builds
+    await wipeAllDeviceNotificationsAndAlarms();
+
     _isInitialized = true;
+  }
+
+  /// Completely cancels and purges all notifications, pending intents,
+  /// and scheduled alarms from Android's system AlarmManager and tray.
+  Future<void> wipeAllDeviceNotificationsAndAlarms() async {
+    try {
+      await _notificationsPlugin.cancelAll();
+      debugPrint('NotificationService: All existing device notifications & alarms purged successfully.');
+    } catch (e) {
+      debugPrint('NotificationService: Error wiping device notifications: $e');
+    }
   }
 
   // ==================== PERMISSIONS ====================
@@ -472,12 +486,6 @@ class NotificationService {
         AndroidNotificationAction(
           actionTaken,
           '✓ TAKE',
-          showsUserInterface: true,
-          cancelNotification: true,
-        ),
-        AndroidNotificationAction(
-          actionSnooze,
-          '⏱ SNOOZE 10M',
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -620,12 +628,6 @@ class NotificationService {
         AndroidNotificationAction(
           actionTaken,
           '✓ TAKE',
-          showsUserInterface: true,
-          cancelNotification: true,
-        ),
-        AndroidNotificationAction(
-          actionSnooze,
-          '⏱ SNOOZE 10M',
           showsUserInterface: true,
           cancelNotification: true,
         ),

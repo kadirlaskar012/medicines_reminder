@@ -15,7 +15,6 @@ import 'medicines/medicines_cabinet_screen.dart';
 import 'medicines/add_edit_medicine_screen.dart';
 import 'reports/reports_analytics_screen.dart';
 import 'settings/settings_screen.dart';
-import 'alarm/alarm_ringing_screen.dart';
 import '../providers/language_provider.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -296,13 +295,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
         );
       } else {
         if (!mounted) return;
-        // Tapped notification card -> Navigate to full Alarm Ringing Screen
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AlarmRingingScreen(medicine: med, reminder: rem),
-          ),
-        );
+        // Tapped notification card -> Navigate directly to Today screen where doses are shown
+        setState(() {
+          _currentIndex = 0;
+        });
       }
     } catch (e) {
       debugPrint('Error handling notification action: $e');
