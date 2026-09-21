@@ -1,5 +1,5 @@
 name: medicines_reminder
-description: "A medicine reminder application with Supabase cloud backup."
+description: "A medicine reminder application with local offline storage and backup."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -30,7 +30,9 @@ dependencies:
   printing: ^5.15.0
   url_launcher: ^6.3.2
   shared_preferences: ^2.3.5
-  supabase_flutter: ^2.8.3
+  share_plus: ^10.1.4
+  file_picker: ^8.1.7
+  path_provider: ^2.1.5
   image_picker: ^1.2.3
   flutter_displaymode: ^0.7.0
 

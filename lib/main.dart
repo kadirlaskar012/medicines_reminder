@@ -3,13 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'core/constants/supabase_config.dart';
 import 'core/database/db_helper.dart';
 import 'core/services/notification_service.dart';
-import 'core/services/supabase_service.dart';
 import 'core/theme/app_theme.dart';
-import 'providers/auth_provider.dart';
 import 'providers/language_provider.dart';
 import 'providers/medicine_provider.dart';
 import 'providers/theme_provider.dart';
@@ -31,18 +27,6 @@ void main() async {
       debugPrint('Notification init notice: $e');
     }),
     SharedPreferences.getInstance(),
-    () async {
-      try {
-        await Supabase.initialize(
-          url: SupabaseConfig.projectUrl,
-          // ignore: deprecated_member_use
-          anonKey: SupabaseConfig.anonKey,
-        );
-        await SupabaseService.instance.initSession();
-      } catch (e) {
-        debugPrint('Supabase init notice: $e');
-      }
-    }(),
   ]);
 
   final prefs = initTasks[2] as SharedPreferences;
@@ -70,9 +54,6 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => MedicineProvider()..loadInitialData(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(),
         ),
       ],
       child: MediRemindApp(showWelcome: !hasSeenWelcome),

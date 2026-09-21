@@ -7,15 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_svg_icons.dart';
 import '../../core/localization/app_strings.dart';
-import '../../core/services/cloud_sync_service.dart';
+import '../../core/services/local_backup_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/profile_selector_sheet.dart';
-import '../auth/phone_login_screen.dart';
 import '../family/family_members_screen.dart';
 import '../welcome/user_onboarding_profile_screen.dart';
 import '../welcome/welcome_screen.dart';
@@ -243,7 +241,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<MedicineProvider>();
-    final auth = context.watch<AuthProvider>();
     final lang = context.watch<LanguageProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final s = lang.strings;
@@ -268,15 +265,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
         children: [
-          // 1. ACCOUNT & CLOUD SYNC
+          // 1. LOCAL DATA BACKUP & RESTORE
           _buildSectionHeader(
-            'ACCOUNT & CLOUD SYNC',
-            icon: Icons.cloud_sync_rounded,
-            accentColor: const Color(0xFF0284C7),
+            s.code == 'bn' ? 'ডাটা ব্যাকআপ ও রিস্টোর' : 'LOCAL BACKUP & RESTORE',
+            icon: Icons.backup_rounded,
+            accentColor: const Color(0xFF0D9488),
             isDark: isDark,
           ),
           const SizedBox(height: 8),
-          _buildAccountCard(context, auth, provider, s, isDark),
+          _buildLocalBackupCard(context, provider, s, isDark),
 
           const SizedBox(height: 24),
 
@@ -428,164 +425,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ================= 1. ACCOUNT & CLOUD SYNC =================
-  Widget _buildAccountCard(
+  // ================= 1. LOCAL DATA BACKUP & RESTORE =================
+  Widget _buildLocalBackupCard(
     BuildContext context,
-    AuthProvider auth,
     MedicineProvider provider,
     AppStrings s,
     bool isDark,
   ) {
-    if (auth.isSignedIn) {
-      final displayName = auth.displayName ?? auth.email ?? auth.phoneNumber ?? 'User';
-      return _buildCardContainer(
-        isDark: isDark,
-        accentGlow: const Color(0xFF0284C7),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                if (auth.photoUrl != null)
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF10B981), width: 2),
-                    ),
-                    child: CircleAvatar(
-                      radius: 22,
-                      backgroundImage: NetworkImage(auth.photoUrl!),
-                    ),
-                  )
-                else
-                  _buildSquircleIcon(
-                    icon: Icons.person_rounded,
-                    gradientColors: const [Color(0xFF0284C7), Color(0xFF38BDF8)],
-                    size: 46,
-                    iconSize: 24,
-                  ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        displayName,
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        ),
-                      ),
-                      if (auth.email != null)
-                        Text(
-                          auth.email!,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                          ),
-                        ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF10B981),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Cloud Sync Active',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF10B981),
-                            ),
-                          ),
-                          if (_lastBackupFormatted != null) ...[
-                            Text(
-                              ' · $_lastBackupFormatted',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10,
-                                color: isDark ? AppColors.darkTextMuted : AppColors.textMuted,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => _confirmSignOut(context, auth, s),
-                  icon: const Icon(Icons.logout_rounded, size: 15, color: AppColors.error),
-                  label: Text(
-                    s.signOutBtn,
-                    style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.error),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.error, width: 1.2),
-                    foregroundColor: AppColors.error,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _performBackup(context, provider, s),
-                    icon: const Icon(Icons.cloud_upload_rounded, size: 16),
-                    label: Text('Backup Now', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0284C7),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      elevation: 3,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _confirmRestore(context, auth, provider, s),
-                    icon: const Icon(Icons.cloud_download_rounded, size: 16, color: Color(0xFF0284C7)),
-                    label: Text('Restore', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF0284C7), width: 1.2),
-                      foregroundColor: const Color(0xFF0284C7),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Guest / Offline Mode Card
+    final isBn = s.code == 'bn';
     return _buildCardContainer(
       isDark: isDark,
-      accentGlow: const Color(0xFF0284C7),
+      accentGlow: const Color(0xFF0D9488),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               _buildSquircleIcon(
-                icon: Icons.cloud_sync_rounded,
-                gradientColors: const [Color(0xFF0284C7), Color(0xFF38BDF8)],
+                icon: Icons.backup_rounded,
+                gradientColors: const [Color(0xFF0D9488), Color(0xFF06B6D4)],
                 size: 46,
                 iconSize: 24,
               ),
@@ -595,16 +453,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Cloud Backup & Sync',
+                      isBn ? 'ডিভাইস লোকাল ব্যাকআপ' : 'Device Local Backup',
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                        fontSize: 16,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Safeguard your medicines, schedules, and history across devices.',
+                      isBn
+                          ? '১০০% অফলাইন ও সুরক্ষিত। সম্পূর্ণ ডাটা আপনার ফোনে সেভ থাকবে।'
+                          : '100% offline & private. All data stays safe on your device.',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -616,67 +476,119 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PhoneLoginScreen(isModal: true)),
-                );
-              },
-              icon: const Icon(Icons.login_rounded, size: 18),
-              label: Text(
-                s.signInOrLoginTitle,
-                style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0284C7),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                elevation: 3,
-                shadowColor: const Color(0xFF0284C7).withValues(alpha: 0.4),
+          const SizedBox(height: 14),
+
+          // Status Badge: Offline & Last Backup Status
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0D9488).withValues(alpha: isDark ? 0.15 : 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                width: 1,
               ),
             ),
+            child: Row(
+              children: [
+                const Icon(Icons.shield_rounded, size: 16, color: Color(0xFF0D9488)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _lastBackupFormatted != null
+                        ? (isBn
+                            ? 'সর্বশেষ ব্যাকআপ: $_lastBackupFormatted'
+                            : 'Last Backup: $_lastBackupFormatted')
+                        : (isBn
+                            ? 'কোনো ব্যাকআপ ফাইল সেভ করা নেই'
+                            : 'Device Storage · No backup exported yet'),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? const Color(0xFF5EEAD4) : const Color(0xFF0F766E),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Action Buttons: Export & Restore
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _performLocalExport(context),
+                  icon: const Icon(Icons.upload_file_rounded, size: 17),
+                  label: Text(
+                    isBn ? 'ব্যাকআপ এক্সপোর্ট' : 'Export Backup',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D9488),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 3,
+                    shadowColor: const Color(0xFF0D9488).withValues(alpha: 0.4),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _confirmLocalRestore(context, provider, isBn),
+                  icon: const Icon(Icons.download_rounded, size: 17, color: Color(0xFF0D9488)),
+                  label: Text(
+                    isBn ? 'ব্যাকআপ রিস্টোর' : 'Restore Backup',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: const Color(0xFF0D9488),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF0D9488), width: 1.3),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: isDark
+                        ? const Color(0xFF0D9488).withValues(alpha: 0.08)
+                        : const Color(0xFF0D9488).withValues(alpha: 0.04),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Future<void> _performBackup(BuildContext context, MedicineProvider provider, AppStrings s) async {
+  Future<void> _performLocalExport(BuildContext context) async {
     try {
-      final ok = await CloudSyncService.instance.syncLocalToCloud(
-        profiles: provider.profiles,
-        medicines: provider.medicines,
-        remindersByMedicine: provider.remindersByMedicine,
-        records: provider.intakeRecords,
-      );
-      if (ok) {
-        final formattedTime = DateFormat('h:mm a').format(DateTime.now());
-        await _savePreference('last_backup_time', 'Today, $formattedTime');
+      final success = await LocalBackupService.instance.exportBackup();
+      if (success) {
+        final formattedTime = DateFormat('MMM d, h:mm a').format(DateTime.now());
+        await _savePreference('last_backup_time', formattedTime);
         setState(() {
-          _lastBackupFormatted = 'Today, $formattedTime';
+          _lastBackupFormatted = formattedTime;
         });
-      }
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ok
-                ? '☁️ Cloud backup completed successfully.'
-                : '⚠️ Cloud backup could not be completed. Check connection and retry.'),
-            backgroundColor: ok ? AppColors.success : AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Backup created and shared successfully!'),
+              backgroundColor: Color(0xFF0D9488),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Backup error: $e'),
+            content: Text('⚠️ Export failed: $e'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -685,86 +597,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _confirmRestore(BuildContext context, AuthProvider auth, MedicineProvider provider, AppStrings s) {
+  void _confirmLocalRestore(BuildContext context, MedicineProvider provider, bool isBn) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Restore Backup?', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+        title: Row(
+          children: [
+            _buildSquircleIcon(
+              icon: Icons.restore_rounded,
+              gradientColors: const [Color(0xFF0D9488), Color(0xFF06B6D4)],
+              size: 40,
+              iconSize: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                isBn ? 'ব্যাকআপ রিস্টোর করবেন?' : 'Restore Backup?',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
         content: Text(
-          'Your current medication data and schedules will be merged with your saved cloud backup.\n\nDo you want to proceed?',
+          isBn
+              ? 'ডিভাইসের ফাইল স্টোরেজ থেকে আপনার MediRemind JSON ব্যাকআপ ফাইল নির্বাচন করুন। আপনার ঔষধ, প্রোফাইল এবং শিডিউল রিস্টোর হবে।'
+              : 'Select a previously exported MediRemind JSON backup file. Your medicines, schedules, and history will be safely restored and merged on this device.',
           style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.45),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+            child: Text(isBn ? 'বাতিল' : 'Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0284C7),
+              backgroundColor: const Color(0xFF0D9488),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
-              final userKey = auth.email ?? auth.phoneNumber;
-              if (userKey == null || userKey.isEmpty) return;
-              final count = await provider.restoreUserFromCloud(userKey);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('✅ Successfully restored $count medicines from cloud.'),
-                    backgroundColor: AppColors.success,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+              final result = await LocalBackupService.instance.importBackup();
+              if (result.success) {
+                await provider.reloadAfterRestore();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result.message),
+                      backgroundColor: const Color(0xFF0D9488),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } else if (result.message != 'No file selected.') {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result.message),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
               }
             },
-            child: Text('Restore Now', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmSignOut(BuildContext context, AuthProvider auth, AppStrings s) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(s.signOutConfirmTitle, style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
-        content: Text(s.signOutConfirmMessage, style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.45)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(s.cancel, style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await auth.signOut();
-              if (mounted) {
-                setState(() {});
-              }
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(s.code == 'bn'
-                        ? '👋 সফলভাবে লগআউট হয়েছে।'
-                        : (s.code == 'hi' ? '👋 सफलतापूर्वक लॉगआउट हुआ।' : '👋 Successfully signed out.')),
-                    backgroundColor: AppColors.primary,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-            child: Text(s.signOutBtn, style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+            icon: const Icon(Icons.file_open_rounded, size: 16),
+            label: Text(isBn ? 'ফাইল সিলেক্ট করুন' : 'Select File', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),
         ],
       ),

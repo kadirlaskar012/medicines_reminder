@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/language_provider.dart';
-import '../auth/phone_login_screen.dart';
 import 'onboarding_language_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -38,13 +37,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         MaterialPageRoute(builder: (_) => const OnboardingLanguageScreen()),
       );
     }
-  }
-
-  void _goToSignIn(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
-    );
   }
 
   @override
@@ -221,35 +213,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           ),
                         ),
                       ),
-
-                      // Secondary Sign In link for Screen 01 / Splash
-                      if (_currentPage == 0) ...[
-                        const SizedBox(height: 12),
-                        TextButton(
-                          onPressed: () => _goToSignIn(context),
-                          child: RichText(
-                            text: TextSpan(
-                              text: lang.languageCode == 'bn' ? 'ইতিমধ্যে একাউন্ট আছে? ' : (lang.languageCode == 'hi' ? 'पहले से खाता है? ' : 'Already have an account? '),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                              ),
-                              children: const [
-                                TextSpan(
-                                  text: 'Sign In',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ] else ...[
-                        const SizedBox(height: 12),
-                        const SizedBox(height: 28), // balance spacing
-                      ],
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),

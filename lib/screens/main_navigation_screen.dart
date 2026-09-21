@@ -8,7 +8,6 @@ import '../core/services/notification_service.dart';
 import '../core/theme/app_colors.dart';
 import '../models/medicine.dart';
 import '../models/reminder_time.dart';
-import '../providers/auth_provider.dart';
 import '../providers/medicine_provider.dart';
 import 'today/today_screen.dart';
 import 'medicines/medicines_cabinet_screen.dart';
@@ -39,23 +38,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _setupNotificationHandler();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkCloudSession();
-    });
-  }
-
-  void _checkCloudSession() {
-    if (!mounted) return;
-    final auth = context.read<AuthProvider>();
-    if (auth.isSignedIn) {
-      auth.validateSessionWithCloud();
-    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _checkCloudSession();
       // Silently reload medicine data so any dose recorded in background is immediately updated without spinner
       context.read<MedicineProvider>().reloadDataSilently();
     }
