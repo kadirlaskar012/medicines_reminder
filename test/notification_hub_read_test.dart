@@ -1,9 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:medicines_reminder/core/localization/app_strings.dart';
 import 'package:medicines_reminder/models/intake_record.dart';
 import 'package:medicines_reminder/models/medicine.dart';
 import 'package:medicines_reminder/models/reminder_time.dart';
 import 'package:medicines_reminder/models/scheduled_dose.dart';
 import 'package:medicines_reminder/models/app_notification.dart';
+import 'package:medicines_reminder/widgets/luxury_notification_card.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -216,5 +219,55 @@ void main() {
         n.type == NotificationType.medicineAdded ||
         n.type == NotificationType.medicineUpdated).toList();
     expect(medicines.length, 2);
+  });
+
+  testWidgets('LuxuryNotificationCard renders with brand, medicine info and horizontal action buttons', (tester) async {
+    bool takenCalled = false;
+    bool snoozeCalled = false;
+    bool skipCalled = false;
+
+    final notif = AppNotification(
+      id: 'notif_due_1',
+      type: NotificationType.reminderDue,
+      title: 'Time to take Paracetamol',
+      message: '1 tablet • After Meal',
+      medicineName: 'Paracetamol',
+      metadata: {
+        'dosage': '500 mg',
+        'instruction': 'afterMeal',
+        'medicineType': 'tablet',
+      },
+      timestamp: DateTime.now(),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: LuxuryNotificationCard(
+            notification: notif,
+            s: AppStrings.en,
+            isDark: false,
+            onTake: () => takenCalled = true,
+            onSnooze: () => snoozeCalled = true,
+            onSkip: () => skipCalled = true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Paracetamol'), findsOneWidget);
+    expect(find.text('500 mg'), findsOneWidget);
+    expect(find.text(AppStrings.en.iTookMyMedicine), findsOneWidget);
+    expect(find.text(AppStrings.en.snooze10m), findsOneWidget);
+    expect(find.text(AppStrings.en.skip), findsOneWidget);
+
+    await tester.tap(find.text(AppStrings.en.iTookMyMedicine));
+    expect(takenCalled, isTrue);
+
+    await tester.tap(find.text(AppStrings.en.snooze10m));
+    expect(snoozeCalled, isTrue);
+
+    await tester.tap(find.text(AppStrings.en.skip));
+    expect(skipCalled, isTrue);
   });
 }

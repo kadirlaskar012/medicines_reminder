@@ -945,6 +945,9 @@ class AppStrings {
   String get notifTestBody => code == 'bn'
       ? 'MediRemind অ্যালার্ম ও নোটিফিকেশন সিস্টেম সঠিকভাবে কাজ করছে।'
       : (code == 'hi' ? 'MediRemind अलार्म और सूचना प्रणाली ठीक से काम कर रही है।' : 'MediRemind reminder notifications are working perfectly.');
+  String get notifPartnerTagline => code == 'bn' ? 'আপনার সুস্থতার সঙ্গী' : (code == 'hi' ? 'आपका स्वास्थ्य साथी' : 'Your Health Partner');
+  String get notifMotivationPrompt => code == 'bn' ? 'সুস্থ থাকতে অনুগ্রহ করে সঠিক সময়ে ওষুধ গ্রহণ করুন।' : (code == 'hi' ? 'स्वस्थ रहने के लिए कृपया समय पर दवा लें।' : 'Please take your medicine on time for a healthier you.');
+  String get notifCursiveNote => code == 'bn' ? 'সুস্থ আগামীর জন্য ছোট্ট একটি ধাপ' : (code == 'hi' ? 'एक स्वस्थ कल के लिए छोटा सा कदम' : 'Small step for a healthier tomorrow');
   String formatNotifTimestamp(DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);

@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediRemind - Luxury Glassmorphic Notification Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Hind+Siliguri:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Default Luxury Light Theme */
+      --page-bg: linear-gradient(135deg, #ECFDF5 0%, #F0FDFA 30%, #F8FAFC 70%, #EFF6FF 100%);
+      --card-bg: rgba(255, 255, 255, 0.88);
+      --card-border: rgba(255, 255, 255, 0.95);
+      --card-shadow: 0 25px 65px -12px rgba(15, 23, 42, 0.12), 0 0 35px rgba(13, 148, 136, 0.12), inset 0 1px 2px rgba(255, 255, 255, 1);
+      --text-main: #0F172A;
+      --text-sub: #475569;
+      --text-muted: #64748B;
+      --brand-teal: #0D9488;
+      --brand-cyan: #0284C7;
+      --med-name: #0D9488;
+      --halo-bg: radial-gradient(circle, rgba(13, 148, 136, 0.18) 0%, rgba(6, 182, 212, 0.08) 55%, transparent 72%);
+      --halo-border: rgba(13, 148, 136, 0.28);
+      --halo-shadow: 0 8px 25px rgba(13, 148, 136, 0.15);
+      --cursive-color: #0284C7;
+      --pill-meta-bg: rgba(13, 148, 136, 0.08);
+      --pill-meta-border: rgba(13, 148, 136, 0.2);
+      --pill-meta-text: #0F766E;
+      --btn-take-bg: linear-gradient(135deg, #0D9488 0%, #06B6D4 100%);
+      --btn-take-text: #FFFFFF;
+      --btn-take-shadow: 0 6px 20px rgba(13, 148, 136, 0.35);
+      --btn-snooze-bg: rgba(255, 255, 255, 0.92);
+      --btn-snooze-border: #E2E8F0;
+      --btn-snooze-text: #334155;
+      --btn-snooze-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+      --btn-skip-bg: rgba(254, 242, 242, 0.9);
+      --btn-skip-border: #FECACA;
+      --btn-skip-text: #EF4444;
+      --toolbar-bg: rgba(255, 255, 255, 0.85);
+      --toolbar-border: rgba(226, 232, 240, 0.8);
+    }
+
+    body.dark-mode {
+      --page-bg: radial-gradient(circle at top center, #1E293B 0%, #090D16 100%);
+      --card-bg: linear-gradient(135deg, rgba(13, 22, 39, 0.95) 0%, rgba(10, 16, 28, 0.98) 100%);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --card-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.65), 0 0 25px rgba(6, 182, 212, 0.08);
+      --text-main: #FFFFFF;
+      --text-sub: #94A3B8;
+      --text-muted: #64748B;
+      --brand-teal: #2DD4BF;
+      --brand-cyan: #38BDF8;
+      --med-name: #2DD4BF;
+      --halo-bg: radial-gradient(circle, rgba(20, 184, 166, 0.35) 0%, rgba(6, 182, 212, 0.15) 50%, transparent 72%);
+      --halo-border: rgba(45, 212, 191, 0.25);
+      --halo-shadow: 0 0 35px rgba(20, 184, 166, 0.25);
+      --cursive-color: #38BDF8;
+      --pill-meta-bg: rgba(255, 255, 255, 0.06);
+      --pill-meta-border: rgba(255, 255, 255, 0.12);
+      --pill-meta-text: #E2E8F0;
+      --btn-take-bg: linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%);
+      --btn-take-text: #022C22;
+      --btn-take-shadow: 0 6px 20px rgba(45, 212, 191, 0.4);
+      --btn-snooze-bg: rgba(255, 255, 255, 0.08);
+      --btn-snooze-border: rgba(255, 255, 255, 0.14);
+      --btn-snooze-text: #E2E8F0;
+      --btn-snooze-shadow: none;
+      --btn-skip-bg: rgba(255, 255, 255, 0.05);
+      --btn-skip-border: rgba(248, 113, 113, 0.25);
+      --btn-skip-text: #F87171;
+      --toolbar-bg: rgba(30, 41, 59, 0.7);
+      --toolbar-border: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--page-bg);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 60px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* Top Control Bar */
+    .toolbar-container {
+      width: 100%;
+      max-width: 820px;
+      background: var(--toolbar-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--toolbar-border);
+      border-radius: 22px;
+      padding: 16px 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    }
+
+    .toolbar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      padding-bottom: 12px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-title img {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(13, 148, 136, 0.3);
+    }
+
+    .segmented-control {
+      display: inline-flex;
+      background: rgba(148, 163, 184, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 12px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .segment-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .segment-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .segment-btn.active {
+      background: linear-gradient(135deg, #0D9488, #0284C7);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35);
+    }
+
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .select-pill {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 10px;
+      outline: none;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    body.dark-mode .select-pill {
+      background: rgba(15, 23, 42, 0.85);
+      border-color: rgba(255, 255, 255, 0.15);
+      color: #F8FAFC;
+    }
+
+    .sound-test-btn {
+      background: rgba(13, 148, 136, 0.12);
+      border: 1px solid rgba(13, 148, 136, 0.35);
+      color: #0D9488;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    body.dark-mode .sound-test-btn {
+      color: #2DD4BF;
+      border-color: rgba(45, 212, 191, 0.4);
+    }
+    .sound-test-btn:hover {
+      background: rgba(13, 148, 136, 0.22);
+      transform: translateY(-1px);
+    }
+
+    /* Preview Canvas Area */
+    .canvas-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .canvas-viewport-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+    body.dark-mode .canvas-viewport-label {
+      background: rgba(15, 23, 42, 0.6);
+      border-color: rgba(255, 255, 255, 0.06);
+    }
+
+    /* ========================================================
+       LUXURY GLASSMORPHIC NOTIFICATION CARD
+       ======================================================== */
+    .notif-card-ref {
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1.5px solid var(--card-border);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: var(--card-shadow);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .notif-card-ref::before {
+      content: '';
+      position: absolute;
+      top: -80px;
+      right: -60px;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(13, 148, 136, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Top Brand Header Row */
+    .card-header-ref {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .brand-meta-ref {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon-box-ref {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #0D9488 0%, #06B6D4 100%);
+      padding: 2.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.28);
+      flex-shrink: 0;
+    }
+
+    .brand-icon-box-ref img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 11.5px;
+    }
+
+    .brand-text-ref {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title-line-ref {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: -0.2px;
+    }
+
+    .brand-title-line-ref .dot {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .brand-title-line-ref .time-ago {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .brand-subtitle-ref {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 1px;
+    }
+
+    .card-timestamp-ref {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.2px;
+    }
+
+    /* Body Row (Left: Info, Right: 3D Visual) */
+    .card-body-ref {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .body-info-ref {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .primary-title-ref {
+      font-size: 23px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text-main);
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+
+    .medicine-headline-ref {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: var(--med-name);
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
+
+    .meta-pills-ref {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .meta-pill-item-ref {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--pill-meta-text);
+      background: var(--pill-meta-bg);
+      border: 1px solid var(--pill-meta-border);
+      padding: 4px 10px;
+      border-radius: 9px;
+    }
+
+    .motivational-prompt-ref {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+      line-height: 1.45;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .heart-icon-ref {
+      display: inline-block;
+      color: #06B6D4;
+      font-size: 14px;
+      filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.4));
+    }
+
+    /* Right Visual: Glowing Halo + 3D Pill + Cursive Quote */
+    .visual-column-ref {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 142px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    .halo-wrapper-ref {
+      width: 98px;
+      height: 98px;
+      border-radius: 50%;
+      background: var(--halo-bg);
+      border: 1.5px solid var(--halo-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: var(--halo-shadow);
+      animation: gentleFloat 4s ease-in-out infinite;
+    }
+
+    .halo-wrapper-ref img {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.16));
+    }
+
+    .cursive-quote-ref {
+      font-family: 'Caveat', cursive;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--cursive-color);
+      line-height: 1.15;
+      margin-top: 8px;
+      position: relative;
+      display: inline-block;
+      max-width: 125px;
+    }
+
+    .swoosh-underline {
+      position: absolute;
+      bottom: -6px;
+      left: 10%;
+      width: 80%;
+      height: 5px;
+    }
+
+    /* ========================================================
+       ACTIONS BAR (STRICTLY HORIZONTAL ON ALL DEVICES!)
+       ======================================================== */
+    .actions-bar-ref {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .btn-ref {
+      border: none;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 700;
+      padding: 13px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-ref:active {
+      transform: scale(0.96);
+    }
+
+    /* Primary Action: Mark as Taken */
+    .btn-taken-ref {
+      flex: 1.4;
+      background: var(--btn-take-bg);
+      color: var(--btn-take-text);
+      box-shadow: var(--btn-take-shadow);
+    }
+
+    .btn-taken-ref:hover {
+      filter: brightness(1.05);
+      box-shadow: 0 8px 24px rgba(13, 148, 136, 0.45);
+    }
+
+    .btn-taken-ref .circle-check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.28);
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body.dark-mode .btn-taken-ref .circle-check {
+      background: #022C22;
+      color: #2DD4BF;
+    }
+
+    /* Secondary Action: Snooze 10m */
+    .btn-snooze-ref {
+      flex: 1.1;
+      background: var(--btn-snooze-bg);
+      border: 1.5px solid var(--btn-snooze-border);
+      color: var(--btn-snooze-text);
+      box-shadow: var(--btn-snooze-shadow);
+    }
+
+    .btn-snooze-ref:hover {
+      background: rgba(255, 255, 255, 1);
+      border-color: #CBD5E1;
+    }
+
+    /* Tertiary Action: Skip */
+    .btn-skip-ref {
+      flex: 0.8;
+      background: var(--btn-skip-bg);
+      border: 1.5px solid var(--btn-skip-border);
+      color: var(--btn-skip-text);
+    }
+
+    .btn-skip-ref:hover {
+      background: rgba(254, 226, 226, 1);
+      border-color: #F87171;
+    }
+
+    /* Toast Message */
+    .toast-overlay {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0F172A;
+      border: 1.5px solid #0D9488;
+      color: #FFFFFF;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 9999;
+    }
+
+    .toast-overlay.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Keyframe Animations */
+    @keyframes gentleFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+    }
+
+    /* Responsive Mobile Tweaks: Keep Horizontal Button Layout! */
+    @media (max-width: 480px) {
+      body {
+        padding: 14px 10px 40px;
+      }
+      .notif-card-ref {
+        padding: 18px 14px;
+        border-radius: 24px;
+      }
+      .primary-title-ref {
+        font-size: 19px;
+      }
+      .medicine-headline-ref {
+        font-size: 22px;
+        margin-bottom: 8px;
+      }
+      .visual-column-ref {
+        width: 104px;
+      }
+      .halo-wrapper-ref {
+        width: 80px;
+        height: 80px;
+      }
+      .halo-wrapper-ref img {
+        width: 56px;
+        height: 56px;
+      }
+      .cursive-quote-ref {
+        font-size: 13px;
+        max-width: 100px;
+      }
+      .actions-bar-ref {
+        gap: 6px;
+      }
+      .btn-ref {
+        padding: 11px 8px;
+        font-size: 12px;
+        border-radius: 13px;
+      }
+      .btn-taken-ref .circle-check {
+        width: 17px;
+        height: 17px;
+      }
+      .btn-taken-ref .circle-check svg {
+        width: 11px;
+        height: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Controls Header Bar -->
+  <div class="toolbar-container">
+    <div class="toolbar-header">
+      <div class="brand-title">
+        <img src="assets/icons/app_brand_logo.png" alt="MediRemind Brand Logo" onerror="this.src='assets/icons/app_icon.png'">
+        <div>
+          <span>MediRemind</span>
+          <span style="font-size: 11px; color: #0D9488; font-weight: 700; margin-left: 6px; background: rgba(13,148,136,0.12); padding: 2px 8px; border-radius: 8px;">LUXURY GLASS PREVIEW</span>
+        </div>
+      </div>
+
+      <!-- Theme Switcher -->
+      <div class="segmented-control" id="themeTabs">
+        <button class="segment-btn active" onclick="setTheme('light', this)">☀️ Luxury Light</button>
+        <button class="segment-btn" onclick="setTheme('dark', this)">🌙 Dark Mode</button>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <!-- Viewport Size Switcher -->
+      <div class="segmented-control" id="viewportTabs">
+        <button class="segment-btn active" onclick="setViewport('430px', this)">📱 Mobile</button>
+        <button class="segment-btn" onclick="setViewport('540px', this)">📲 Large Phone</button>
+        <button class="segment-btn" onclick="setViewport('680px', this)">💻 Tablet</button>
+      </div>
+
+      <!-- Medicine & Language & Sound Controls -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <select class="select-pill" id="medSelect" onchange="changeMedicine(this.value)">
+          <option value="tablet">💊 Tablet (Test 500 mg)</option>
+          <option value="capsule">💊 Capsule (Amoxicillin 500 mg)</option>
+          <option value="syrup">🧪 Syrup (Cough Relief 10 ml)</option>
+          <option value="inhaler">💨 Inhaler (Asthalin 2 Puffs)</option>
+        </select>
+
+        <select class="select-pill" id="langSelect" onchange="changeLanguage(this.value)">
+          <option value="en">🇺🇸 English</option>
+          <option value="bn">🇧🇩 বাংলা</option>
+          <option value="hi">🇮🇳 हिन्दी</option>
+        </select>
+
+        <button class="sound-test-btn" onclick="playNotificationChime()">
+          🔔 Ring Alarm
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Canvas Wrapper -->
+  <div class="canvas-wrapper" id="canvasWrapper" style="max-width: 430px;">
+    <div class="canvas-viewport-label">
+      <span>📐 Viewport Mode:</span>
+      <strong id="viewportWidthLabel">Mobile (~430px) • Horizontal Action Buttons</strong>
+    </div>
+
+    <!-- ========================================================
+         LUXURY GLASSMORPHIC NOTIFICATION CARD
+         ======================================================== -->
+    <div class="notif-card-ref">
+      <!-- Top Brand Header -->
+      <div class="card-header-ref">
+        <div class="brand-meta-ref">
+          <div class="brand-icon-box-ref">
+            <img src="assets/icons/app_brand_logo.png" alt="Logo" onerror="this.src='assets/icons/app_icon.png'">
+          </div>
+          <div class="brand-text-ref">
+            <div class="brand-title-line-ref">
+              <span class="lbl-brand-name">MediRemind</span>
+              <span class="dot">•</span>
+              <span class="time-ago lbl-now">now</span>
+            </div>
+            <div class="brand-subtitle-ref lbl-tagline">Your Health Partner</div>
+          </div>
+        </div>
+        <div class="card-timestamp-ref" id="clockRef">10:26 PM</div>
+      </div>
+
+      <!-- Body Info + 3D Pill Visual -->
+      <div class="card-body-ref">
+        <div class="body-info-ref">
+          <div class="primary-title-ref lbl-time-for">Time for your medication</div>
+          <div class="medicine-headline-ref" id="medNameLabel">Test 500 mg</div>
+
+          <div class="meta-pills-ref">
+            <div class="meta-pill-item-ref">
+              <!-- Pill Icon SVG -->
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="6" width="20" height="12" rx="6" transform="rotate(45 12 12)"/>
+              </svg>
+              <span id="medDoseLabel">1 tablet (500 mg)</span>
+            </div>
+            <div class="meta-pill-item-ref">
+              <!-- Moon Icon SVG -->
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+              <span id="medTimingLabel" class="lbl-timing">Bedtime</span>
+            </div>
+          </div>
+
+          <div class="motivational-prompt-ref">
+            <span class="lbl-prompt">Please take your medicine on time for a healthier you.</span>
+            <span class="heart-icon-ref">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="#06B6D4" stroke="#06B6D4" stroke-width="1" style="vertical-align: middle;">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <!-- Right Visual (Glowing Halo + 3D Medicine Icon + Cursive Quote) -->
+        <div class="visual-column-ref">
+          <div class="halo-wrapper-ref">
+            <img id="medImageRef" src="assets/icons/3d/med_3d_tablet.png" alt="Medicine 3D Icon">
+          </div>
+          <div class="cursive-quote-ref">
+            <span class="lbl-cursive">Small step for a healthier tomorrow</span>
+            <!-- Hand-drawn decorative underline SVG -->
+            <svg class="swoosh-underline" viewBox="0 0 100 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 5C25 2 75 1 98 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons (Strictly Horizontal on ALL screens!) -->
+      <div class="actions-bar-ref">
+        <button class="btn-ref btn-taken-ref" onclick="handleAction('taken')">
+          <div class="circle-check">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <span class="lbl-action-take">Mark as Taken</span>
+        </button>
+
+        <button class="btn-ref btn-snooze-ref" onclick="handleAction('snooze')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span class="lbl-action-snooze">Snooze 10m</span>
+        </button>
+
+        <button class="btn-ref btn-skip-ref" onclick="handleAction('skip')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span class="lbl-action-skip">Skip</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Feedback Toast -->
+  <div class="toast-overlay" id="toastOverlay">
+    <span id="toastIcon">🎉</span>
+    <span id="toastText">Dose marked as Taken! Adherence recorded.</span>
+  </div>
+
+  <script>
+    // Theme Switcher
+    function setTheme(mode, btn) {
+      document.querySelectorAll('#themeTabs .segment-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (mode === 'dark') {
+        document.body.classList.add('dark-mode');
+        showToast('Switched to Dark Glass Mode 🌙');
+      } else {
+        document.body.classList.remove('dark-mode');
+        showToast('Switched to Luxury Light Glass Mode ☀️');
+      }
+    }
+
+    // Viewport Resizing
+    function setViewport(width, btn) {
+      document.getElementById('canvasWrapper').style.maxWidth = width;
+      document.querySelectorAll('#viewportTabs .segment-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const labels = {
+        '430px': 'Mobile (~430px) • Horizontal Action Buttons',
+        '540px': 'Large Phone (~540px) • Horizontal Action Buttons',
+        '680px': 'Tablet (~680px) • Horizontal Action Buttons'
+      };
+      document.getElementById('viewportWidthLabel').textContent = labels[width] || width;
+    }
+
+    // Audio Context Synthesizer
+    let audioCtx = null;
+    function playNotificationChime() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const now = audioCtx.currentTime;
+        const notes = [659.25, 987.77, 830.61]; // Bright chord: E5 -> B5 -> G#5
+        notes.forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.12);
+
+          gain.gain.setValueAtTime(0, now + i * 0.12);
+          gain.gain.linearRampToValueAtTime(0.25, now + i * 0.12 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 0.5);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          osc.start(now + i * 0.12);
+          osc.stop(now + i * 0.12 + 0.55);
+        });
+
+        showToast('🔔 Reminder chime ringing...');
+      } catch (e) {
+        console.error('Audio error', e);
+      }
+    }
+
+    // Medicine Selection
+    const medicines = {
+      tablet: {
+        name: 'Test 500 mg',
+        dose: '1 tablet (500 mg)',
+        img: 'assets/icons/3d/med_3d_tablet.png'
+      },
+      capsule: {
+        name: 'Amoxicillin 500 mg',
+        dose: '1 capsule (500 mg)',
+        img: 'assets/icons/3d/med_3d_capsule.png'
+      },
+      syrup: {
+        name: 'Cough Relief Syrup',
+        dose: '10 ml (2 spoons)',
+        img: 'assets/icons/3d/med_3d_syrup.png'
+      },
+      inhaler: {
+        name: 'Asthalin Inhaler',
+        dose: '2 puffs (Rotacaps)',
+        img: 'assets/icons/3d/med_3d_inhaler.png'
+      }
+    };
+
+    function changeMedicine(key) {
+      const med = medicines[key] || medicines.tablet;
+      document.getElementById('medNameLabel').textContent = med.name;
+      document.getElementById('medDoseLabel').textContent = med.dose;
+      document.getElementById('medImageRef').src = med.img;
+      showToast(`Selected: ${med.name}`);
+    }
+
+    // Language Localizations
+    const translations = {
+      en: {
+        brandName: 'MediRemind',
+        now: 'now',
+        tagline: 'Your Health Partner',
+        timeFor: 'Time for your medication',
+        timing: 'Bedtime',
+        prompt: 'Please take your medicine on time for a healthier you.',
+        cursive: 'Small step for a healthier tomorrow',
+        actionTake: 'Mark as Taken',
+        actionSnooze: 'Snooze 10m',
+        actionSkip: 'Skip',
+        takenToast: 'Dose marked as Taken! Adherence recorded 🎉',
+        snoozeToast: 'Reminder snoozed for 10 minutes ⏰',
+        skipToast: 'Dose skipped.'
+      },
+      bn: {
+        brandName: 'মেডিরিমাইন্ড',
+        now: 'এখনই',
+        tagline: 'আপনার সুস্থতার সঙ্গী',
+        timeFor: 'ওষুধ সেবনের সময় হয়েছে',
+        timing: 'ঘুমানোর আগে',
+        prompt: 'সুস্থ থাকতে অনুগ্রহ করে সঠিক সময়ে ওষুধ গ্রহণ করুন।',
+        cursive: 'সুস্থ আগামীর জন্য ছোট্ট একটি ধাপ',
+        actionTake: 'ওষুধ নিয়েছি',
+        actionSnooze: '১০ মিনিট পর',
+        actionSkip: 'বাদ দিন',
+        takenToast: 'ওষুধ গ্রহণ সম্পন্ন হিসেবে রেকর্ড করা হয়েছে 🎉',
+        snoozeToast: '১০ মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে ⏰',
+        skipToast: 'এই ডোজটি বাদ দেওয়া হয়েছে।'
+      },
+      hi: {
+        brandName: 'मेडीरिमाइंड',
+        now: 'अभी',
+        tagline: 'आपका स्वास्थ्य साथी',
+        timeFor: 'दवा लेने का समय हो गया है',
+        timing: 'सोने से पहले',
+        prompt: 'स्वस्थ रहने के लिए कृपया समय पर दवा लें।',
+        cursive: 'एक स्वस्थ कल के लिए छोटा सा कदम',
+        actionTake: 'दवा ले ली',
+        actionSnooze: '१० मिनट बाद',
+        actionSkip: 'छोड़ें',
+        takenToast: 'दवा खुराक पूरी दर्ज की गई 🎉',
+        snoozeToast: '१० मिनट के लिए रिमाइंडर स्थगित किया गया ⏰',
+        skipToast: 'खुराक छोड़ दी गई।'
+      }
+    };
+
+    let currentLang = 'en';
+
+    function changeLanguage(lang) {
+      currentLang = lang;
+      const t = translations[lang] || translations.en;
+
+      document.querySelectorAll('.lbl-brand-name').forEach(el => el.textContent = t.brandName);
+      document.querySelectorAll('.lbl-now').forEach(el => el.textContent = t.now);
+      document.querySelectorAll('.lbl-tagline').forEach(el => el.textContent = t.tagline);
+      document.querySelectorAll('.lbl-time-for').forEach(el => el.textContent = t.timeFor);
+      document.querySelectorAll('.lbl-timing').forEach(el => el.textContent = t.timing);
+      document.querySelectorAll('.lbl-prompt').forEach(el => el.textContent = t.prompt);
+      document.querySelectorAll('.lbl-cursive').forEach(el => el.textContent = t.cursive);
+      document.querySelectorAll('.lbl-action-take').forEach(el => el.textContent = t.actionTake);
+      document.querySelectorAll('.lbl-action-snooze').forEach(el => el.textContent = t.actionSnooze);
+      document.querySelectorAll('.lbl-action-skip').forEach(el => el.textContent = t.actionSkip);
+
+      showToast(`Language: ${lang.toUpperCase()}`);
+    }
+
+    // Action Buttons
+    function handleAction(action) {
+      const t = translations[currentLang];
+      if (action === 'taken') {
+        playNotificationChime();
+        showToast(t.takenToast, '🎉');
+      } else if (action === 'snooze') {
+        showToast(t.snoozeToast, '⏰');
+      } else if (action === 'skip') {
+        showToast(t.skipToast, '❌');
+      }
+    }
+
+    // Toast
+    let toastTimeout = null;
+    function showToast(msg, icon = '✨') {
+      const toast = document.getElementById('toastOverlay');
+      document.getElementById('toastText').textContent = msg;
+      document.getElementById('toastIcon').textContent = icon;
+
+      toast.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Real-time Clock
+    function updateClock() {
+      const now = new Date();
+      let hours = now.getHours();
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      const timeString = `${hours}:${minutes} ${ampm}`;
+      const clockEl = document.getElementById('clockRef');
+      if (clockEl) clockEl.textContent = timeString;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+</body>
+</html>

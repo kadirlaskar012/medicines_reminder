@@ -225,6 +225,25 @@ void main() {
       );
       expect(legacyNotif3.localizedMessage(sEn), 'Dose: 500 • Stock: 3 Tablets • After Meal');
       expect(bnRegex.hasMatch(legacyNotif3.localizedMessage(sEn)), isFalse);
+
+      // Verify Hindi notification conversion
+      expect(bnRegex.hasMatch(legacyNotif3.localizedMessage(sHi)), isFalse);
+      expect(legacyNotif3.localizedMessage(sHi).contains('स्टॉक:'), isTrue);
+
+      // Verify Bengali notification conversion
+      expect(hiRegex.hasMatch(legacyNotif3.localizedMessage(sBn)), isFalse);
+      expect(legacyNotif3.localizedMessage(sBn).contains('মজুদ:'), isTrue);
+
+      // Verify new tagline & prompt getters
+      expect(bnRegex.hasMatch(sEn.notifPartnerTagline), isFalse);
+      expect(bnRegex.hasMatch(sEn.notifMotivationPrompt), isFalse);
+      expect(bnRegex.hasMatch(sEn.notifCursiveNote), isFalse);
+
+      expect(hiRegex.hasMatch(sHi.notifPartnerTagline), isTrue);
+      expect(bnRegex.hasMatch(sHi.notifPartnerTagline), isFalse);
+
+      expect(bnRegex.hasMatch(sBn.notifPartnerTagline), isTrue);
+      expect(hiRegex.hasMatch(sBn.notifPartnerTagline), isFalse);
     });
   });
 }
