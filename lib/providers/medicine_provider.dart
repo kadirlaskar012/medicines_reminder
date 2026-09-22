@@ -12,6 +12,7 @@ import '../models/reminder_time.dart';
 import '../models/intake_record.dart';
 import '../models/scheduled_dose.dart';
 import '../models/app_notification.dart';
+import '../core/localization/app_strings.dart';
 
 enum DateComplianceStatus {
   allTaken,      // 🟢 All scheduled medicines taken on this date
@@ -458,22 +459,40 @@ class MedicineProvider extends ChangeNotifier {
     }
   }
 
+  Future<AppStrings> _getStrings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lang = prefs.getString('selected_language_code') ?? 'en';
+      return AppStrings.of(lang);
+    } catch (_) {
+      return AppStrings.en;
+    }
+  }
+
   Future<void> _backfillNotificationsIfEmpty() async {
     try {
       final existingNotifs = await _db.getAllNotifications(limit: 1);
       if (existingNotifs.isNotEmpty) return;
+
+      final s = await _getStrings();
 
       // Backfill from medicines
       for (final med in _medicines) {
         final addNotif = AppNotification(
           id: _uuid.v4(),
           type: NotificationType.medicineAdded,
-          title: '${med.name} যোগ করা হয়েছে',
-          message: 'ডোজ: ${med.dosage} • ${med.instruction.title} • মজুদ: ${med.currentStock} ${med.unit}',
+          title: s.notifMedAddedTitle(med.name),
+          message: s.notifMedAddedMsg(med.dosage, '${med.currentStock} ${med.unit}', s.foodInstructionName(med.instruction.name)),
           medicineId: med.id,
           medicineName: med.name,
           timestamp: med.createdAt,
           isRead: true,
+          metadata: {
+            'dosage': med.dosage,
+            'stock': med.currentStock,
+            'unit': med.unit,
+            'instruction': med.instruction.name,
+          },
         );
         await _db.insertNotification(addNotif);
 
@@ -481,12 +500,16 @@ class MedicineProvider extends ChangeNotifier {
           final lowStockNotif = AppNotification(
             id: _uuid.v4(),
             type: NotificationType.lowStock,
-            title: '${med.name} এর মজুদ প্রায় শেষ',
-            message: 'বর্তমান মজুদ মাত্র ${med.currentStock} ${med.unit}। দ্রুত রিফিল করুন।',
+            title: s.notifLowStockTitle(med.name),
+            message: s.notifLowStockWarningMsg(med.currentStock, med.unit),
             medicineId: med.id,
             medicineName: med.name,
             timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
             isRead: true,
+            metadata: {
+              'stock': med.currentStock,
+              'unit': med.unit,
+            },
           );
           await _db.insertNotification(lowStockNotif);
         }
@@ -499,43 +522,55 @@ class MedicineProvider extends ChangeNotifier {
           (m) => m?.id == rec.medicineId,
           orElse: () => null,
         );
-        final medName = med?.name ?? 'ওষুধ';
+        final medName = med?.name ?? 'Medicine';
         final timeStr = '${rec.scheduledHour.toString().padLeft(2, '0')}:${rec.scheduledMinute.toString().padLeft(2, '0')}';
 
         if (rec.status == IntakeStatus.taken) {
           final n = AppNotification(
             id: _uuid.v4(),
             type: NotificationType.doseTaken,
-            title: '$medName গ্রহণ সম্পন্ন',
-            message: '${med?.dosage ?? ""} • $timeStr এর ডোজ গ্রহণ করা হয়েছে',
+            title: s.notifDoseTakenTitle(medName),
+            message: s.notifDoseTakenMsg(med?.dosage ?? '', timeStr),
             medicineId: rec.medicineId,
             medicineName: medName,
             timestamp: rec.recordedAt,
             isRead: true,
+            metadata: {
+              'dosage': med?.dosage ?? '',
+              'time': timeStr,
+            },
           );
           await _db.insertNotification(n);
         } else if (rec.status == IntakeStatus.skipped) {
           final n = AppNotification(
             id: _uuid.v4(),
             type: NotificationType.doseSkipped,
-            title: '$medName বাদ দেওয়া হয়েছে',
-            message: '${med?.dosage ?? ""} • $timeStr এর ডোজ বাদ দেওয়া হয়েছে',
+            title: s.notifDoseSkippedTitle(medName),
+            message: s.notifDoseSkippedMsg(med?.dosage ?? '', timeStr),
             medicineId: rec.medicineId,
             medicineName: medName,
             timestamp: rec.recordedAt,
             isRead: true,
+            metadata: {
+              'dosage': med?.dosage ?? '',
+              'time': timeStr,
+            },
           );
           await _db.insertNotification(n);
         } else if (rec.status == IntakeStatus.missed) {
           final n = AppNotification(
             id: _uuid.v4(),
             type: NotificationType.doseMissed,
-            title: '$medName ডোজ মিস হয়েছে',
-            message: '${med?.dosage ?? ""} • $timeStr এর ডোজ মিস হয়েছে',
+            title: s.notifDoseMissedTitle(medName),
+            message: s.notifDoseMissedMsg(med?.dosage ?? '', timeStr),
             medicineId: rec.medicineId,
             medicineName: medName,
             timestamp: rec.recordedAt,
             isRead: true,
+            metadata: {
+              'dosage': med?.dosage ?? '',
+              'time': timeStr,
+            },
           );
           await _db.insertNotification(n);
         }
@@ -684,12 +719,19 @@ class MedicineProvider extends ChangeNotifier {
 
     await _refreshMedicinesAndReminders();
     await _refreshRecords();
+    final s = await _getStrings();
     await logAppNotification(
       type: NotificationType.medicineAdded,
-      title: '$name যোগ করা হয়েছে',
-      message: 'ডোজ: $dosage • $currentStock ${unit ?? type.defaultUnit} মজুদ • ${instruction.title}',
+      title: s.notifMedAddedTitle(name),
+      message: s.notifMedAddedMsg(dosage, '$currentStock ${unit ?? type.defaultUnit}', s.foodInstructionName(instruction.name)),
       medicineId: medId,
       medicineName: name,
+      metadata: {
+        'dosage': dosage,
+        'stock': currentStock,
+        'unit': unit ?? type.defaultUnit,
+        'instruction': instruction.name,
+      },
     );
     notifyListeners();
   }
@@ -716,12 +758,18 @@ class MedicineProvider extends ChangeNotifier {
 
     await _refreshMedicinesAndReminders();
     await _refreshRecords();
+    final s = await _getStrings();
     await logAppNotification(
       type: NotificationType.medicineUpdated,
-      title: '${medicine.name} আপডেট করা হয়েছে',
-      message: 'ডোজ: ${medicine.dosage} • মজুদ: ${medicine.currentStock} ${medicine.unit}',
+      title: s.notifMedUpdatedTitle(medicine.name),
+      message: s.notifMedUpdatedMsg(medicine.dosage, medicine.currentStock, medicine.unit),
       medicineId: medicine.id,
       medicineName: medicine.name,
+      metadata: {
+        'dosage': medicine.dosage,
+        'stock': medicine.currentStock,
+        'unit': medicine.unit,
+      },
     );
     notifyListeners();
   }
@@ -859,12 +907,17 @@ class MedicineProvider extends ChangeNotifier {
       final updatedMed = await _db.getMedicineById(medicine.id);
       if (updatedMed != null && updatedMed.isLowStock) {
         await _notifications.showRefillAlert(updatedMed);
+        final s = await _getStrings();
         await logAppNotification(
           type: NotificationType.lowStock,
-          title: '${updatedMed.name} এর মজুদ প্রায় শেষ',
-          message: 'বর্তমান মজুদ মাত্র ${updatedMed.currentStock} ${updatedMed.unit}। দ্রুত রিফিল করুন।',
+          title: s.notifLowStockTitle(updatedMed.name),
+          message: s.notifLowStockWarningMsg(updatedMed.currentStock, updatedMed.unit),
           medicineId: updatedMed.id,
           medicineName: updatedMed.name,
+          metadata: {
+            'stock': updatedMed.currentStock,
+            'unit': updatedMed.unit,
+          },
         );
       }
       await _refreshMedicinesAndReminders();
@@ -882,12 +935,17 @@ class MedicineProvider extends ChangeNotifier {
     // Dismiss active reminders for this dose
     await _notifications.dismissActiveReminderNotification(reminder: reminder);
 
+    final s = await _getStrings();
     await logAppNotification(
       type: NotificationType.doseTaken,
-      title: '${medicine.name} গ্রহণ সম্পন্ন',
-      message: '${medicine.dosage} • ${reminder.formattedTime} এর ডোজ গ্রহণ করা হয়েছে',
+      title: s.notifDoseTakenTitle(medicine.name),
+      message: s.notifDoseTakenMsg(medicine.dosage, reminder.formattedTime),
       medicineId: medicine.id,
       medicineName: medicine.name,
+      metadata: {
+        'dosage': medicine.dosage,
+        'time': reminder.formattedTime,
+      },
     );
 
     notifyListeners();
@@ -919,12 +977,17 @@ class MedicineProvider extends ChangeNotifier {
     // Dismiss active reminders for this dose
     await _notifications.dismissActiveReminderNotification(reminder: reminder);
 
+    final s = await _getStrings();
     await logAppNotification(
       type: NotificationType.doseSkipped,
-      title: '${medicine.name} বাদ দেওয়া হয়েছে',
-      message: '${medicine.dosage} • ${reminder.formattedTime} এর ডোজ বাদ দেওয়া হয়েছে',
+      title: s.notifDoseSkippedTitle(medicine.name),
+      message: s.notifDoseSkippedMsg(medicine.dosage, reminder.formattedTime),
       medicineId: medicine.id,
       medicineName: medicine.name,
+      metadata: {
+        'dosage': medicine.dosage,
+        'time': reminder.formattedTime,
+      },
     );
 
     notifyListeners();
@@ -976,12 +1039,17 @@ class MedicineProvider extends ChangeNotifier {
         medicineId: medicine.id,
         reminderTimeId: reminder.id,
       );
+      final s = await _getStrings();
       await logAppNotification(
         type: NotificationType.doseSnoozed,
-        title: '${medicine.name} স্থগিত (স্নুজ)',
-        message: '$minutes মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে (${reminder.formattedTime})',
+        title: s.notifDoseSnoozedTitle(medicine.name),
+        message: s.notifDoseSnoozedMsg(minutes, reminder.formattedTime),
         medicineId: medicine.id,
         medicineName: medicine.name,
+        metadata: {
+          'minutes': minutes,
+          'time': reminder.formattedTime,
+        },
       );
     } catch (e) {
       debugPrint('Error in snoozeDose: $e');
@@ -995,12 +1063,18 @@ class MedicineProvider extends ChangeNotifier {
       if (med != null) {
         final newStock = med.currentStock + addedQuantity;
         await _db.updateStock(medicineId, newStock);
+        final s = await _getStrings();
         await logAppNotification(
           type: NotificationType.refillAdded,
-          title: '${med.name} রিফিল করা হয়েছে',
-          message: '+$addedQuantity ${med.unit} যোগ করা হয়েছে (মোট মজুদ: $newStock ${med.unit})',
+          title: s.notifRefillAddedTitle(med.name),
+          message: s.notifRefillMsg(addedQuantity, newStock, med.unit),
           medicineId: med.id,
           medicineName: med.name,
+          metadata: {
+            'added': addedQuantity,
+            'stock': newStock,
+            'unit': med.unit,
+          },
         );
         await _refreshMedicinesAndReminders();
       }
@@ -1176,12 +1250,17 @@ class MedicineProvider extends ChangeNotifier {
         } catch (_) {}
         _recordsByDoseKey[key] = record;
         await _notifications.dismissActiveReminderNotification(reminder: dose.reminder);
+        final s = await _getStrings();
         await logAppNotification(
           type: NotificationType.doseMissed,
-          title: '${dose.medicine.name} ডোজ মিস হয়েছে',
-          message: '${dose.medicine.dosage} • ${dose.reminder.formattedTime} এর ডোজ সময়মতো নেওয়া হয়নি',
+          title: s.notifDoseMissedTitle(dose.medicine.name),
+          message: s.notifDoseMissedMsg(dose.medicine.dosage, dose.reminder.formattedTime),
           medicineId: dose.medicine.id,
           medicineName: dose.medicine.name,
+          metadata: {
+            'dosage': dose.medicine.dosage,
+            'time': dose.reminder.formattedTime,
+          },
         );
         changed = true;
       }

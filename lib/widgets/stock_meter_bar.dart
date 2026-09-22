@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../core/localization/app_strings.dart';
 import '../core/theme/app_colors.dart';
+import '../providers/language_provider.dart';
 
 class StockMeterBar extends StatelessWidget {
   final int currentStock;
@@ -8,6 +11,7 @@ class StockMeterBar extends StatelessWidget {
   final int threshold;
   final String unit;
   final VoidCallback? onRefillTap;
+  final AppStrings? strings;
 
   const StockMeterBar({
     super.key,
@@ -16,10 +20,12 @@ class StockMeterBar extends StatelessWidget {
     this.threshold = 5,
     this.unit = 'units',
     this.onRefillTap,
+    this.strings,
   });
 
   @override
   Widget build(BuildContext context) {
+    final s = strings ?? context.watch<LanguageProvider>().strings;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final maxVal = totalCapacity > 0 ? totalCapacity : 30;
     final ratio = (currentStock / maxVal).clamp(0.0, 1.0);
@@ -65,7 +71,7 @@ class StockMeterBar extends StatelessWidget {
                   const SizedBox(width: 5),
                 ],
                 Text(
-                  isLow ? 'Low Stock Warning' : 'Stock Remaining',
+                  isLow ? s.lowStockWarningLabel : s.stockRemainingLabel,
                   style: GoogleFonts.outfit(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -81,7 +87,7 @@ class StockMeterBar extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '$currentStock $unit left',
+                  s.unitsLeftText(currentStock, unit),
                   style: GoogleFonts.outfit(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -108,7 +114,7 @@ class StockMeterBar extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        '+ Refill',
+                        s.refillBtn,
                         style: GoogleFonts.outfit(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,

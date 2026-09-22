@@ -51,14 +51,19 @@ class DoseCard extends StatelessWidget {
           case TimeSlot.night: n++; break;
         }
       }
+      final sm = s.formatNumber(m);
+      final sl = s.formatNumber(l);
+      final sa = s.formatNumber(a);
+      final se = s.formatNumber(e);
+      final sn = s.formatNumber(n);
       if (l == 0 && a == 0 && e == 0) {
-        routinePattern = '$m-$n';
+        routinePattern = '$sm-$sn';
       } else if (l == 0 && e == 0) {
-        routinePattern = '$m-$a-$n';
+        routinePattern = '$sm-$sa-$sn';
       } else if (l == 0) {
-        routinePattern = '$m-$a-$e-$n';
+        routinePattern = '$sm-$sa-$se-$sn';
       } else {
-        routinePattern = '$m-$l-$a-$e-$n';
+        routinePattern = '$sm-$sl-$sa-$se-$sn';
       }
     }
 
@@ -419,7 +424,7 @@ class DoseCard extends StatelessWidget {
                           const Icon(Icons.cancel_rounded, size: 12, color: Color(0xFFE11D48)),
                           const SizedBox(width: 4),
                           Text(
-                            s.code == 'bn' ? 'বাদ দেওয়া হয়েছে' : (s.code == 'hi' ? 'छोड़ दिया' : 'Skipped'),
+                            s.skipped,
                             style: GoogleFonts.outfit(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -460,7 +465,7 @@ class DoseCard extends StatelessWidget {
                         const Icon(Icons.error_outline_rounded, size: 12, color: AppColors.accentRose),
                         const SizedBox(width: 3),
                         Text(
-                          s.code == 'bn' ? 'মিস হয়েছে' : (s.code == 'hi' ? 'छूट गई' : 'Missed'),
+                          s.missed,
                           style: GoogleFonts.outfit(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -499,7 +504,7 @@ class DoseCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          s.code == 'bn' ? 'বাকি আছে' : (s.code == 'hi' ? 'देरी' : 'Due Now'),
+                          s.dueNow,
                           style: GoogleFonts.outfit(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -720,9 +725,7 @@ class DoseCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          s.code == 'bn'
-                              ? '${rem.timeSlot.title} · নির্ধারিত সময় ${rem.formattedTime}'
-                              : '${rem.timeSlot.title} · Scheduled at ${rem.formattedTime}',
+                          s.timeSlotScheduled(rem.timeSlot.titleLocalized(s), rem.formattedTime),
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
@@ -737,7 +740,7 @@ class DoseCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          s.code == 'bn' ? 'আসন্ন' : 'Upcoming',
+                          s.upcomingStatus,
                           style: GoogleFonts.outfit(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -772,9 +775,7 @@ class DoseCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      s.code == 'bn'
-                          ? 'হোল্ড প্রেস করে স্ট্যাটাস সংশোধন করুন'
-                          : (s.code == 'hi' ? 'दबाकर स्थिति बदलें' : 'Hold to change status'),
+                      s.holdToCorrectStatus,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,

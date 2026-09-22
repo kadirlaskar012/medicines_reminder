@@ -6,12 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../../models/intake_record.dart';
 import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
 import '../database/db_helper.dart';
+import '../localization/app_strings.dart';
 
 /// Safely and accurately configures the device's true local timezone
 Future<void> configureLocalTimeZone() async {
@@ -527,8 +529,19 @@ class NotificationService {
     };
   }
 
+  Future<AppStrings> _getStrings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lang = prefs.getString('selected_language_code') ?? 'en';
+      return AppStrings.of(lang);
+    } catch (_) {
+      return AppStrings.en;
+    }
+  }
+
   // ==================== SCHEDULING ====================
   Future<void> scheduleMedicineReminder(Medicine medicine, ReminderTime reminder) async {
+    final s = await _getStrings();
     final channelId = reminder.isAlarm ? alarmChannelId : gentleChannelId;
     final channelName = reminder.isAlarm ? alarmChannelName : gentleChannelName;
 
@@ -545,6 +558,9 @@ class NotificationService {
       largeIconBitmap = DrawableResourceAndroidBitmap(largeIcon);
     }
 
+    final instructionStr = s.foodInstructionName(medicine.instruction.name);
+    final medTitle = s.notifTimeForMed(medicine.name, medicine.dosage);
+
     final androidDetails = AndroidNotificationDetails(
       channelId,
       channelName,
@@ -559,32 +575,32 @@ class NotificationService {
       icon: smallIcon,
       largeIcon: largeIconBitmap,
       color: medicine.colorValue != 0 ? Color(medicine.colorValue) : brandPrimaryColor,
-      ticker: '$emoji Time for ${medicine.name} • ${medicine.dosage}',
+      ticker: '$emoji $medTitle',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       vibrationPattern: reminder.isAlarm ? Int64List.fromList([0, 1000, 500, 1000, 500, 1000]) : null,
       styleInformation: BigTextStyleInformation(
-        '🍽️ <b>${medicine.instruction.title}</b> &nbsp;•&nbsp; ⏰ <b>${reminder.formattedTime}</b><br>Please take <b>${medicine.dosage}</b> now to stay on schedule.',
+        s.notifTakeBigText(instructionStr, reminder.formattedTime, medicine.dosage),
         htmlFormatBigText: true,
-        contentTitle: '$emoji <b>Time for ${medicine.name}</b> • ${medicine.dosage}',
+        contentTitle: '$emoji <b>$medTitle</b>',
         htmlFormatContentTitle: true,
       ),
-      actions: const [
+      actions: [
         AndroidNotificationAction(
           actionTaken,
-          '✓ Mark Taken',
+          s.notifActionMarkTaken,
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
-          '⏱ Snooze 10m',
+          s.notifActionSnooze10m,
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
-          '✕ Skip Dose',
+          s.notifActionSkip,
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -592,6 +608,8 @@ class NotificationService {
     );
 
     final notificationDetails = NotificationDetails(android: androidDetails);
+    final notifTitle = '$emoji $medTitle';
+    final notifBody = s.notifTakeBody(instructionStr, reminder.formattedTime, medicine.dosage);
 
     // Schedule for each day in daysOfWeek
     for (final dayOfWeek in reminder.daysOfWeek) {
@@ -605,7 +623,7 @@ class NotificationService {
         'medicineType': medicine.type.name,
         'colorValue': medicine.colorValue,
         'photoPath': medicine.photoPath,
-        'instruction': medicine.instruction.title,
+        'instruction': instructionStr,
         'reminderTimeId': reminder.id,
         'isAlarm': reminder.isAlarm,
         'notificationId': uniqueNotificationId,
@@ -620,8 +638,8 @@ class NotificationService {
       try {
         await _notificationsPlugin.zonedSchedule(
           id: uniqueNotificationId,
-          title: '$emoji Time for ${medicine.name} • ${medicine.dosage}',
-          body: '🍽️ ${medicine.instruction.title} • ⏰ ${reminder.formattedTime} • Take ${medicine.dosage}',
+          title: notifTitle,
+          body: notifBody,
           scheduledDate: scheduledDate,
           notificationDetails: notificationDetails,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -633,8 +651,8 @@ class NotificationService {
         try {
           await _notificationsPlugin.zonedSchedule(
             id: uniqueNotificationId,
-            title: '$emoji Time for ${medicine.name} • ${medicine.dosage}',
-            body: '🍽️ ${medicine.instruction.title} • ⏰ ${reminder.formattedTime} • Take ${medicine.dosage}',
+            title: notifTitle,
+            body: notifBody,
             scheduledDate: scheduledDate,
             notificationDetails: notificationDetails,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -689,6 +707,7 @@ class NotificationService {
     required ReminderTime reminder,
     required int dayOfWeek,
   }) async {
+    final s = await _getStrings();
     final scheduledDate = _nextInstanceOfDayAndTime(dayOfWeek, reminder.hour, reminder.minute);
     final uniqueNotificationId = reminder.notificationId * 10 + dayOfWeek;
 
@@ -707,6 +726,9 @@ class NotificationService {
       largeIconBitmap = DrawableResourceAndroidBitmap(largeIcon);
     }
 
+    final instructionStr = s.foodInstructionName(medicine.instruction.name);
+    final medTitle = s.notifTimeForMed(medicine.name, medicine.dosage);
+
     final androidDetails = AndroidNotificationDetails(
       channelId,
       channelName,
@@ -721,25 +743,25 @@ class NotificationService {
       icon: smallIcon,
       largeIcon: largeIconBitmap,
       color: medicine.colorValue != 0 ? Color(medicine.colorValue) : brandPrimaryColor,
-      ticker: '$emoji Time for ${medicine.name} • ${medicine.dosage}',
+      ticker: '$emoji $medTitle',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       styleInformation: BigTextStyleInformation(
-        '🍽️ <b>${medicine.instruction.title}</b> &nbsp;•&nbsp; ⏰ <b>${reminder.formattedTime}</b><br>Please take <b>${medicine.dosage}</b> now to stay on schedule.',
+        s.notifTakeBigText(instructionStr, reminder.formattedTime, medicine.dosage),
         htmlFormatBigText: true,
-        contentTitle: '$emoji <b>Time for ${medicine.name}</b> • ${medicine.dosage}',
+        contentTitle: '$emoji <b>$medTitle</b>',
         htmlFormatContentTitle: true,
       ),
-      actions: const [
+      actions: [
         AndroidNotificationAction(
           actionTaken,
-          '✓ Mark Taken',
+          s.notifActionMarkTaken,
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
-          '✕ Skip Dose',
+          s.notifActionSkip,
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -753,7 +775,7 @@ class NotificationService {
       'medicineType': medicine.type.name,
       'colorValue': medicine.colorValue,
       'photoPath': medicine.photoPath,
-      'instruction': medicine.instruction.title,
+      'instruction': instructionStr,
       'reminderTimeId': reminder.id,
       'isAlarm': reminder.isAlarm,
       'notificationId': uniqueNotificationId,
@@ -763,8 +785,8 @@ class NotificationService {
     try {
       await _notificationsPlugin.zonedSchedule(
         id: uniqueNotificationId,
-        title: '$emoji Time for ${medicine.name} • ${medicine.dosage}',
-        body: '🍽️ ${medicine.instruction.title} • ⏰ ${reminder.formattedTime} • Take ${medicine.dosage}',
+        title: '$emoji $medTitle',
+        body: s.notifTakeBody(instructionStr, reminder.formattedTime, medicine.dosage),
         scheduledDate: scheduledDate,
         notificationDetails: NotificationDetails(android: androidDetails),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -791,6 +813,7 @@ class NotificationService {
     String? medicineId,
     String? reminderTimeId,
   }) async {
+    final s = await _getStrings();
     await configureLocalTimeZone();
 
     final now = tz.TZDateTime.now(tz.local);
@@ -810,6 +833,9 @@ class NotificationService {
       largeIconBitmap = DrawableResourceAndroidBitmap(largeIcon);
     }
 
+    final snoozedTitle = s.notifSnoozedTitle(medicineName);
+    final snoozedBody = s.notifSnoozedBody(dosage);
+
     final androidDetails = AndroidNotificationDetails(
       alarmChannelId,
       alarmChannelName,
@@ -824,35 +850,35 @@ class NotificationService {
       icon: smallIcon,
       largeIcon: largeIconBitmap,
       color: colorValue != 0 ? Color(colorValue) : brandPrimaryColor,
-      subText: '${type.label} Snoozed Dose',
-      ticker: '$emoji Snoozed: $medicineName ($dosage)',
+      subText: snoozedTitle,
+      ticker: '$emoji $snoozedTitle',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
       styleInformation: BigTextStyleInformation(
-        '⏱️ <b>10m Snooze elapsed!</b> Please take <b>$dosage</b> now.<br>Tap to log your dose.',
+        '⏱️ <b>$snoozedBody</b>',
         htmlFormatBigText: true,
-        contentTitle: '⏰ <b>$emoji Snoozed: $medicineName</b> ($dosage)',
+        contentTitle: '⏰ <b>$emoji $snoozedTitle</b>',
         htmlFormatContentTitle: true,
-        summaryText: '${type.label} Snoozed Dose',
+        summaryText: snoozedTitle,
         htmlFormatSummaryText: true,
       ),
-      actions: const [
+      actions: [
         AndroidNotificationAction(
           actionTaken,
-          '✓ Mark Taken',
+          s.notifActionMarkTaken,
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
-          '⏱ Snooze 10m',
+          s.notifActionSnooze10m,
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
-          '✕ Skip Dose',
+          s.notifActionSkip,
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -879,8 +905,8 @@ class NotificationService {
     try {
       await _notificationsPlugin.zonedSchedule(
         id: snoozeId,
-        title: '⏰ $emoji Snoozed: $medicineName ($dosage)',
-        body: '⏱️ Snooze elapsed! Please take $dosage now.',
+        title: '⏰ $emoji $snoozedTitle',
+        body: snoozedBody,
         scheduledDate: scheduledDate,
         notificationDetails: NotificationDetails(android: androidDetails),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -892,8 +918,8 @@ class NotificationService {
       try {
         await _notificationsPlugin.zonedSchedule(
           id: snoozeId,
-          title: '⏰ $emoji Snoozed: $medicineName ($dosage)',
-          body: '⏱️ Snooze elapsed! Please take $dosage now.',
+          title: '⏰ $emoji $snoozedTitle',
+          body: snoozedBody,
           scheduledDate: scheduledDate,
           notificationDetails: NotificationDetails(android: androidDetails),
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -920,6 +946,7 @@ class NotificationService {
 
 
   Future<void> showStockForecastAlert(Medicine medicine, int daysLeft, String runOutDateStr) async {
+    final s = await _getStrings();
     final smallIcon = getSmallIconForType(medicine.type);
     final largeIcon = getLargeIconForType(medicine.type);
 
@@ -936,13 +963,14 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       id: medicine.name.hashCode.abs() % 100000 + 800000,
-      title: '📦 Low Stock Alert: ${medicine.name}',
-      body: 'Will run out in $daysLeft days ($runOutDateStr). Remaining: ${medicine.currentStock} units.',
+      title: s.notifLowStockTitle(medicine.name),
+      body: s.notifLowStockBody(medicine.currentStock),
       notificationDetails: NotificationDetails(android: androidDetails),
     );
   }
 
   Future<void> showRefillAlert(Medicine medicine) async {
+    final s = await _getStrings();
     final smallIcon = getSmallIconForType(medicine.type);
     final largeIcon = getLargeIconForType(medicine.type);
 
@@ -959,54 +987,55 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       id: medicine.name.hashCode.abs() % 100000 + 800000,
-      title: '⚠️ Low Stock: ${medicine.name}',
-      body: 'Only ${medicine.currentStock} doses remaining! Please refill soon.',
+      title: s.notifLowStockTitle(medicine.name),
+      body: s.notifLowStockBody(medicine.currentStock),
       notificationDetails: NotificationDetails(android: androidDetails),
     );
   }
 
   Future<void> showTestNotification({MedicineType type = MedicineType.tablet}) async {
+    final s = await _getStrings();
     String medName;
     String dosage;
-    String instruction = 'After Meal';
+    String instruction = s.foodInstructionName('afterMeal');
 
     switch (type) {
       case MedicineType.tablet:
         medName = 'Paracetamol';
-        dosage = '650 mg (1 Tablet)';
+        dosage = '650 mg (1 ${s.typeTablet})';
         break;
       case MedicineType.syrup:
         medName = 'Cough Relief Syrup';
-        dosage = '10 ml (1 Spoon)';
+        dosage = '10 ml (1 ${s.typeSyrup})';
         break;
       case MedicineType.injection:
         medName = 'Insulin Glargine';
         dosage = '15 Units';
-        instruction = 'Before Meal';
+        instruction = s.foodInstructionName('beforeMeal');
         break;
       case MedicineType.capsule:
         medName = 'Amoxicillin';
-        dosage = '500 mg (1 Capsule)';
+        dosage = '500 mg (1 ${s.typeCapsule})';
         break;
       case MedicineType.drops:
         medName = 'OptiClear Eye Drops';
-        dosage = '2 Drops';
-        instruction = 'Anytime';
+        dosage = '2 ${s.typeDrops}';
+        instruction = s.foodInstructionName('anytime');
         break;
       case MedicineType.inhaler:
         medName = 'Salbutamol Inhaler';
-        dosage = '2 Puffs';
-        instruction = 'Anytime';
+        dosage = '2 ${s.typeInhaler}';
+        instruction = s.foodInstructionName('anytime');
         break;
       case MedicineType.ointment:
         medName = 'Hydrocortisone Cream';
         dosage = 'Thin Layer';
-        instruction = 'Anytime';
+        instruction = s.foodInstructionName('anytime');
         break;
       case MedicineType.supplement:
         medName = 'Omega-3 Fish Oil';
         dosage = '1 Softgel';
-        instruction = 'With Meal';
+        instruction = s.foodInstructionName('withMeal');
         break;
       default:
         medName = 'Daily Medicine';
@@ -1031,6 +1060,8 @@ class NotificationService {
     final smallIcon = getSmallIconForType(type);
     final largeIcon = getLargeIconForType(type);
     final emoji = getEmojiForType(type);
+    final titleStr = '$emoji ${s.notifTimeForMed(medName, dosage)}';
+    final bigText = s.notifTakeBigText(instruction, 'Just Now', dosage);
 
     final androidDetails = AndroidNotificationDetails(
       alarmChannelId,
@@ -1045,25 +1076,25 @@ class NotificationService {
       icon: smallIcon,
       largeIcon: DrawableResourceAndroidBitmap(largeIcon),
       color: brandPrimaryColor,
-      ticker: '$emoji Time for $medName • $dosage',
+      ticker: titleStr,
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       styleInformation: BigTextStyleInformation(
-        '🍽️ <b>$instruction</b> &nbsp;•&nbsp; ⏰ <b>Just Now</b><br>Please take <b>$dosage</b> now to stay on schedule.',
+        bigText,
         htmlFormatBigText: true,
-        contentTitle: '$emoji <b>Time for $medName</b> • $dosage',
+        contentTitle: titleStr,
         htmlFormatContentTitle: true,
       ),
-      actions: const [
+      actions: [
         AndroidNotificationAction(
           actionTaken,
-          '✓ Mark Taken',
+          s.notifActionMarkTaken,
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
-          '✕ Skip Dose',
+          s.notifActionSkip,
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -1072,8 +1103,8 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       id: 99990 + type.index,
-      title: '$emoji Time for $medName • $dosage',
-      body: '🍽️ $instruction • ⏰ Just Now • Take $dosage',
+      title: titleStr,
+      body: s.notifTakeBody(instruction, 'Just Now', dosage),
       notificationDetails: NotificationDetails(android: androidDetails),
       payload: payload,
     );
@@ -1121,6 +1152,7 @@ class NotificationService {
   /// Schedules a quick test alarm that rings with sound, vibration, and full-screen alert
   /// in [secondsFromNow] seconds (defaults to 5 seconds).
   Future<void> scheduleQuickTestAlarm({int secondsFromNow = 5}) async {
+    final s = await _getStrings();
     final now = tz.TZDateTime.now(tz.local);
     final scheduledDate = now.add(Duration(seconds: secondsFromNow));
     const int testId = 777777;
@@ -1139,17 +1171,17 @@ class NotificationService {
       color: brandPrimaryColor,
       vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
       audioAttributesUsage: AudioAttributesUsage.alarm,
-      ticker: '⏰ Test Alarm Ringing',
-      styleInformation: const BigTextStyleInformation(
-        '🔔 <b>Test Alarm Verified!</b><br>Your medicine alarm and notifications are working properly.',
+      ticker: s.notifTestTitle,
+      styleInformation: BigTextStyleInformation(
+        '🔔 <b>${s.notifTestBody}</b>',
         htmlFormatBigText: true,
-        contentTitle: '⏰ <b>Test Alarm</b> • MediRemind',
+        contentTitle: '⏰ <b>${s.notifTestTitle}</b>',
         htmlFormatContentTitle: true,
       ),
-      actions: const [
+      actions: [
         AndroidNotificationAction(
           actionTaken,
-          '✓ Dismiss',
+          s.notifActionDismiss,
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -1168,8 +1200,8 @@ class NotificationService {
 
     await _notificationsPlugin.zonedSchedule(
       id: testId,
-      title: '⏰ Test Alarm • MediRemind',
-      body: 'Your medicine alarm and notification are working perfectly!',
+      title: s.notifTestTitle,
+      body: s.notifTestBody,
       scheduledDate: scheduledDate,
       notificationDetails: NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

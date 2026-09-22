@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/constants/app_svg_icons.dart';
@@ -171,7 +170,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           children: [
             const Icon(Icons.date_range_rounded, color: AppColors.primary),
             const SizedBox(width: 8),
-            Text(s.code == 'bn' ? 'কাস্টম কোর্সের মেয়াদ' : 'Custom Course Duration'),
+            Text(s.customCourseDurationDialogTitle),
           ],
         ),
         content: Column(
@@ -179,7 +178,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              s.code == 'bn' ? 'কত দিন ওষুধটি চলবে?' : 'How many days should this medicine be taken?',
+              s.howManyDaysMedicinePrompt,
               style: const TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 12),
@@ -189,7 +188,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               autofocus: true,
               onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
               decoration: InputDecoration(
-                suffixText: s.code == 'bn' ? 'দিন' : 'Days',
+                suffixText: s.daysSuffix,
                 hintText: 'e.g. 15, 45, 60',
               ),
             ),
@@ -212,7 +211,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   }
                 },
                 icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                label: Text(s.code == 'bn' ? 'ক্যালেন্ডার থেকে শেষ তারিখ বাছুন' : 'Pick end date from calendar'),
+                label: Text(s.pickEndDateCalendar),
               ),
             ),
           ],
@@ -318,41 +317,41 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   String _getSlotSubtitle(String slotKey, AppStrings s) {
     final rem = _getSlotReminder(slotKey);
     if (rem == null) {
-      return s.code == 'bn' ? 'সেট করুন' : (s.code == 'hi' ? 'सेट करें' : 'Tap to set');
+      return s.tapToSetSlot;
     }
     String mealDesc;
     final totalMins = rem.hour * 60 + rem.minute;
     if (slotKey == 'morning') {
       if (rem.hour < 8) {
-        mealDesc = s.code == 'bn' ? 'খাবারের আগে' : 'Before breakfast';
+        mealDesc = s.mealDescBeforeBreakfast;
       } else {
-        mealDesc = s.code == 'bn' ? 'খাবারের পরে' : 'After breakfast';
+        mealDesc = s.mealDescAfterBreakfast;
       }
     } else if (slotKey == 'lunch') {
       if (totalMins <= 13 * 60 + 15) {
-        mealDesc = s.code == 'bn' ? 'খাবারের আগে' : 'Before lunch';
+        mealDesc = s.mealDescBeforeLunch;
       } else {
-        mealDesc = s.code == 'bn' ? 'খাবারের পরে' : 'After lunch';
+        mealDesc = s.mealDescAfterLunch;
       }
     } else if (slotKey == 'afternoon') {
       if (totalMins < 17 * 60 + 15) {
-        mealDesc = s.code == 'bn' ? 'নাস্তার আগে' : 'Before snacks';
+        mealDesc = s.mealDescBeforeSnacks;
       } else {
-        mealDesc = s.code == 'bn' ? 'নাস্তার পরে' : 'After snacks';
+        mealDesc = s.mealDescAfterSnacks;
       }
     } else if (slotKey == 'evening') {
       if (totalMins < 19 * 60 + 15) {
-        mealDesc = s.code == 'bn' ? 'খাবারের আগে' : 'Before snacks';
+        mealDesc = s.mealDescBeforeSnacks;
       } else {
-        mealDesc = s.code == 'bn' ? 'খাবারের পরে' : 'After snacks';
+        mealDesc = s.mealDescAfterSnacks;
       }
     } else {
       if (totalMins >= 22 * 60) {
-        mealDesc = s.code == 'bn' ? 'ঘুমানোর আগে' : 'Bedtime';
+        mealDesc = s.mealDescBedtime;
       } else if (totalMins < 21 * 60) {
-        mealDesc = s.code == 'bn' ? 'খাবারের আগে' : 'Before dinner';
+        mealDesc = s.mealDescBeforeDinner;
       } else {
-        mealDesc = s.code == 'bn' ? 'খাবারের পরে' : 'After dinner';
+        mealDesc = s.mealDescAfterDinner;
       }
     }
     return '${rem.formattedTime}\n$mealDesc';
@@ -369,30 +368,30 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     TimeOfDay defaultTime;
 
     if (slotKey == 'morning') {
-      title = s.code == 'bn' ? 'সকালের ওষুধের সময় ও নিয়ম' : 'Morning Dose Timing';
+      title = s.morningTimingTitle;
       slotIcon = Icons.wb_sunny_rounded;
       slotColor = const Color(0xFFF59E0B);
       defaultTime = const TimeOfDay(hour: 8, minute: 30);
       options = [
         {
-          'label': s.code == 'bn' ? 'খাবারের আগে (Before Breakfast)' : 'Before Breakfast',
-          'sub': s.code == 'bn' ? 'সকালের নাস্তার ৩০ মিনিট আগে' : '30 min before breakfast',
+          'label': s.optBeforeBreakfastLabel,
+          'sub': s.optBeforeBreakfastSub,
           'hour': 7,
           'minute': 30,
           'instruction': FoodInstruction.beforeMeal,
           'icon': Icons.hourglass_bottom_rounded,
         },
         {
-          'label': s.code == 'bn' ? 'খাবারের পরে (After Breakfast)' : 'After Breakfast',
-          'sub': s.code == 'bn' ? 'সকালের নাস্তার ৩০ মিনিটের মধ্যে' : 'Within 30 min after breakfast',
+          'label': s.optAfterBreakfastLabel,
+          'sub': s.optAfterBreakfastSub,
           'hour': 8,
           'minute': 30,
           'instruction': FoodInstruction.afterMeal,
           'icon': Icons.done_all_rounded,
         },
         {
-          'label': s.code == 'bn' ? 'খালি পেটে (Empty Stomach)' : 'Empty Stomach',
-          'sub': s.code == 'bn' ? 'সকালে ঘুম থেকে উঠে ১ গ্লাস পানিসহ' : 'Right after waking up with water',
+          'label': s.optEmptyStomachLabel,
+          'sub': s.optEmptyStomachSub,
           'hour': 7,
           'minute': 0,
           'instruction': FoodInstruction.emptyStomach,
@@ -400,30 +399,30 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         },
       ];
     } else if (slotKey == 'lunch') {
-      title = s.code == 'bn' ? 'দুপুরের ওষুধের সময় ও নিয়ম' : 'Lunch Dose Timing';
+      title = s.lunchTimingTitle;
       slotIcon = Icons.lunch_dining_rounded;
       slotColor = const Color(0xFF3B82F6);
       defaultTime = const TimeOfDay(hour: 14, minute: 0);
       options = [
         {
-          'label': s.code == 'bn' ? 'খাবারের আগে (Before Lunch)' : 'Before Lunch',
-          'sub': s.code == 'bn' ? 'দুপুরের খাওয়ার ৩০ মিনিট আগে' : '30 min before lunch',
+          'label': s.optBeforeLunchLabel,
+          'sub': s.optBeforeLunchSub,
           'hour': 13,
           'minute': 0,
           'instruction': FoodInstruction.beforeMeal,
           'icon': Icons.hourglass_bottom_rounded,
         },
         {
-          'label': s.code == 'bn' ? 'খাবারের পরে (After Lunch)' : 'After Lunch',
-          'sub': s.code == 'bn' ? 'দুপুরের খাওয়ার ৩০ মিনিটের মধ্যে' : 'Within 30 min after lunch',
+          'label': s.optAfterLunchLabel,
+          'sub': s.optAfterLunchSub,
           'hour': 14,
           'minute': 0,
           'instruction': FoodInstruction.afterMeal,
           'icon': Icons.done_all_rounded,
         },
         {
-          'label': s.code == 'bn' ? 'খাবারের সাথে (With Meal)' : 'With Meal',
-          'sub': s.code == 'bn' ? 'দুপুরের খাবার খাওয়ার সাথে' : 'While having lunch',
+          'label': s.optWithMealLabel,
+          'sub': s.optWithMealSub,
           'hour': 13,
           'minute': 30,
           'instruction': FoodInstruction.withMeal,
@@ -431,30 +430,30 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         },
       ];
     } else if (slotKey == 'afternoon') {
-      title = s.code == 'bn' ? 'বিকালের ওষুধের সময় ও নিয়ম' : 'Afternoon Dose Timing';
+      title = s.afternoonTimingTitle;
       slotIcon = Icons.coffee_rounded;
       slotColor = const Color(0xFF10B981);
       defaultTime = const TimeOfDay(hour: 17, minute: 0);
       options = [
         {
-          'label': s.code == 'bn' ? 'নাস্তার আগে (Before Snacks)' : 'Before Snacks',
-          'sub': s.code == 'bn' ? 'বিকালের নাস্তা বা চা খাওয়ার আগে' : 'Before afternoon snacks',
+          'label': s.optBeforeSnacksLabel,
+          'sub': s.optBeforeSnacksSub,
           'hour': 16,
           'minute': 30,
           'instruction': FoodInstruction.beforeMeal,
           'icon': Icons.hourglass_bottom_rounded,
         },
         {
-          'label': s.code == 'bn' ? 'নাস্তার পরে (After Snacks)' : 'After Snacks',
-          'sub': s.code == 'bn' ? 'বিকালের নাস্তা বা চা খাওয়ার পর' : 'After afternoon snacks',
+          'label': s.optAfterSnacksLabel,
+          'sub': s.optAfterSnacksSub,
           'hour': 17,
           'minute': 30,
           'instruction': FoodInstruction.afterMeal,
           'icon': Icons.done_all_rounded,
         },
         {
-          'label': s.code == 'bn' ? 'সাধারণ সময় (Anytime)' : 'Anytime Afternoon',
-          'sub': s.code == 'bn' ? 'বিকালের যে কোনো সময়' : 'Anytime during afternoon',
+          'label': s.optAnytimeAfternoonLabel,
+          'sub': s.optAnytimeAfternoonSub,
           'hour': 17,
           'minute': 0,
           'instruction': FoodInstruction.anytime,
@@ -462,30 +461,30 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         },
       ];
     } else if (slotKey == 'evening') {
-      title = s.code == 'bn' ? 'সন্ধ্যার ওষুধের সময় ও নিয়ম' : (s.code == 'hi' ? 'शाम की दवा का समय और नियम' : 'Evening Dose Timing');
+      title = s.eveningTimingTitle;
       slotIcon = Icons.wb_twilight_rounded;
       slotColor = const Color(0xFF8B5CF6);
       defaultTime = const TimeOfDay(hour: 19, minute: 0);
       options = [
         {
-          'label': s.code == 'bn' ? 'খাবারের আগে (Before Snacks)' : (s.code == 'hi' ? 'नाश्ते से पहले' : 'Before Evening Snacks'),
-          'sub': s.code == 'bn' ? 'সন্ধ্যার নাস্তা বা চা খাওয়ার ৩০ মিনিট আগে' : '30 min before evening snacks',
+          'label': s.optBeforeEveningSnacksLabel,
+          'sub': s.optBeforeEveningSnacksSub,
           'hour': 18,
           'minute': 30,
           'instruction': FoodInstruction.beforeMeal,
           'icon': Icons.hourglass_bottom_rounded,
         },
         {
-          'label': s.code == 'bn' ? 'খাবারের পরে (After Snacks)' : (s.code == 'hi' ? 'नाश्ते के बाद' : 'After Evening Snacks'),
-          'sub': s.code == 'bn' ? 'সন্ধ্যার নাস্তা বা চা খাওয়ার ৩০ মিনিটের মধ্যে' : 'Within 30 min after evening snacks',
+          'label': s.optAfterEveningSnacksLabel,
+          'sub': s.optAfterEveningSnacksSub,
           'hour': 19,
           'minute': 30,
           'instruction': FoodInstruction.afterMeal,
           'icon': Icons.done_all_rounded,
         },
         {
-          'label': s.code == 'bn' ? 'সাধারণ সময় (Anytime)' : (s.code == 'hi' ? 'सामान्य समय' : 'Anytime Evening'),
-          'sub': s.code == 'bn' ? 'সন্ধ্যার যে কোনো সুবিধাজনক সময়' : 'Anytime during evening hours',
+          'label': s.optAnytimeEveningLabel,
+          'sub': s.optAnytimeEveningSub,
           'hour': 19,
           'minute': 0,
           'instruction': FoodInstruction.anytime,
@@ -493,30 +492,30 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         },
       ];
     } else {
-      title = s.code == 'bn' ? 'রাতের ওষুধের সময় ও নিয়ম' : 'Night Dose Timing';
+      title = s.nightTimingTitle;
       slotIcon = Icons.bedtime_rounded;
       slotColor = const Color(0xFF6366F1);
       defaultTime = const TimeOfDay(hour: 21, minute: 30);
       options = [
         {
-          'label': s.code == 'bn' ? 'খাবারের আগে (Before Dinner)' : 'Before Dinner',
-          'sub': s.code == 'bn' ? 'রাতের খাওয়ার ৩০ মিনিট আগে' : '30 min before dinner',
+          'label': s.optBeforeDinnerLabel,
+          'sub': s.optBeforeDinnerSub,
           'hour': 20,
           'minute': 30,
           'instruction': FoodInstruction.beforeMeal,
           'icon': Icons.hourglass_bottom_rounded,
         },
         {
-          'label': s.code == 'bn' ? 'খাবারের পরে (After Dinner)' : 'After Dinner',
-          'sub': s.code == 'bn' ? 'রাতের খাওয়ার ৩০ মিনিটের মধ্যে' : 'Within 30 min after dinner',
+          'label': s.optAfterDinnerLabel,
+          'sub': s.optAfterDinnerSub,
           'hour': 21,
           'minute': 30,
           'instruction': FoodInstruction.afterMeal,
           'icon': Icons.done_all_rounded,
         },
         {
-          'label': s.code == 'bn' ? 'ঘুমানোর আগে (At Bedtime)' : 'At Bedtime',
-          'sub': s.code == 'bn' ? 'রাতে ঘুমানোর ঠিক আগে' : 'Right before sleeping',
+          'label': s.optBedtimeLabel,
+          'sub': s.optBedtimeSub,
           'hour': 22,
           'minute': 30,
           'instruction': FoodInstruction.bedtime,
@@ -592,7 +591,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                 style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
                               ),
                               Text(
-                                s.code == 'bn' ? 'ওষুধ খাওয়ার নিয়ম বেছে নিন' : 'Choose food timing & instruction',
+                                s.chooseFoodTimingPrompt,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: isDarkModal ? AppColors.darkTextMuted : AppColors.lightTextMuted,
@@ -721,7 +720,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                 const Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
                                 const SizedBox(width: 8),
                                 Text(
-                                  s.code == 'bn' ? 'অ্যালার্মের সময়:' : 'Alarm Time:',
+                                  s.alarmTimePrefix,
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(width: 8),
@@ -767,7 +766,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               Navigator.pop(ctx);
                             },
                             icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
-                            label: Text(s.code == 'bn' ? 'মুছুন' : 'Remove', style: const TextStyle(color: AppColors.error)),
+                            label: Text(s.removeBtn, style: const TextStyle(color: AppColors.error)),
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: AppColors.error),
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -810,9 +809,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             ),
                             child: Text(
-                              s.code == 'bn'
-                                  ? (existingIndex >= 0 ? 'সময় আপডেট করুন' : 'রিমাইন্ডার সেট করুন')
-                                  : (existingIndex >= 0 ? 'Update Reminder' : 'Confirm Reminder'),
+                              existingIndex >= 0 ? s.updateReminderBtn : s.confirmReminderBtn,
                               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                             ),
                           ),
@@ -901,20 +898,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     });
   }
 
-  String _formatBnNum(int num, String lang) {
-    if (lang != 'bn') return '$num';
-    return '$num'
-        .replaceAll('0', '০')
-        .replaceAll('1', '১')
-        .replaceAll('2', '২')
-        .replaceAll('3', '৩')
-        .replaceAll('4', '৪')
-        .replaceAll('5', '৫')
-        .replaceAll('6', '৬')
-        .replaceAll('7', '৭')
-        .replaceAll('8', '৮')
-        .replaceAll('9', '৯');
-  }
+  String _formatBnNum(int num, String lang) => AppStrings(lang).formatNumber(num);
 
   Future<({int stock, int threshold})?> _showInitialStockSheet(
     BuildContext context,
@@ -994,24 +978,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             final isFiftyPercent = currentStock > 0 && threshold == (currentStock * 0.5).round();
 
             // Formula calculation texts
-            final String calcFormulaText;
-            final String alertInfoText;
-            if (s.code == 'bn') {
-              calcFormulaText = isOngoing
-                  ? 'নিয়মিত ওষুধ • ৩০ দিনের স্টক (দিনে ${_formatBnNum(dailyDoseCount, s.code)} বার = ${_formatBnNum(calculatedCourseStock, s.code)}টি ওষুধ)'
-                  : '${_formatBnNum(courseDays, s.code)} দিনের কোর্স × দিনে ${_formatBnNum(dailyDoseCount, s.code)} বার = ${_formatBnNum(calculatedCourseStock, s.code)}টি ওষুধের স্বয়ংক্রিয় হিসাব';
-              alertInfoText = '🔔 ৫০% রিফিল এলার্ট: ${_formatBnNum(threshold, s.code)}টি ওষুধ বাকি থাকলে সতর্কবার্তা আসবে';
-            } else if (s.code == 'hi') {
-              calcFormulaText = isOngoing
-                  ? 'नियमित दवा • 30 दिन का स्टॉक (दिन में $dailyDoseCount बार = $calculatedCourseStock दवा)'
-                  : '$courseDays दिन का कोर्स × दिन में $dailyDoseCount बार = $calculatedCourseStock दवा की स्वचालित गणना';
-              alertInfoText = '🔔 50% रीफिल अलर्ट: $threshold दवा बचने पर अलर्ट आएगा';
-            } else {
-              calcFormulaText = isOngoing
-                  ? 'Ongoing treatment • 30-day supply ($dailyDoseCount times daily = $calculatedCourseStock units)'
-                  : '$courseDays days course × $dailyDoseCount times daily = $calculatedCourseStock units calculated';
-              alertInfoText = '🔔 50% Refill Alert: Notified when remaining stock reaches $threshold units';
-            }
+            final String calcFormulaText = isOngoing
+                ? s.calcFormulaOngoing(dailyDoseCount, calculatedCourseStock)
+                : s.calcFormulaCourse(courseDays, dailyDoseCount, calculatedCourseStock);
+            final String alertInfoText = s.alertInfoTextRefill(threshold);
 
             // Tailored dynamic preset chips
             final Set<int> chipValues = {};
@@ -1020,9 +990,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             // 1. Recommended Course
             chipValues.add(calculatedCourseStock);
             dynamicChips.add((
-              label: s.code == 'bn'
-                  ? 'প্রস্তাবিত কোর্স: ${_formatBnNum(calculatedCourseStock, s.code)}টি'
-                  : 'Recommended: $calculatedCourseStock units',
+              label: s.proposedCourseCount(calculatedCourseStock),
               val: calculatedCourseStock,
               isRecommended: true,
             ));
@@ -1032,9 +1000,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               final half = (calculatedCourseStock / 2).round();
               if (chipValues.add(half)) {
                 dynamicChips.add((
-                  label: s.code == 'bn'
-                      ? 'অর্ধেক: ${_formatBnNum(half, s.code)}টি'
-                      : 'Half Course: $half',
+                  label: s.halfCourseCount(half),
                   val: half,
                   isRecommended: false,
                 ));
@@ -1044,7 +1010,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             // 3. 1 Strip (10)
             if (chipValues.add(10)) {
               dynamicChips.add((
-                label: s.code == 'bn' ? '১০টি (১ পাতা)' : '10 (1 strip)',
+                label: s.tenStripsLabel,
                 val: 10,
                 isRecommended: false,
               ));
@@ -1053,7 +1019,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             // 4. 2 Strips (20)
             if (chipValues.add(20)) {
               dynamicChips.add((
-                label: s.code == 'bn' ? '২০টি (২ পাতা)' : '20 (2 strips)',
+                label: s.twentyStripsLabel,
                 val: 20,
                 isRecommended: false,
               ));
@@ -1062,7 +1028,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             // 5. 30 units
             if (chipValues.add(30)) {
               dynamicChips.add((
-                label: s.code == 'bn' ? '৩০টি' : '30 units',
+                label: s.thirtyUnitsLabel,
                 val: 30,
                 isRecommended: false,
               ));
@@ -1073,9 +1039,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               final oneMonth = 30 * dailyDoseCount;
               if (chipValues.add(oneMonth)) {
                 dynamicChips.add((
-                  label: s.code == 'bn'
-                      ? '১ মাস: ${_formatBnNum(oneMonth, s.code)}টি'
-                      : '1 Month: $oneMonth',
+                  label: s.oneMonthCount(oneMonth),
                   val: oneMonth,
                   isRecommended: false,
                 ));
@@ -1157,7 +1121,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      s.code == 'bn' ? 'স্টক ও রিফিল ট্র্যাকিং' : 'STOCK & REFILL',
+                                      s.stockRefillTitle,
                                       style: GoogleFonts.outfit(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w800,
@@ -1168,9 +1132,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
-                                    s.code == 'bn'
-                                        ? 'আপনার কাছে কতগুলো ওষুধ আছে?'
-                                        : (s.code == 'hi' ? 'दवा का वर्तमान स्टॉक कितना है?' : 'How much stock do you have?'),
+                                    s.howManyMedsHave,
                                     style: GoogleFonts.outfit(
                                       fontSize: 17,
                                       fontWeight: FontWeight.w800,
@@ -1227,9 +1189,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      s.code == 'bn'
-                                          ? 'কোর্স অনুযায়ী স্বয়ংক্রিয় হিসাব'
-                                          : (s.code == 'hi' ? 'कोर्स अनुसार स्वचालित गणना' : 'Smart Course Calculation'),
+                                      s.autoCalculateCourse,
                                       style: GoogleFonts.outfit(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w800,
@@ -1396,7 +1356,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
                         // Quick Preset Chips tailored dynamically
                         Text(
-                          s.code == 'bn' ? 'কুইক স্টক সিলেক্ট করুন:' : 'Quick Select:',
+                          s.quickSelectLabel,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
@@ -1459,9 +1419,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          s.code == 'bn'
-                                              ? 'কতটিতে নামলে রিফিল সতর্কতা চান?'
-                                              : (s.code == 'hi' ? 'रीफिल अलर्ट कितने पर चाहिए?' : 'Refill alert when below:'),
+                                          s.whenRefillAlertPrompt,
                                           style: GoogleFonts.plusJakartaSans(
                                             fontSize: 12.5,
                                             fontWeight: FontWeight.w700,
@@ -1469,9 +1427,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                           ),
                                         ),
                                         Text(
-                                          s.code == 'bn'
-                                              ? '৫০% স্টক বাকি থাকলে স্বয়ংক্রিয় এলার্ট'
-                                              : (s.code == 'hi' ? '50% स्टॉक बचने पर अलर्ट' : 'Triggers alert at 50% stock'),
+                                          s.fiftyPercentAutoAlert,
                                           style: GoogleFonts.plusJakartaSans(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w500,
@@ -1515,9 +1471,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            s.code == 'bn'
-                                                ? (isFiftyPercent ? '৫০% অটো' : '৫০% এ সেট')
-                                                : (isFiftyPercent ? '50% Auto' : 'Set 50%'),
+                                            isFiftyPercent ? s.fiftyPercentAuto : s.setAtFiftyPercent,
                                             style: GoogleFonts.outfit(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w800,
@@ -1592,7 +1546,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                 const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                  s.code == 'bn' ? 'স্টক নিশ্চিত করুন ও রিমাইন্ডার সেট করুন' : 'Confirm Stock & Set Reminders',
+                                  s.confirmStockAndSetReminders,
                                   style: GoogleFonts.outfit(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w800,
@@ -1610,7 +1564,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           child: TextButton(
                             onPressed: () => Navigator.pop(ctx, (stock: 0, threshold: 0)),
                             child: Text(
-                              s.code == 'bn' ? 'এখন স্টক দেব না (পরে কার্ড থেকে দেব)' : 'Skip stock for now (0 stock)',
+                              s.skipStockForNow,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -1904,7 +1858,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             const SizedBox(height: 24),
 
             // 3. Start Date Picker (First)
-            _buildSectionHeader(s.code == 'bn' ? 'শুরুর তারিখ (Start Date)' : 'Start Date'),
+            _buildSectionHeader(s.startDateHeader),
             const SizedBox(height: 8),
             InkWell(
               onTap: _pickStartDate,
@@ -1923,8 +1877,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     Expanded(
                       child: Text(
                         _startDate != null
-                            ? DateFormat('EEEE, d MMMM yyyy').format(_startDate!)
-                            : 'Today',
+                            ? s.formatFullDate(_startDate!)
+                            : s.today,
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -1985,7 +1939,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${s.courseEndsOn}: ${DateFormat('dd MMMM, yyyy').format(_endDate!)} (${s.courseDaysLabel(_durationDays!)})',
+                        '${s.courseEndsOn}: ${s.formatFullDate(_endDate!)} (${s.courseDaysLabel(_durationDays!)})',
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
                       ),
                     ),
@@ -2007,7 +1961,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        s.code == 'bn' ? 'চলমান চিকিৎসা (কোর্সের নির্দিষ্ট মেয়াদ নেই)' : 'Ongoing treatment (No end date)',
+                        s.ongoingTreatmentNoEndDate,
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryTeal),
                       ),
                     ),
@@ -2021,7 +1975,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.accentAmber),
                   const SizedBox(width: 6),
                   Text(
-                    s.code == 'bn' ? 'যেকোনো একটি কোর্স বা চলমান অপশন বাছুন *' : 'Please select a course or ongoing *',
+                    s.pleaseSelectCourseOrOngoing,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -2042,7 +1996,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   onPressed: _addCustomReminderTime,
                   icon: const Icon(Icons.add_alarm_rounded, size: 16),
                   label: Text(
-                    s.code == 'bn' ? 'কাস্টম সময়' : 'Custom Time',
+                    s.customTime,
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                   ),
                   style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
@@ -2050,11 +2004,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               ],
             ),
             Text(
-              s.code == 'bn'
-                  ? 'সকাল, দুপুর, বিকাল, সন্ধ্যা বা রাত্রিতে ট্যাপ করে খাবারের আগে বা পরে সেট করুন'
-                  : (s.code == 'hi'
-                      ? 'सुबह, दोपहर, शाम या रात पर टैप करके भोजन से पहले या बाद में सेट करें'
-                      : 'Tap Morning, Lunch, Afternoon, Evening, or Night to configure food timing'),
+              s.tapToSetFoodRoutinePrompt,
               style: TextStyle(
                 fontSize: 12,
                 color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
@@ -2361,7 +2311,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            s.code == 'bn' ? '⚡ সুপার-ফাস্ট ওষুধ যোগ' : '⚡ Quick Add Mode',
+                            s.quickAddMode,
                             style: GoogleFonts.outfit(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -2370,9 +2320,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            s.code == 'bn'
-                                ? 'স্টক সংখ্যা, ওষুধের ছবি, এক্সপায়ারি ডেট ও নোট যেকোনো সময় কার্ডের "Info & Stock" অপশন থেকে আপডেট করতে পারবেন।'
-                                : 'Stock count, packaging photo, expiry date, and notes can be updated anytime via the "Info & Stock" badge on the medicine card.',
+                            s.quickAddModeSub,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
@@ -2561,7 +2509,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                         children: [
                           Text(
                             _expiryDate != null
-                                ? '${s.expiresOn} ${DateFormat('MMMM yyyy').format(_expiryDate!)}'
+                                ? '${s.expiresOn} ${s.getMonthName(_expiryDate!.month)} ${s.formatNumber(_expiryDate!.year)}'
                                 : s.selectExpiryDate,
                             style: TextStyle(
                               fontSize: 13,
@@ -2738,11 +2686,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           ],
         ),
         content: Text(
-          s.code == 'bn'
-              ? 'আপনি কি নিশ্চিত যে "${widget.medicineToEdit?.name}" মুছে ফেলতে চান?'
-              : (s.code == 'hi'
-                  ? 'क्या आप वाकई "${widget.medicineToEdit?.name}" को हटाना चाहते हैं?'
-                  : 'Are you sure you want to delete "${widget.medicineToEdit?.name}"?'),
+          s.deleteConfirmMedicine(widget.medicineToEdit?.name ?? ''),
         ),
         actions: [
           TextButton(
@@ -2908,7 +2852,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     borderRadius: BorderRadius.circular(7),
                   ),
                   child: Text(
-                    'LIVE 3D PREVIEW',
+                    s.livePreviewBadge,
                     style: GoogleFonts.outfit(
                       fontSize: 9.0,
                       fontWeight: FontWeight.w800,
@@ -2921,7 +2865,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 Text(
                   _nameController.text.trim().isNotEmpty
                       ? _nameController.text.trim()
-                      : (s.code == 'bn' ? 'ওষুধের নাম লিখুন' : 'New Medicine'),
+                      : s.newMedicinePrompt,
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -2933,7 +2877,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_dosageController.text.trim().isNotEmpty ? _dosageController.text.trim() : (s.code == 'bn' ? "ডোজ উল্লেখ করুন" : "Dose")} · ${s.medicineTypeName(_selectedType.name)}',
+                  '${_dosageController.text.trim().isNotEmpty ? _dosageController.text.trim() : s.enterDosePrompt} · ${s.medicineTypeName(_selectedType.name)}',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -2962,24 +2906,20 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   String _getMissingFieldsHelperText(AppStrings s) {
     final missing = <String>[];
     if (_nameController.text.trim().isEmpty) {
-      missing.add(s.code == 'bn' ? 'ওষুধের নাম' : 'Medicine name');
+      missing.add(s.fieldMedicineName);
     }
     if (_dosageController.text.trim().isEmpty) {
-      missing.add(s.code == 'bn' ? 'ডোজ' : 'Dosage');
+      missing.add(s.fieldDosage);
     }
     if (_durationDays == null) {
-      missing.add(s.code == 'bn' ? 'চিকিৎসার মেয়াদ/কোর্স' : 'Treatment course');
+      missing.add(s.fieldTreatmentCourse);
     }
     if (_reminders.isEmpty) {
-      missing.add(s.code == 'bn' ? 'খাওয়ার সময়/রুটিন' : 'Taking routine');
+      missing.add(s.fieldTakingRoutine);
     }
 
     if (missing.isEmpty) return '';
-    if (s.code == 'bn') {
-      return 'প্রয়োজনীয় ৪টি তথ্য পূরণ করুন: ${missing.join(', ')}';
-    } else {
-      return 'Required: please set ${missing.join(', ')}';
-    }
+    return s.fillRequiredFieldsPrompt(missing.join(', '));
   }
 
   Widget _buildSlotCard(
@@ -3112,9 +3052,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    s.code == 'bn'
-                        ? 'কোনো সময় এখনও নির্বাচন করা হয়নি'
-                        : (s.code == 'hi' ? 'कोई समय अभी तक नहीं चुना गया' : 'No Timing Selected Yet'),
+                    s.noTimingSelectedYet,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -3123,11 +3061,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    s.code == 'bn'
-                        ? 'ওপরে সকাল, দুপুর, বিকাল, সন্ধ্যা বা রাত্রিতে ট্যাপ করে সময় সেট করুন'
-                        : (s.code == 'hi'
-                            ? 'समय सेट करने के लिए ऊपर किसी स्लॉट पर टैप करें'
-                            : 'Tap any slot above to set routine time'),
+                    s.tapAnySlotAbovePrompt,
                     style: TextStyle(
                       fontSize: 11,
                       color: isDark ? AppColors.darkTextMuted : const Color(0xFFB45309),
@@ -3148,18 +3082,20 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     final hasEvening = _getSlotReminder('evening') != null;
     final hasNight = _getSlotReminder('night') != null;
 
-    // Daily prescription formula e.g. "১ + ০ + ১"
+    // Daily prescription formula localized
     String prescriptionFormula = '';
     final hasOnlyStandard3 = !hasAfternoon && !hasEvening;
+    final oneDigit = s.formatNumber(1);
+    final zeroDigit = s.formatNumber(0);
     if (hasOnlyStandard3) {
-      prescriptionFormula = '${hasMorning ? "১" : "০"} + ${hasLunch ? "১" : "০"} + ${hasNight ? "১" : "০"}';
+      prescriptionFormula = '${hasMorning ? oneDigit : zeroDigit} + ${hasLunch ? oneDigit : zeroDigit} + ${hasNight ? oneDigit : zeroDigit}';
     } else {
       final parts = <String>[];
-      if (hasMorning) parts.add('১');
-      if (hasLunch) parts.add('১');
-      if (hasAfternoon) parts.add('১');
-      if (hasEvening) parts.add('১');
-      if (hasNight) parts.add('১');
+      if (hasMorning) parts.add(oneDigit);
+      if (hasLunch) parts.add(oneDigit);
+      if (hasAfternoon) parts.add(oneDigit);
+      if (hasEvening) parts.add(oneDigit);
+      if (hasNight) parts.add(oneDigit);
       prescriptionFormula = parts.join(' + ');
     }
 
@@ -3208,9 +3144,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      s.code == 'bn'
-                          ? 'ওষুধ খাওয়ার দৈনন্দিন নিয়ম ও মাপ'
-                          : (s.code == 'hi' ? 'दैनिक खुराक माप' : 'Daily Dose Routine'),
+                      s.dailyRoutineAndDosage,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -3265,9 +3199,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     const Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF10B981)),
                     const SizedBox(width: 4),
                     Text(
-                      s.code == 'bn'
-                          ? '${s.formatNumber(count)}টি সময়'
-                          : (s.code == 'hi' ? '${s.formatNumber(count)} समय' : '$count Times'),
+                      s.timeSlotsCount(count),
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,

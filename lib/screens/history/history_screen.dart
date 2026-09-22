@@ -126,7 +126,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 color: _selectedDate != null ? AppColors.primaryTealLight : null,
               ),
             ),
-            tooltip: s.code == 'bn' ? 'তারিখ দিয়ে ফিল্টার করুন' : 'Filter by Date',
+            tooltip: s.filterByDateTooltip,
             onPressed: () => _pickFilterDate(context),
           ),
           const SizedBox(width: 6),
@@ -270,13 +270,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.1),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.event_available_rounded, size: 20, color: AppColors.primary),
+                    const Icon(Icons.filter_alt_rounded, size: 16, color: AppColors.primary),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -287,7 +287,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.primary),
                           ),
                           Text(
-                            s.code == 'bn' ? 'শুধুমাত্র এই তারিখের ফিল্টার করা ইতিহাস' : 'Showing history for this date only',
+                            s.showingHistoryForDateOnly,
                             style: TextStyle(fontSize: 11, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
                           ),
                         ],
@@ -296,7 +296,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.primary),
                       visualDensity: VisualDensity.compact,
-                      tooltip: s.code == 'bn' ? 'ফিল্টার বাতিল করুন' : 'Clear filter',
+                      tooltip: s.clearFilterTooltip,
                       onPressed: () => setState(() => _selectedDate = null),
                     ),
                   ],
@@ -323,9 +323,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       const SizedBox(height: 10),
                       Text(
                         _selectedDate != null
-                            ? (s.code == 'bn'
-                                ? 'এই তারিখে কোনো ওষুধ নেওয়ার বা মিস করার রেকর্ড নেই'
-                                : 'No intake or missed logs found for this selected date.')
+                            ? s.noHistoryForThisDate
                             : '${s.noIntakeLogsTitle}\n${s.noIntakeLogsSub}',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
@@ -359,10 +357,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       final daySkipped = dayLogs.where((l) => l.status == IntakeStatus.skipped || l.status == IntakeStatus.missed).length;
 
                       String headerTitle;
+                      final dateFormatted = DateFormat('d MMM yyyy').format(firstDate);
                       if (dateKey == todayStr) {
-                        headerTitle = s.code == 'bn' ? 'আজ (${DateFormat('d MMM yyyy').format(firstDate)})' : 'Today (${DateFormat('d MMM yyyy').format(firstDate)})';
+                        headerTitle = '${s.historyDateToday} ($dateFormatted)';
                       } else if (dateKey == yesterdayStr) {
-                        headerTitle = s.code == 'bn' ? 'গতকাল (${DateFormat('d MMM yyyy').format(firstDate)})' : 'Yesterday (${DateFormat('d MMM yyyy').format(firstDate)})';
+                        headerTitle = '${s.historyDateYesterday} ($dateFormatted)';
                       } else {
                         headerTitle = DateFormat('EEEE, d MMMM yyyy').format(firstDate);
                       }

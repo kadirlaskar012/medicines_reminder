@@ -14,6 +14,16 @@ enum TimeSlot {
   final IconData icon;
   final Color color;
   const TimeSlot(this.title, this.timeRange, this.icon, this.color);
+
+  String titleLocalized(AppStrings s) {
+    switch (this) {
+      case TimeSlot.morning: return s.morning;
+      case TimeSlot.lunch: return s.lunch;
+      case TimeSlot.afternoon: return s.afternoon;
+      case TimeSlot.evening: return s.evening;
+      case TimeSlot.night: return s.night;
+    }
+  }
 }
 
 class ReminderTime {

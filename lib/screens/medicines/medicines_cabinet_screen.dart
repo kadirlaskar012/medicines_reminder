@@ -170,10 +170,10 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
               ),
               child: Row(
                 children: [
-                  _buildTabItem('All', s.all, allMeds.length, isDark),
-                  _buildTabItem('Active', s.activeStatus, activeCount, isDark),
-                  _buildTabItem('Paused', s.code == 'bn' ? 'স্থগিত' : (s.code == 'hi' ? 'रोकी गई' : 'Paused'), pausedCount, isDark),
-                  _buildTabItem('Completed', s.courseCompleted, completedCount, isDark),
+                  _buildTabItem('All', s.all, allMeds.length, isDark, s),
+                  _buildTabItem('Active', s.activeStatus, activeCount, isDark, s),
+                  _buildTabItem('Paused', s.pausedLabel, pausedCount, isDark, s),
+                  _buildTabItem('Completed', s.courseCompleted, completedCount, isDark, s),
                 ],
               ),
             ),
@@ -291,7 +291,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
 
                 // Total counter badge
                 Text(
-                  '${filtered.length} ${s.code == 'bn' ? 'টি' : (s.code == 'hi' ? 'दवाएं' : 'meds')}',
+                  s.medsCountShort(filtered.length),
                   style: GoogleFonts.outfit(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
@@ -415,7 +415,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                                     ),
                                                     const SizedBox(width: 4),
                                                     Text(
-                                                      med.isActive ? (s.code == 'bn' ? 'সক্রিয়' : 'Active') : (s.code == 'bn' ? 'স্থগিত' : 'Paused'),
+                                                      med.isActive ? s.activeLabel : s.pausedLabel,
                                                       style: GoogleFonts.outfit(
                                                         fontSize: 10,
                                                         fontWeight: FontWeight.w700,
@@ -452,8 +452,8 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                                   ),
                                                   child: Text(
                                                     med.isOutOfStock
-                                                        ? (s.code == 'bn' ? 'স্টক শেষ' : 'Out of stock')
-                                                        : '${med.currentStock} ${s.code == 'bn' ? 'বাকি' : 'left'}',
+                                                        ? s.outOfStockLabel
+                                                        : s.leftStockCount(med.currentStock),
                                                     style: GoogleFonts.outfit(
                                                       fontSize: 10,
                                                       fontWeight: FontWeight.w700,
@@ -550,7 +550,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                             children: [
                                               const Icon(Icons.info_outline_rounded, size: 18),
                                               const SizedBox(width: 8),
-                                              Text(s.code == 'bn' ? 'বিস্তারিত তথ্য' : 'Details'),
+                                              Text(s.viewDetails),
                                             ],
                                           ),
                                         ),
@@ -580,27 +580,27 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                             children: [
                                               Icon(med.isActive ? Icons.pause_circle_outline_rounded : Icons.play_circle_outline_rounded, size: 18),
                                               const SizedBox(width: 8),
-                                              Text(med.isActive ? 'Pause Reminders' : 'Resume Reminders'),
+                                              Text(med.isActive ? s.pauseReminders : s.resumeReminders),
                                             ],
                                           ),
                                         ),
-                                        const PopupMenuItem(
+                                        PopupMenuItem(
                                           value: 'refill',
                                           child: Row(
                                             children: [
-                                              Icon(Icons.add_shopping_cart_rounded, size: 18),
-                                              SizedBox(width: 8),
-                                              Text('Refill / Update Stock'),
+                                              const Icon(Icons.add_shopping_cart_rounded, size: 18),
+                                              const SizedBox(width: 8),
+                                              Text(s.refillOrUpdateStock),
                                             ],
                                           ),
                                         ),
-                                        const PopupMenuItem(
+                                        PopupMenuItem(
                                           value: 'duplicate',
                                           child: Row(
                                             children: [
-                                              Icon(Icons.copy_rounded, size: 18),
-                                              SizedBox(width: 8),
-                                              Text('Duplicate'),
+                                              const Icon(Icons.copy_rounded, size: 18),
+                                              const SizedBox(width: 8),
+                                              Text(s.duplicate),
                                             ],
                                           ),
                                         ),
@@ -628,7 +628,8 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                   currentStock: med.currentStock,
                                   totalCapacity: (med.refillThreshold * 4).clamp(10, 200),
                                   threshold: med.refillThreshold,
-                                  unit: med.displayUnit,
+                                  unit: s.unitName(med.displayUnit),
+                                  strings: s,
                                   onRefillTap: () => _showRefillDialog(context, med, s),
                                 ),
                                 const SizedBox(height: 12),
@@ -660,7 +661,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                             const Icon(Icons.edit_outlined, size: 13, color: AppColors.primaryTealLight),
                                             const SizedBox(width: 4),
                                             Text(
-                                              'Edit',
+                                              s.editBtn,
                                               style: GoogleFonts.outfit(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w700,
@@ -692,7 +693,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                             const Icon(Icons.inventory_2_outlined, size: 13, color: AppColors.primaryTealLight),
                                             const SizedBox(width: 5),
                                             Text(
-                                              'Info & Stock',
+                                              s.infoAndStockBtn,
                                               style: GoogleFonts.outfit(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w700,
@@ -733,7 +734,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
     );
   }
 
-  Widget _buildTabItem(String key, String label, int count, bool isDark) {
+  Widget _buildTabItem(String key, String label, int count, bool isDark, AppStrings s) {
     final isSelected = _selectedStatusTab == key;
 
     // Distinct signature gradient & glow for each status tab
@@ -780,7 +781,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                 : null,
           ),
           child: Text(
-            '$label ($count)',
+            '$label (${s.formatNumber(count)})',
             textAlign: TextAlign.center,
             style: GoogleFonts.outfit(
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
@@ -901,15 +902,11 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          s.code == 'bn' ? '"${med.name}" মুছে ফেলবেন?' : 'Delete "${med.name}"?',
+          s.deleteMedicinePrompt(med.name),
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         content: Text(
-          s.code == 'bn'
-              ? 'এটি এর ভবিষ্যৎ সকল রিমাইন্ডার এবং ওষুধের ইতিহাস মুছে ফেলবে।'
-              : (s.code == 'hi'
-                  ? 'यह इसके भविष्य के अलार्म और दवा का इतिहास हटा देगा।'
-                  : 'This will remove its future reminders and medication history.'),
+          s.deleteFutureRemindersAndHistoryWarning,
         ),
         actions: [
           TextButton(
@@ -1083,7 +1080,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                           setState(() => _selectedTypeFilter = null);
                           Navigator.pop(ctx);
                         },
-                        child: Text(s.code == 'bn' ? 'রিসেট' : 'Reset'),
+                        child: Text(s.resetBtn),
                       ),
                   ],
                 ),

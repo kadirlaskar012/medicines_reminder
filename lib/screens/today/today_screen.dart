@@ -549,14 +549,10 @@ class _TodayScreenState extends State<TodayScreen> {
                         const SizedBox(width: 8),
                         Text(
                           _selectedSlotFilter != null
-                              ? (s.code == 'bn'
-                                  ? '${_getTimeSlotTitle(_selectedSlotFilter!, s)}-এর ওষুধ'
-                                  : '${_getTimeSlotTitle(_selectedSlotFilter!, s).toUpperCase()} DOSES')
+                              ? s.slotMedicinesHeading(_getTimeSlotTitle(_selectedSlotFilter!, s))
                               : (isViewingToday
-                                  ? (s.code == 'bn' ? 'আজকের ওষুধ' : 'TODAY\'S DOSES')
-                                  : (s.code == 'bn'
-                                      ? '${provider.selectedDate.day} ${DateFormat('MMMM').format(provider.selectedDate)}-এর ওষুধ'
-                                      : '${DateFormat('MMMM d').format(provider.selectedDate).toUpperCase()}\'S DOSES')),
+                                  ? s.todayDoses
+                                  : s.dateMedicinesHeading(provider.selectedDate.day, s.getMonthName(provider.selectedDate.month))),
                           style: GoogleFonts.outfit(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
@@ -577,9 +573,7 @@ class _TodayScreenState extends State<TodayScreen> {
                               ),
                             ),
                             child: Text(
-                              s.code == 'bn'
-                                  ? '${pendingDoses.length}টি বাকি'
-                                  : '${pendingDoses.length} pending',
+                              s.dosesRemainingCount(pendingDoses.length),
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w700,
@@ -612,7 +606,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                   const Icon(Icons.today_rounded, size: 13, color: AppColors.primaryTeal),
                                   const SizedBox(width: 4),
                                   Text(
-                                    s.code == 'bn' ? 'আজকে ফিরুন' : 'Today',
+                                    s.backToToday,
                                     style: GoogleFonts.outfit(
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w700,
@@ -715,7 +709,7 @@ class _TodayScreenState extends State<TodayScreen> {
                               Icon(effectiveSlot.icon, size: 15, color: effectiveSlot.color),
                               const SizedBox(width: 7),
                               Text(
-                                s.code == 'bn' ? _getTimeSlotTitle(effectiveSlot, s) : effectiveSlot.title,
+                                _getTimeSlotTitle(effectiveSlot, s),
                                 style: GoogleFonts.outfit(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
@@ -730,7 +724,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                 const Icon(Icons.check_rounded, size: 13, color: AppColors.accentEmerald),
                                 const SizedBox(width: 3),
                                 Text(
-                                  '$currentSlotTaken Take',
+                                  s.slotTakeCount(currentSlotTaken),
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w700,
@@ -743,7 +737,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                 const Icon(Icons.close_rounded, size: 13, color: AppColors.accentRose),
                                 const SizedBox(width: 3),
                                 Text(
-                                  '$currentSlotSkipped Skip',
+                                  s.slotSkipCount(currentSlotSkipped),
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w700,
@@ -759,7 +753,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  s.code == 'bn' ? '${currentOrDueDoses.length}টি বাকি' : '${currentOrDueDoses.length} due',
+                                  s.dosesDueCount(currentOrDueDoses.length),
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
@@ -854,7 +848,7 @@ class _TodayScreenState extends State<TodayScreen> {
                               const Icon(Icons.schedule_rounded, size: 12, color: Color(0xFF6366F1)),
                               const SizedBox(width: 5),
                               Text(
-                                s.code == 'bn' ? 'পরবর্তী ওষুধসমূহ' : 'UPCOMING MEDICINES',
+                                s.upcomingMedicines,
                                 style: GoogleFonts.outfit(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -921,7 +915,7 @@ class _TodayScreenState extends State<TodayScreen> {
             if (completedDoses.isNotEmpty)
               ..._buildDoseSection(
                 context,
-                title: s.code == 'bn' ? 'আজকের সম্পন্ন ওষুধ' : 'Completed Today',
+                title: s.completedToday,
                 icon: Icons.check_circle_rounded,
                 color: AppColors.accentEmerald,
                 doses: completedDoses,
@@ -944,9 +938,7 @@ class _TodayScreenState extends State<TodayScreen> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          s.code == 'bn'
-                              ? '${_getTimeSlotTitle(_selectedSlotFilter!, s)}-এ কোনো ওষুধ নির্ধারিত নেই'
-                              : 'No medicines scheduled for ${_getTimeSlotTitle(_selectedSlotFilter!, s)}',
+                          s.noMedicinesForSlot(_getTimeSlotTitle(_selectedSlotFilter!, s)),
                           style: GoogleFonts.outfit(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -981,9 +973,7 @@ class _TodayScreenState extends State<TodayScreen> {
     AppStrings s,
   ) {
     final count = missedDoses.length;
-    final label = s.code == 'bn'
-        ? 'ছুটে যাওয়া'
-        : (s.code == 'hi' ? 'छूटी हुई' : 'Missed');
+    final label = s.skippedDosesFilter;
 
     return Material(
       color: Colors.transparent,
@@ -1087,31 +1077,7 @@ class _TodayScreenState extends State<TodayScreen> {
     final skippedCount = slotDoses.where((d) => d.isSkipped).length;
     final totalCount = slotDoses.length;
 
-    // Slot Title localized
-    String slotHeading;
-    if (s.code == 'bn') {
-      switch (slot) {
-        case TimeSlot.morning:
-          slotHeading = 'সকালের ওষুধ';
-          break;
-        case TimeSlot.lunch:
-          slotHeading = 'দুপুরের ওষুধ';
-          break;
-        case TimeSlot.afternoon:
-          slotHeading = 'বিকেলের ওষুধ';
-          break;
-        case TimeSlot.evening:
-          slotHeading = 'সন্ধ্যার ওষুধ';
-          break;
-        case TimeSlot.night:
-          slotHeading = 'রাতের ওষুধ';
-          break;
-      }
-    } else if (s.code == 'hi') {
-      slotHeading = '${_getTimeSlotTitle(slot, s)} की दवाएं';
-    } else {
-      slotHeading = '${slot.title} Medicines';
-    }
+    final slotHeading = s.slotMedicinesHeading(slot.titleLocalized(s));
 
     if (totalCount == 0) {
       if (!hasUpcoming) return const SliverToBoxAdapter(child: SizedBox.shrink());
@@ -1176,9 +1142,7 @@ class _TodayScreenState extends State<TodayScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        s.code == 'bn'
-                            ? 'এই সময়ে কোনো ওষুধ নির্ধারিত নেই'
-                            : 'No medicines scheduled for this time',
+                        s.noMedicinesForTimeRange,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
@@ -1282,7 +1246,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                s.code == 'bn' ? 'সম্পন্ন' : 'Completed',
+                                s.completed,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -1294,9 +1258,7 @@ class _TodayScreenState extends State<TodayScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          s.code == 'bn'
-                              ? 'নির্ধারিত সময়: ${slot.timeRange}'
-                              : 'Window: ${slot.timeRange}',
+                          '${s.scheduledTimePrefix}: ${slot.timeRange}',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w500,
@@ -1365,9 +1327,7 @@ class _TodayScreenState extends State<TodayScreen> {
                           const Icon(Icons.check_rounded, size: 15, color: Color(0xFF10B981)),
                           const SizedBox(width: 5),
                           Text(
-                            skippedCount == 0
-                                ? (s.code == 'bn' ? 'Take $takenCount' : 'Take $takenCount')
-                                : '$takenCount Take',
+                            '${s.taken} ${s.formatNumber(takenCount)}',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -1405,9 +1365,7 @@ class _TodayScreenState extends State<TodayScreen> {
                           const Icon(Icons.close_rounded, size: 15, color: Color(0xFFF43F5E)),
                           const SizedBox(width: 5),
                           Text(
-                            takenCount == 0
-                                ? (s.code == 'bn' ? 'Skip $skippedCount' : 'Skip $skippedCount')
-                                : '$skippedCount Skip',
+                            '${s.skipped} ${s.formatNumber(skippedCount)}',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -1432,9 +1390,7 @@ class _TodayScreenState extends State<TodayScreen> {
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
-                        s.code == 'bn'
-                            ? 'পরবর্তী ওষুধ নিচে দেখুন (নির্ধারিত সময়ে সক্রিয় হবে)'
-                            : 'Upcoming medicines will activate below at due time',
+                        s.nextMedicinesBelowNotice,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -1464,9 +1420,7 @@ class _TodayScreenState extends State<TodayScreen> {
   }) {
     final provider = context.read<MedicineProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final countLabel = doses.length == 1
-        ? (s.code == 'bn' ? '১টি ওষুধ' : '1 medicine')
-        : (s.code == 'bn' ? '${doses.length}টি ওষুধ' : '${doses.length} medicines');
+    final countLabel = s.medicinesCount(doses.length);
 
     return [
       SliverToBoxAdapter(
@@ -1582,9 +1536,14 @@ class _TodayScreenState extends State<TodayScreen> {
     required AppStrings s,
   }) {
     final liveSlot = currentLiveTimeSlot;
+    final sm = s.formatNumber(morningCount);
+    final sl = s.formatNumber(lunchCount);
+    final sa = s.formatNumber(afternoonCount);
+    final se = s.formatNumber(eveningCount);
+    final sn = s.formatNumber(nightCount);
     final routinePattern = lunchCount > 0
-        ? '$morningCount-$lunchCount-$afternoonCount-$eveningCount-$nightCount'
-        : '$morningCount-$afternoonCount-$eveningCount-$nightCount';
+        ? '$sm-$sl-$sa-$se-$sn'
+        : '$sm-$sa-$se-$sn';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 2, 20, 4),
@@ -1659,52 +1618,57 @@ class _TodayScreenState extends State<TodayScreen> {
                 children: [
                   _buildRoutineSlotChip(
                     emoji: '🌅',
-                    label: s.code == 'bn' ? 'সকাল' : 'Morn',
+                    label: s.morningShort,
                     count: morningCount,
                     slot: TimeSlot.morning,
                     isLive: liveSlot == TimeSlot.morning,
                     isSelected: _selectedSlotFilter == TimeSlot.morning,
                     isDark: isDark,
+                    s: s,
                   ),
                   _buildRoutineConnector(isDark),
                   _buildRoutineSlotChip(
                     emoji: '🍽️',
-                    label: s.code == 'bn' ? 'দুপুর' : 'Lunch',
+                    label: s.lunchShort,
                     count: lunchCount,
                     slot: TimeSlot.lunch,
                     isLive: liveSlot == TimeSlot.lunch,
                     isSelected: _selectedSlotFilter == TimeSlot.lunch,
                     isDark: isDark,
+                    s: s,
                   ),
                   _buildRoutineConnector(isDark),
                   _buildRoutineSlotChip(
                     emoji: '☀️',
-                    label: s.code == 'bn' ? 'বিকাল' : 'Aft',
+                    label: s.afternoonShort,
                     count: afternoonCount,
                     slot: TimeSlot.afternoon,
                     isLive: liveSlot == TimeSlot.afternoon,
                     isSelected: _selectedSlotFilter == TimeSlot.afternoon,
                     isDark: isDark,
+                    s: s,
                   ),
                   _buildRoutineConnector(isDark),
                   _buildRoutineSlotChip(
                     emoji: '☕',
-                    label: s.code == 'bn' ? 'সন্ধ্যা' : 'Eve',
+                    label: s.eveningShort,
                     count: eveningCount,
                     slot: TimeSlot.evening,
                     isLive: liveSlot == TimeSlot.evening,
                     isSelected: _selectedSlotFilter == TimeSlot.evening,
                     isDark: isDark,
+                    s: s,
                   ),
                   _buildRoutineConnector(isDark),
                   _buildRoutineSlotChip(
                     emoji: '🌙',
-                    label: s.code == 'bn' ? 'রাত' : 'Night',
+                    label: s.nightShort,
                     count: nightCount,
                     slot: TimeSlot.night,
                     isLive: liveSlot == TimeSlot.night,
                     isSelected: _selectedSlotFilter == TimeSlot.night,
                     isDark: isDark,
+                    s: s,
                   ),
                 ],
               ),
@@ -1734,9 +1698,10 @@ class _TodayScreenState extends State<TodayScreen> {
     required bool isLive,
     required bool isSelected,
     required bool isDark,
+    required AppStrings s,
   }) {
     return Tooltip(
-      message: '$label: $count',
+      message: '$label: ${s.formatNumber(count)}',
       child: InkWell(
         onTap: () {
           setState(() {
@@ -1769,7 +1734,7 @@ class _TodayScreenState extends State<TodayScreen> {
               Text(emoji, style: const TextStyle(fontSize: 11.5)),
               const SizedBox(width: 3),
               Text(
-                count.toString(),
+                s.formatNumber(count),
                 style: GoogleFonts.outfit(
                   fontSize: 12,
                   fontWeight: count > 0 ? FontWeight.w800 : FontWeight.w500,
@@ -1952,7 +1917,7 @@ class _TodayScreenState extends State<TodayScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              isTaken ? s.taken : (s.code == 'bn' ? 'স্কিপড' : 'Skipped'),
+                              isTaken ? s.taken : s.skipped,
                               style: GoogleFonts.outfit(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -1973,9 +1938,7 @@ class _TodayScreenState extends State<TodayScreen> {
                     context: context,
                     icon: Icons.cancel_rounded,
                     title: s.markAsSkippedOption,
-                    subtitle: s.code == 'bn'
-                        ? 'ওষুধটি গ্রহণ করা হয়নি, স্কিপ হিসেবে চিহ্নিত করুন'
-                        : 'Change status to Skipped and restore 1 stock',
+                    subtitle: s.markSkippedPrompt,
                     color: const Color(0xFFE11D48),
                     isDark: isDark,
                     onTap: () {
@@ -1995,9 +1958,7 @@ class _TodayScreenState extends State<TodayScreen> {
                     context: context,
                     icon: Icons.check_circle_rounded,
                     title: s.markAsTakenOption,
-                    subtitle: s.code == 'bn'
-                        ? 'ওষুধটি নেওয়া হয়েছে, সম্পন্ন হিসেবে চিহ্নিত করুন'
-                        : 'Change status to Taken and deduct 1 stock',
+                    subtitle: s.markTakenPrompt,
                     color: const Color(0xFF0D9488),
                     isDark: isDark,
                     onTap: () {
@@ -2020,9 +1981,7 @@ class _TodayScreenState extends State<TodayScreen> {
                     context: context,
                     icon: Icons.restart_alt_rounded,
                     title: s.resetToPendingOption,
-                    subtitle: s.code == 'bn'
-                        ? 'স্ট্যাটাস মুছে দিয়ে বর্তমান পেন্ডিং তালিকায় ফিরিয়ে নিন'
-                        : 'Clear status and return to current pending schedule',
+                    subtitle: s.resetPendingPrompt,
                     color: const Color(0xFF4F46E5),
                     isDark: isDark,
                     onTap: () {

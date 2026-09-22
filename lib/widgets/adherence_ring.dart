@@ -37,12 +37,12 @@ class AdherenceRing extends StatelessWidget {
       subtitle = s.allDoneSub;
       accentColor = AppColors.accentEmerald;
     } else if (takenCount > 0) {
-      title = '$takenCount / $totalCount ${s.taken}';
-      subtitle = '${totalCount - takenCount} ${s.dosesRemaining}';
+      title = '${s.formatNumber(takenCount)} / ${s.formatNumber(totalCount)} ${s.taken}';
+      subtitle = '${s.formatNumber(totalCount - takenCount)} ${s.dosesRemaining}';
       accentColor = AppColors.primaryTealLight;
     } else {
       title = s.due;
-      subtitle = '$totalCount ${s.dosesRemaining}';
+      subtitle = '${s.formatNumber(totalCount)} ${s.dosesRemaining}';
       accentColor = AppColors.accentAmber;
     }
 
@@ -117,7 +117,7 @@ class AdherenceRing extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'DAILY ADHERENCE',
+                        s.dailyAdherenceBadge,
                         style: GoogleFonts.outfit(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w800,
@@ -170,7 +170,7 @@ class AdherenceRing extends StatelessWidget {
                       const Text('🔥', style: TextStyle(fontSize: 11)),
                       const SizedBox(width: 4),
                       Text(
-                        '$streakDays-Day Streak! Keep going!',
+                        s.dayStreakText(streakDays),
                         style: GoogleFonts.outfit(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -210,7 +210,7 @@ class AdherenceRing extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      totalCount == 0 ? '100%' : '$percentage%',
+                      totalCount == 0 ? '${s.formatNumber(100)}%' : '${s.formatNumber(percentage)}%',
                       style: GoogleFonts.outfit(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -219,7 +219,7 @@ class AdherenceRing extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'TODAY',
+                      s.today.toUpperCase(),
                       style: GoogleFonts.outfit(
                         fontSize: 8.5,
                         fontWeight: FontWeight.w700,

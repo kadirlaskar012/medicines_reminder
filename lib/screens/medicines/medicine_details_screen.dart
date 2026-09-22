@@ -27,17 +27,17 @@ class MedicineDetailsScreen extends StatelessWidget {
     final timeStr = reminders.isNotEmpty
         ? reminders.map((r) => r.formattedTime).join(', ')
         : '08:00 AM';
-    final dateStr = DateFormat('dd MMM, yyyy').format(medicine.startDate ?? medicine.createdAt);
+    final dateStr = s.formatDayMonthYear(medicine.startDate ?? medicine.createdAt);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Medicine Details'),
+        title: Text(s.medicineDetails),
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit',
+            tooltip: s.edit,
             onPressed: () {
               Navigator.push(
                 context,
@@ -71,7 +71,7 @@ class MedicineDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    medicine.isActive ? 'Active' : 'Inactive',
+                    medicine.isActive ? s.active : s.inactive,
                     style: TextStyle(
                       color: medicine.isActive ? AppColors.accentMint : AppColors.error,
                       fontWeight: FontWeight.w700,
@@ -158,9 +158,9 @@ class MedicineDetailsScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildGridCell('Category', s.medicineTypeName(medicine.type.name), isDark),
-                    _buildGridCell('Frequency', '${reminders.length} times/day', isDark),
-                    _buildGridCell('Time', reminders.isNotEmpty ? reminders.first.formattedTime : timeStr, isDark),
+                    _buildGridCell(s.category, s.medicineTypeName(medicine.type.name), isDark),
+                    _buildGridCell(s.frequency, '${s.formatNumber(reminders.length)} ${s.timesPerDay}', isDark),
+                    _buildGridCell(s.time, reminders.isNotEmpty ? reminders.first.formattedTime : timeStr, isDark),
                   ],
                 ),
                 const Padding(
@@ -170,15 +170,15 @@ class MedicineDetailsScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildGridCell('Start Date', dateStr, isDark),
+                    _buildGridCell(s.startDate, dateStr, isDark),
                     _buildGridCell(
-                      'Notes',
+                      s.notes,
                       s.foodInstructionName(medicine.instruction.name).isNotEmpty
                           ? s.foodInstructionName(medicine.instruction.name)
-                          : (medicine.notes.isNotEmpty ? medicine.notes : 'After food'),
+                          : (medicine.notes.isNotEmpty ? medicine.notes : s.foodInstructionName('afterMeal')),
                       isDark,
                     ),
-                    _buildGridCell('Stock', medicine.formattedStock, isDark),
+                    _buildGridCell(s.stock, '${s.formatNumber(medicine.currentStock)} ${s.medicineTypeName(medicine.type.name)}', isDark),
                   ],
                 ),
               ],
@@ -302,7 +302,7 @@ class MedicineDetailsScreen extends StatelessWidget {
               children: [
                 _buildActionTile(
                   icon: Icons.edit_outlined,
-                  title: 'Edit Medicine Details',
+                  title: s.editMedicineDetails,
                   isDark: isDark,
                   onTap: () {
                     Navigator.push(
@@ -314,7 +314,7 @@ class MedicineDetailsScreen extends StatelessWidget {
                 const Divider(height: 1),
                 _buildActionTile(
                   icon: Icons.history_rounded,
-                  title: 'View History',
+                  title: s.viewHistory,
                   isDark: isDark,
                   onTap: () {
                     Navigator.push(
@@ -326,7 +326,7 @@ class MedicineDetailsScreen extends StatelessWidget {
                 const Divider(height: 1),
                 _buildActionTile(
                   icon: Icons.share_outlined,
-                  title: 'Share Prescription',
+                  title: s.sharePrescription,
                   isDark: isDark,
                   onTap: () {
                     Clipboard.setData(ClipboardData(
@@ -335,11 +335,7 @@ class MedicineDetailsScreen extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          s.code == 'bn'
-                              ? '📋 ওষুধের প্রেসক্রিপশন ক্লিপবোর্ডে কপি হয়েছে!'
-                              : (s.code == 'hi'
-                                  ? '📋 दवा का विवरण क्लिपबोर्ड पर कॉपी किया गया!'
-                                  : '📋 Prescription copied to clipboard!'),
+                          s.prescriptionCopiedSnackbar,
                         ),
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -349,10 +345,10 @@ class MedicineDetailsScreen extends StatelessWidget {
                 const Divider(height: 1),
                 _buildActionTile(
                   icon: Icons.delete_outline_rounded,
-                  title: 'Delete Medicine',
+                  title: s.deleteMedicine,
                   isDark: isDark,
                   isDestructive: true,
-                  onTap: () => _confirmDelete(context, provider),
+                  onTap: () => _confirmDelete(context, provider, s),
                 ),
               ],
             ),
@@ -431,7 +427,7 @@ class MedicineDetailsScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              slot.title,
+                              slot.titleLocalized(s),
                               style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w800,
@@ -489,7 +485,7 @@ class MedicineDetailsScreen extends StatelessWidget {
                   const SizedBox(width: 6),
                   IconButton(
                     icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
-                    tooltip: s.code == 'bn' ? 'সময় মুছুন' : 'Delete Time',
+                    tooltip: s.deleteTimeTooltip,
                     onPressed: () => _confirmDeleteReminder(context, provider, rem, s),
                     visualDensity: VisualDensity.compact,
                   ),
@@ -529,11 +525,11 @@ class MedicineDetailsScreen extends StatelessWidget {
             final formattedTime = DateFormat('hh:mm a').format(dt);
 
             final presets = [
-              {'label': s.code == 'bn' ? 'সকাল' : 'Morning', 'hour': 8, 'minute': 0, 'icon': Icons.wb_sunny_rounded},
-              {'label': s.code == 'bn' ? 'দুপুর' : 'Lunch', 'hour': 13, 'minute': 0, 'icon': Icons.lunch_dining_rounded},
-              {'label': s.code == 'bn' ? 'বিকাল' : 'Afternoon', 'hour': 16, 'minute': 30, 'icon': Icons.coffee_rounded},
-              {'label': s.code == 'bn' ? 'সন্ধ্যা' : 'Evening', 'hour': 19, 'minute': 0, 'icon': Icons.wb_twilight_rounded},
-              {'label': s.code == 'bn' ? 'রাত' : 'Night', 'hour': 21, 'minute': 30, 'icon': Icons.bedtime_rounded},
+              {'label': s.morning, 'hour': 8, 'minute': 0, 'icon': Icons.wb_sunny_rounded},
+              {'label': s.lunchSlot, 'hour': 13, 'minute': 0, 'icon': Icons.lunch_dining_rounded},
+              {'label': s.afternoon, 'hour': 16, 'minute': 30, 'icon': Icons.coffee_rounded},
+              {'label': s.evening, 'hour': 19, 'minute': 0, 'icon': Icons.wb_twilight_rounded},
+              {'label': s.night, 'hour': 21, 'minute': 30, 'icon': Icons.bedtime_rounded},
             ];
 
             return Container(
@@ -893,11 +889,9 @@ class MedicineDetailsScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(s.code == 'bn' ? 'সময় মুছবেন?' : 'Delete Reminder Time?'),
+        title: Text(s.deleteReminderTitle),
         content: Text(
-          s.code == 'bn'
-              ? '${medicine.name} এর ${rem.formattedTime} এর অ্যালার্ম কি মুছে ফেলতে চান?'
-              : 'Do you want to remove the ${rem.formattedTime} alarm for ${medicine.name}?',
+          s.deleteReminderConfirm(medicine.name, rem.formattedTime),
         ),
         actions: [
           TextButton(
@@ -922,7 +916,7 @@ class MedicineDetailsScreen extends StatelessWidget {
                 );
               }
             },
-            child: Text(s.code == 'bn' ? 'মুছুন' : 'Delete'),
+            child: Text(s.deleteBtn),
           ),
         ],
       ),
@@ -987,17 +981,17 @@ class MedicineDetailsScreen extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, MedicineProvider provider) {
+  void _confirmDelete(BuildContext context, MedicineProvider provider, AppStrings s) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete Medicine'),
-        content: Text('Are you sure you want to delete ${medicine.name}?'),
+        title: Text(s.deleteMedicine),
+        content: Text('${s.deleteMedicineConfirm} (${medicine.name})'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(s.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
@@ -1008,7 +1002,7 @@ class MedicineDetailsScreen extends StatelessWidget {
                 Navigator.pop(context);
               }
             },
-            child: const Text('Delete'),
+            child: Text(s.deleteBtn),
           ),
         ],
       ),

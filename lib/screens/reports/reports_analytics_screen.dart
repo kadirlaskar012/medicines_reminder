@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/theme/app_colors.dart';
@@ -89,21 +88,11 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     if (_selectedPeriod == 'Weekly') {
       final startOfWeek = DateTime(_anchorDate.year, _anchorDate.month, _anchorDate.day - (_anchorDate.weekday - 1));
       final endOfWeek = startOfWeek.add(const Duration(days: 6));
-      if (s.code == 'bn') {
-        return '${startOfWeek.day} ${s.monthName(startOfWeek.month)} – ${endOfWeek.day} ${s.monthName(endOfWeek.month)} ${endOfWeek.year}';
-      }
-      if (startOfWeek.year == endOfWeek.year) {
-        return '${DateFormat('d MMM').format(startOfWeek)} – ${DateFormat('d MMM yyyy').format(endOfWeek)}';
-      } else {
-        return '${DateFormat('d MMM yyyy').format(startOfWeek)} – ${DateFormat('d MMM yyyy').format(endOfWeek)}';
-      }
+      return s.formatDateRange(startOfWeek, endOfWeek);
     } else if (_selectedPeriod == 'Monthly') {
-      if (s.code == 'bn') {
-        return '${s.monthName(_anchorDate.month)} ${_anchorDate.year}';
-      }
-      return DateFormat('MMMM yyyy').format(_anchorDate);
+      return '${s.getMonthName(_anchorDate.month)} ${s.formatNumber(_anchorDate.year)}';
     } else {
-      return '${_anchorDate.year}';
+      return s.formatNumber(_anchorDate.year);
     }
   }
 
@@ -158,7 +147,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       appBar: AppBar(
         title: Text(
-          s.code == 'bn' ? 'মেডিসিন অনুপালন রিপোর্ট' : 'Medication Adherence',
+          s.adherenceReportTitle,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
@@ -204,9 +193,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             ),
             child: Row(
               children: [
-                {'key': 'Weekly', 'label': s.code == 'bn' ? 'সাপ্তাহিক' : 'Weekly'},
-                {'key': 'Monthly', 'label': s.code == 'bn' ? 'মাসিক' : 'Monthly'},
-                {'key': 'Yearly', 'label': s.code == 'bn' ? 'বার্ষিক' : 'Yearly'},
+                {'key': 'Weekly', 'label': s.weeklyPeriod},
+                {'key': 'Monthly', 'label': s.monthlyPeriod},
+                {'key': 'Yearly', 'label': s.yearlyPeriod},
               ].map((item) {
                 final period = item['key']!;
                 final label = item['label']!;
@@ -405,7 +394,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                               ),
                             ),
                             Text(
-                              s.code == 'bn' ? 'অনুপালনের হার' : 'Adherence Rate',
+                              s.adherenceRateLabel,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -420,7 +409,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              s.code == 'bn' ? 'চলমান' : 'In Progress',
+                              s.inProgressLabel,
                               style: GoogleFonts.outfit(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
@@ -428,7 +417,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                               ),
                             ),
                             Text(
-                              s.code == 'bn' ? 'দিন শেষে যুক্ত হবে' : 'Pending completion',
+                              s.pendingCompletionLabel,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
@@ -443,7 +432,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              s.code == 'bn' ? 'কোনো ওষুধ নেই' : 'No Doses',
+                              s.noDosesLabel,
                               style: GoogleFonts.outfit(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -451,7 +440,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                               ),
                             ),
                             Text(
-                              s.code == 'bn' ? 'এই সময়ের জন্য' : 'For period',
+                              s.forPeriodLabel,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 color: isDark ? AppColors.darkTextMuted : AppColors.textMuted,
@@ -467,15 +456,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                 Text(
                   totalCompleted == 0
                       ? (hasMeds
-                          ? (s.code == 'bn'
-                              ? 'আজকের ওষুধ চক্র শেষ হলে রিপোর্ট এখানে চূড়ান্ত হবে।'
-                              : 'Historical reports finalize as daily cycles complete.')
-                          : (s.code == 'bn'
-                              ? 'এই সময়ের জন্য কোনো ওষুধের তথ্য নেই।'
-                              : 'No medication data for this period.'))
-                      : (s.code == 'bn'
-                          ? '$totalCompletedটি নির্ধারিত ওষুধের মধ্যে $takenCountটি নেওয়া হয়েছে'
-                          : '$takenCount of $totalCompleted scheduled doses taken'),
+                          ? s.historicalReportsFinalize
+                          : s.noMedDataForPeriod)
+                      : s.scheduledDosesTakenCount(takenCount, totalCompleted),
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
@@ -494,8 +477,8 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             children: [
               Expanded(
                 child: _buildSummaryCard(
-                  label: s.code == 'bn' ? 'নেওয়া হয়েছে' : 'Taken',
-                  value: '$takenCount',
+                  label: s.taken,
+                  value: s.formatNumber(takenCount),
                   color: AppColors.accentEmerald,
                   bgColor: isDark ? AppColors.accentEmerald.withValues(alpha: 0.12) : const Color(0xFFECFDF5),
                   borderColor: isDark ? AppColors.accentEmerald.withValues(alpha: 0.3) : const Color(0xFFA7F3D0),
@@ -505,8 +488,8 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: _buildSummaryCard(
-                  label: s.code == 'bn' ? 'মিস / বাদ' : 'Missed',
-                  value: '$missedCount',
+                  label: s.missedOrSkipped,
+                  value: s.formatNumber(missedCount),
                   color: AppColors.accentRose,
                   bgColor: isDark ? AppColors.accentRose.withValues(alpha: 0.12) : const Color(0xFFFEF2F2),
                   borderColor: isDark ? AppColors.accentRose.withValues(alpha: 0.3) : const Color(0xFFFECACA),
@@ -516,8 +499,8 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: _buildSummaryCard(
-                  label: s.code == 'bn' ? 'মোট সম্পন্ন' : 'Total Due',
-                  value: '$totalCompleted',
+                  label: s.totalDue,
+                  value: s.formatNumber(totalCompleted),
                   color: AppColors.accentCyan,
                   bgColor: isDark ? AppColors.accentCyan.withValues(alpha: 0.12) : const Color(0xFFEFF6FF),
                   borderColor: isDark ? AppColors.accentCyan.withValues(alpha: 0.3) : const Color(0xFFBFDBFE),
@@ -554,11 +537,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _selectedPeriod == 'Weekly'
-                          ? (s.code == 'bn' ? 'দৈনিক গ্রহণের অনুপাত' : 'Daily Adherence')
-                          : (_selectedPeriod == 'Monthly'
-                              ? (s.code == 'bn' ? 'মাসিক ট্রেন্ড' : 'Monthly Trend')
-                              : (s.code == 'bn' ? 'বার্ষিক ট্রেন্ড' : 'Yearly Trend')),
+                      _selectedPeriod == 'Weekly' ? s.dailyAdherenceRatio : (_selectedPeriod == 'Monthly' ? s.monthlyTrend : s.yearlyTrend),
                       style: GoogleFonts.outfit(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -566,7 +545,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                       ),
                     ),
                     Text(
-                      s.code == 'bn' ? 'বারে ট্যাপ করে বিস্তারিত দেখুন' : 'Tap bar for details',
+                      s.tapBarForDetails,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -633,7 +612,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        s.code == 'bn' ? 'ওষুধ গ্রহণের ধারাবাহিকতা' : 'Medication Consistency',
+                        s.medicationConsistency,
                         style: GoogleFonts.outfit(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -642,9 +621,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        s.code == 'bn'
-                            ? 'বর্তমান স্ট্রিক: ${provider.currentStreakDays} দিন  ·  সেরা: ${provider.bestStreakDays} দিন'
-                            : 'Current streak: ${provider.currentStreakDays} ${provider.currentStreakDays == 1 ? "day" : "days"}  ·  Best: ${provider.bestStreakDays} ${provider.bestStreakDays == 1 ? "day" : "days"}',
+                        s.streakSummaryText(provider.currentStreakDays, provider.bestStreakDays),
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -815,7 +792,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          s.code == 'bn' ? 'ওষুধ তালিকায় কোনো ওষুধ নেই' : 'No medicines in cabinet',
+                          s.noMedicinesInCabinet,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -824,9 +801,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          s.code == 'bn'
-                              ? 'দৈনিক ওষুধ গ্রহণ রেকর্ড করতে এবং রিপোর্ট দেখতে ওষুধ যুক্ত করুন।'
-                              : 'Add medicines to begin recording daily intake and tracking adherence trends.',
+                          s.noMedicinesInCabinetDesc,
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -882,7 +857,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                     const Icon(Icons.date_range_rounded, size: 16, color: AppColors.primaryTeal),
                     const SizedBox(width: 6),
                     Text(
-                      s.code == 'bn' ? 'সাপ্তাহিক ক্যালেন্ডার ট্র্যাকার' : '7-Day Week Tracker',
+                      s.sevenDayTracker,
                       style: GoogleFonts.outfit(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -892,7 +867,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                   ],
                 ),
                 Text(
-                  s.code == 'bn' ? 'আগের দিনে ট্যাপ করে রিপোর্ট দেখুন' : 'Tap past day for report',
+                  s.tapPastDayForReport,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
@@ -997,7 +972,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${day.day}',
+                          s.formatNumber(day.day),
                           style: GoogleFonts.outfit(
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
@@ -1052,9 +1027,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     final missed = total - taken;
     final adherenceRate = total > 0 ? ((taken / total) * 100).round() : 0;
 
-    final dateFormatted = s.code == 'bn'
-        ? '${s.weekdayFull(date.weekday)}, ${date.day} ${s.monthName(date.month)} ${date.year}'
-        : DateFormat('EEEE, d MMMM yyyy').format(date);
+    final dateFormatted = s.formatFullDate(date);
 
     showModalBottomSheet(
       context: context,
@@ -1128,7 +1101,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                           Row(
                             children: [
                               Text(
-                                s.code == 'bn' ? 'পূর্ববর্তী দিনের রিপোর্ট' : 'Past Day Report',
+                                s.pastDayReport,
                                 style: GoogleFonts.outfit(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w800,
@@ -1143,7 +1116,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  s.code == 'bn' ? 'সংরক্ষিত' : 'Archived',
+                                  s.archivedLabel,
                                   style: GoogleFonts.outfit(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
@@ -1198,29 +1171,29 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               _buildSheetStatPill(
-                                label: s.code == 'bn' ? 'মোট ওষুধ' : 'Total',
-                                value: '$total',
+                                label: s.totalLabel,
+                                value: s.formatNumber(total),
                                 color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                                 isDark: isDark,
                               ),
                               Container(width: 1, height: 32, color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
                               _buildSheetStatPill(
-                                label: s.code == 'bn' ? 'নেওয়া হয়েছে' : 'Taken',
-                                value: '$taken',
+                                label: s.taken,
+                                value: s.formatNumber(taken),
                                 color: AppColors.accentEmerald,
                                 isDark: isDark,
                               ),
                               Container(width: 1, height: 32, color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
                               _buildSheetStatPill(
-                                label: s.code == 'bn' ? 'মিস / বাদ' : 'Missed',
-                                value: '$missed',
+                                label: s.missedOrSkipped,
+                                value: s.formatNumber(missed),
                                 color: AppColors.accentRose,
                                 isDark: isDark,
                               ),
                               Container(width: 1, height: 32, color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
                               _buildSheetStatPill(
-                                label: s.code == 'bn' ? 'অনুপালন' : 'Adherence',
-                                value: '$adherenceRate%',
+                                label: s.adherenceLabel,
+                                value: '${s.formatNumber(adherenceRate)}%',
                                 color: adherenceRate >= 80
                                     ? AppColors.accentEmerald
                                     : (adherenceRate >= 40 ? AppColors.accentAmber : AppColors.accentRose),
@@ -1262,12 +1235,12 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                                 Expanded(
                                   child: Text(
                                     total == 0
-                                        ? (s.code == 'bn' ? 'এই দিনে কোনো ওষুধ নির্ধারিত ছিল না' : 'No medicines were scheduled on this date')
+                                        ? s.noMedsScheduledDate
                                         : (taken == total
-                                            ? (s.code == 'bn' ? '১০০% অনুপালন সম্পন্ন! সব ওষুধ নেওয়া হয়েছে।' : '100% Complete! All scheduled medicines were taken.')
+                                            ? s.allMedsTaken100
                                             : (taken > 0
-                                                ? (s.code == 'bn' ? 'আংশিক সম্পন্ন: $totalটির মধ্যে $takenটি নেওয়া হয়েছে, $missedটি মিস হয়েছে।' : 'Partially completed: $taken of $total taken, $missed missed.')
-                                                : (s.code == 'bn' ? 'সব ওষুধ মিস হয়েছে ($missedটি ওষুধ নেওয়া হয়নি)।' : 'All medicines were missed on this day ($missed missed).'))),
+                                                ? s.partiallyCompletedText(taken, total, missed)
+                                                : s.allMedsMissedText(missed))),
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -1290,7 +1263,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
 
                     // Section Title
                     Text(
-                      s.code == 'bn' ? 'ওষুধের বিস্তারিত তালিকা' : 'Medication Details',
+                      s.medicationDetailsList,
                       style: GoogleFonts.outfit(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
@@ -1314,7 +1287,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                s.code == 'bn' ? 'এই তারিখে কোনো ওষুধ নির্ধারিত ছিল না' : 'No medicines were scheduled on this date',
+                                s.noMedsScheduledDate,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 13,
                                   color: isDark ? AppColors.darkTextMuted : AppColors.textSecondary,
@@ -1495,9 +1468,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
   // Dynamic Chart (Weekly, Monthly, Yearly)
   // -------------------------------------------------------------
   Widget _buildDynamicChart(MedicineProvider provider, bool isDark, DateTime today) {
+    final s = context.read<LanguageProvider>().strings;
     if (_selectedPeriod == 'Weekly') {
       final startOfWeek = DateTime(_anchorDate.year, _anchorDate.month, _anchorDate.day - (_anchorDate.weekday - 1));
-      final s = context.read<LanguageProvider>().strings;
 
       final data = List.generate(7, (i) {
         final day = startOfWeek.add(Duration(days: i));
@@ -1524,9 +1497,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             : (isToday && due > 0 ? (taken / due) : 0.0);
 
         final dayName = s.weekdayShort(day.weekday);
-        final fullDateStr = s.code == 'bn'
-            ? '${s.weekdayFull(day.weekday)}, ${day.day} ${s.monthName(day.month)}'
-            : DateFormat('EEEE, d MMM').format(day);
+        final fullDateStr = s.formatDayMonthWeekday(day);
 
         return {
           'name': dayName,
@@ -1573,9 +1544,14 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
         final bool isFuture = startWeekDate.isAfter(today);
         final double rate = due > 0 ? (taken / due) : 0.0;
 
+        final weekName = s.code == 'bn'
+            ? 'স${s.formatNumber(w + 1)}'
+            : (s.code == 'hi' ? 'स${s.formatNumber(w + 1)}' : 'W${w + 1}');
+        final fullDateStr = s.formatWeekRange(w + 1, startDay, endDay, _anchorDate.month);
+
         return {
-          'name': 'W${w + 1}',
-          'fullDate': 'Week ${w + 1} ($startDay-$endDay ${DateFormat("MMM").format(_anchorDate)})',
+          'name': weekName,
+          'fullDate': fullDateStr,
           'rate': rate,
           'taken': taken,
           'due': due,
@@ -1590,7 +1566,6 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     } else {
       // Yearly: 12 months (Jan - Dec)
       final monthNames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-      final fullMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
       final data = List.generate(12, (m) {
         final monthNum = m + 1;
@@ -1618,9 +1593,14 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
         final bool isFuture = monthStart.isAfter(today);
         final double rate = due > 0 ? (taken / due) : 0.0;
 
+        final mLabel = s.code == 'bn' || s.code == 'hi'
+            ? s.monthName(monthNum).substring(0, 1)
+            : monthNames[m];
+        final fullDateStr = s.formatMonthYear(monthNum, _anchorDate.year);
+
         return {
-          'name': monthNames[m],
-          'fullDate': '${fullMonths[m]} ${_anchorDate.year}',
+          'name': mLabel,
+          'fullDate': fullDateStr,
           'rate': rate,
           'taken': taken,
           'due': due,
@@ -1677,16 +1657,16 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                 ),
                 Text(
                   (selected['isFuture'] as bool? ?? false)
-                      ? (s.code == 'bn' ? 'ভবিষ্যতের তারিখ' : 'Future date')
+                      ? s.futureDate
                       : ((selected['total'] as int) == 0
-                          ? (s.code == 'bn' ? 'কোনো ওষুধ নির্ধারিত নেই' : 'No scheduled doses')
+                          ? s.noScheduledDoses
                           : ((selected['isToday'] as bool? ?? false)
-                              ? (s.code == 'bn'
-                                  ? '${selected['taken']}/${selected['total']} নেওয়া হয়েছে (চলমান)'
-                                  : '${selected['taken']} / ${selected['total']} taken today (In progress)')
-                              : (s.code == 'bn'
-                                  ? '${selected['taken']}/${selected['total']} নেওয়া হয়েছে (${((selected['rate'] as double) * 100).round()}%)'
-                                  : '${selected['taken']} / ${selected['total']} taken (${((selected['rate'] as double) * 100).round()}%)'))),
+                              ? s.dosesTakenOngoing(selected['taken'] as int, selected['total'] as int)
+                              : s.dosesTakenWithPercent(
+                                  selected['taken'] as int,
+                                  selected['total'] as int,
+                                  ((selected['rate'] as double) * 100).round(),
+                                ))),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -1916,9 +1896,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     final totalDoses = doses.length;
     final totalMissedOrSkipped = skipped + overdueOrMissed;
 
-    final dateFormatted = s.code == 'bn'
-        ? '${s.weekdayFull(_selectedDateForDetail.weekday)}, ${_selectedDateForDetail.day} ${s.monthName(_selectedDateForDetail.month)} ${_selectedDateForDetail.year}'
-        : DateFormat('EEEE, d MMMM yyyy').format(_selectedDateForDetail);
+    final dateFormatted = s.formatFullDate(_selectedDateForDetail);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1976,7 +1954,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                           children: [
                             Flexible(
                               child: Text(
-                                s.code == 'bn' ? 'তারিখের ওষুধের বিবরণ' : 'Day Dose Inspection',
+                                s.dayInspectionHeading,
                                 style: GoogleFonts.outfit(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w800,
@@ -1997,7 +1975,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  s.code == 'bn' ? 'আজ' : 'Today',
+                                  s.historyDateToday,
                                   style: GoogleFonts.outfit(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
@@ -2014,7 +1992,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  s.code == 'bn' ? 'অতীত' : 'Past',
+                                  s.pastLabel,
                                   style: GoogleFonts.outfit(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
@@ -2058,12 +2036,12 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                       ),
                       child: Text(
                         taken == totalDoses
-                            ? (s.code == 'bn' ? 'সব নেওয়া' : 'All Done')
+                            ? s.allDoneShort
                             : (taken > 0
-                                ? '$taken / $totalDoses'
+                                ? '${s.formatNumber(taken)} / ${s.formatNumber(totalDoses)}'
                                 : (totalMissedOrSkipped > 0
-                                    ? (s.code == 'bn' ? '$totalMissedOrSkipped মিস' : '$totalMissedOrSkipped Missed')
-                                    : (s.code == 'bn' ? 'নির্ধারিত' : 'Scheduled'))),
+                                    ? s.missedCountShort(totalMissedOrSkipped)
+                                    : s.scheduledShort)),
                         style: GoogleFonts.outfit(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -2092,23 +2070,23 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildDayStatPill(
-                        label: s.code == 'bn' ? 'নেওয়া হয়েছে' : 'Taken',
-                        count: taken,
+                        label: s.taken,
+                        value: s.formatNumber(taken),
                         color: AppColors.accentEmerald,
                         isDark: isDark,
                       ),
                       Container(width: 1, height: 22, color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
                       _buildDayStatPill(
-                        label: s.code == 'bn' ? 'মিস / বাদ' : 'Missed',
-                        count: totalMissedOrSkipped,
+                        label: s.missedOrSkipped,
+                        value: s.formatNumber(totalMissedOrSkipped),
                         color: AppColors.accentRose,
                         isDark: isDark,
                       ),
                       if (isToday) ...[
                         Container(width: 1, height: 22, color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
                         _buildDayStatPill(
-                          label: s.code == 'bn' ? 'বাকি শিডিউল' : 'Scheduled',
-                          count: scheduledFuture,
+                          label: s.scheduledSchedule,
+                          value: s.formatNumber(scheduledFuture),
                           color: AppColors.primaryTeal,
                           isDark: isDark,
                         ),
@@ -2144,7 +2122,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  s.code == 'bn' ? 'এই দিনে কোনো নির্ধারিত ওষুধ ছিল না' : 'No medicines were scheduled on this date',
+                  s.noMedsScheduledDate,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
@@ -2327,14 +2305,14 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
 
   Widget _buildDayStatPill({
     required String label,
-    required int count,
+    required String value,
     required Color color,
     required bool isDark,
   }) {
     return Column(
       children: [
         Text(
-          '$count',
+          value,
           style: GoogleFonts.outfit(
             fontSize: 18,
             fontWeight: FontWeight.w900,
@@ -2372,7 +2350,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.accentEmerald),
             const SizedBox(width: 4),
             Text(
-              s.code == 'bn' ? 'নেওয়া হয়েছে' : 'Taken',
+              s.taken,
               style: GoogleFonts.outfit(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
@@ -2399,7 +2377,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             const Icon(Icons.redo_rounded, size: 14, color: AppColors.accentAmber),
             const SizedBox(width: 4),
             Text(
-              s.code == 'bn' ? 'বাদ দেওয়া হয়েছে' : 'Skipped',
+              s.skipped,
               style: GoogleFonts.outfit(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
@@ -2427,7 +2405,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             const Icon(Icons.cancel_rounded, size: 14, color: AppColors.accentRose),
             const SizedBox(width: 4),
             Text(
-              s.code == 'bn' ? 'মিস হয়েছে' : 'Missed',
+              s.missed,
               style: GoogleFonts.outfit(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
@@ -2459,7 +2437,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.accentEmerald),
             const SizedBox(width: 4),
             Text(
-              s.code == 'bn' ? 'নেওয়া হয়েছে' : 'Taken',
+              s.taken,
               style: GoogleFonts.outfit(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
@@ -2486,7 +2464,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             const Icon(Icons.redo_rounded, size: 14, color: AppColors.accentAmber),
             const SizedBox(width: 4),
             Text(
-              s.code == 'bn' ? 'বাদ দেওয়া হয়েছে' : 'Skipped',
+              s.skipped,
               style: GoogleFonts.outfit(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
@@ -2513,7 +2491,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             const Icon(Icons.cancel_rounded, size: 14, color: AppColors.accentRose),
             const SizedBox(width: 4),
             Text(
-              s.code == 'bn' ? 'মিস হয়েছে' : 'Missed',
+              s.missed,
               style: GoogleFonts.outfit(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
@@ -2541,7 +2519,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             const Icon(Icons.schedule_rounded, size: 14, color: AppColors.primaryTeal),
             const SizedBox(width: 4),
             Text(
-              s.code == 'bn' ? 'নির্ধারিত' : 'Scheduled',
+              s.scheduledShort,
               style: GoogleFonts.outfit(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,

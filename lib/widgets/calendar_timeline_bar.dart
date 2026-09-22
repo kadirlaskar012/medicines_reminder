@@ -131,7 +131,7 @@ class _CalendarTimelineBarState extends State<CalendarTimelineBar> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    DateFormat('MMMM yyyy').format(widget.selectedDate),
+                    s.formatMonthYear(widget.selectedDate.month, widget.selectedDate.year),
                     style: GoogleFonts.outfit(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
@@ -152,7 +152,9 @@ class _CalendarTimelineBarState extends State<CalendarTimelineBar> {
                         ),
                       ),
                       child: Text(
-                        DateFormat('d MMM').format(widget.selectedDate),
+                        s.code == 'bn' || s.code == 'hi'
+                            ? '${s.formatNumber(widget.selectedDate.day)} ${s.monthName(widget.selectedDate.month)}'
+                            : DateFormat('d MMM').format(widget.selectedDate),
                         style: GoogleFonts.outfit(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -187,9 +189,7 @@ class _CalendarTimelineBarState extends State<CalendarTimelineBar> {
                         const Icon(Icons.restart_alt_rounded, size: 13, color: Colors.white),
                         const SizedBox(width: 4),
                         Text(
-                          s.code == 'bn'
-                              ? 'আজকের তারিখ'
-                              : (s.code == 'hi' ? 'आज की तारीख' : 'Today'),
+                          s.todayDate,
                           style: GoogleFonts.outfit(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -205,11 +205,11 @@ class _CalendarTimelineBarState extends State<CalendarTimelineBar> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildLegendDot(AppColors.accentEmerald, s.code == 'bn' ? 'সম্পূর্ণ' : 'Done'),
+                    _buildLegendDot(AppColors.accentEmerald, s.doneLegend),
                     const SizedBox(width: 8),
-                    _buildLegendDot(AppColors.accentAmber, s.code == 'bn' ? 'বাকি' : 'Pending'),
+                    _buildLegendDot(AppColors.accentAmber, s.pendingLegend),
                     const SizedBox(width: 8),
-                    _buildLegendDot(AppColors.accentRose, s.code == 'bn' ? 'মিস' : 'Missed'),
+                    _buildLegendDot(AppColors.accentRose, s.missedLegend),
                   ],
                 ),
             ],
@@ -352,7 +352,7 @@ class _CalendarTimelineBarState extends State<CalendarTimelineBar> {
                           const SizedBox(height: 3),
                           // Day Number
                           Text(
-                            DateFormat('d').format(date),
+                            s.formatNumber(date.day),
                             style: GoogleFonts.outfit(
                               fontSize: 17,
                               fontWeight: (isToday || isSelected) ? FontWeight.w900 : FontWeight.w700,

@@ -87,7 +87,7 @@ class AlarmRingingScreen extends StatelessWidget {
                               const Icon(Icons.alarm_on_rounded, color: AppColors.accentEmerald, size: 16),
                               const SizedBox(width: 6),
                               Text(
-                                s.code == 'bn' ? 'ওষুধের সময়' : (s.code == 'hi' ? 'दवा का समय' : 'Dose Reminder'),
+                                s.doseReminderTitle,
                                 style: GoogleFonts.outfit(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
@@ -282,7 +282,7 @@ class AlarmRingingScreen extends StatelessWidget {
                                   const Icon(Icons.check_circle_rounded, color: Colors.white, size: 24),
                                   const SizedBox(width: 10),
                                   Text(
-                                    s.code == 'bn' ? 'ওষুধ নিয়েছি (Take Dose)' : 'Take Dose',
+                                    s.takeDoseAction,
                                     style: GoogleFonts.outfit(
                                       fontSize: 17,
                                       fontWeight: FontWeight.w800,
@@ -319,7 +319,7 @@ class AlarmRingingScreen extends StatelessWidget {
                                 },
                                 icon: const Icon(Icons.snooze_rounded, color: Colors.white, size: 18),
                                 label: Text(
-                                  s.code == 'bn' ? '১০ মি. স্নুজ' : 'Snooze 10m',
+                                  s.snooze10mAction,
                                   style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w700),
                                 ),
                                 style: OutlinedButton.styleFrom(
@@ -351,7 +351,7 @@ class AlarmRingingScreen extends StatelessWidget {
                                 },
                                 icon: const Icon(Icons.close_rounded, color: AppColors.accentRose, size: 18),
                                 label: Text(
-                                  s.code == 'bn' ? 'বাদ দিন (Skip)' : 'Skip',
+                                  s.skipAction,
                                   style: GoogleFonts.outfit(color: AppColors.accentRose, fontWeight: FontWeight.w700),
                                 ),
                                 style: OutlinedButton.styleFrom(

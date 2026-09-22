@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/services/notification_service.dart';
@@ -112,10 +111,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               await NotificationService.instance.showTestNotification();
               await medProvider.logAppNotification(
                 type: NotificationType.testAlarm,
-                title: lang == 'bn' ? 'টেস্ট নোটিফিকেশন' : 'Test Notification',
-                message: lang == 'bn'
-                    ? 'লকস্ক্রিন ও সিস্টেম নোটিফিকেশন টেস্ট সফলভাবে যাচাই করা হয়েছে।'
-                    : 'Lock screen & system notification test triggered successfully.',
+                title: s.notifTestTitle,
+                message: s.notifTestBody,
               );
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -521,7 +518,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               context,
               notif,
               isDark: isDark,
-              lang: lang,
+              s: s,
               textPrimary: textPrimary,
             ),
           );
@@ -537,10 +534,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     BuildContext context,
     AppNotification notif, {
     required bool isDark,
-    required String lang,
+    required AppStrings s,
     required Color textPrimary,
   }) {
-    final formattedTime = _formatNotificationTimestamp(notif.timestamp, lang);
+    final formattedTime = s.formatNotifTimestamp(notif.timestamp);
 
     return Container(
       padding: const EdgeInsets.all(15),
@@ -572,7 +569,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               children: [
                 Row(
                   children: [
-                    _buildTypeBadge(notif.type, lang),
+                    _buildTypeBadge(notif.type, s),
                     const Spacer(),
                     Text(
                       formattedTime,
@@ -586,17 +583,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(height: 7),
                 Text(
-                  notif.title,
+                  notif.localizedTitle(s),
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: textPrimary,
                   ),
                 ),
-                if (notif.message.isNotEmpty) ...[
+                if (notif.localizedMessage(s).isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Text(
-                    notif.message,
+                    notif.localizedMessage(s),
                     style: TextStyle(
                       fontSize: 13,
                       color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
@@ -670,66 +667,70 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: gradientColors[0].withValues(alpha: 0.35),
+            color: gradientColors.first.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Icon(iconData, color: Colors.white, size: 22),
+      child: Icon(
+        iconData,
+        color: Colors.white,
+        size: 22,
+      ),
     );
   }
 
   // ==================== TYPE BADGE ====================
-  Widget _buildTypeBadge(NotificationType type, String lang) {
+  Widget _buildTypeBadge(NotificationType type, AppStrings s) {
     String label;
     Color bg;
     Color fg;
 
     switch (type) {
       case NotificationType.doseTaken:
-        label = lang == 'bn' ? 'সম্পন্ন' : 'Taken';
+        label = s.badgeTaken;
         bg = const Color(0xFF10B981).withValues(alpha: 0.15);
         fg = const Color(0xFF059669);
         break;
       case NotificationType.doseSkipped:
-        label = lang == 'bn' ? 'স্কিপ' : 'Skipped';
+        label = s.badgeSkipped;
         bg = const Color(0xFFF59E0B).withValues(alpha: 0.15);
         fg = const Color(0xFFD97706);
         break;
       case NotificationType.doseSnoozed:
-        label = lang == 'bn' ? 'স্থগিত' : 'Snoozed';
+        label = s.badgeSnoozed;
         bg = const Color(0xFF8B5CF6).withValues(alpha: 0.15);
         fg = const Color(0xFF7C3AED);
         break;
       case NotificationType.doseMissed:
-        label = lang == 'bn' ? 'মিসড' : 'Missed';
+        label = s.badgeMissed;
         bg = const Color(0xFFEF4444).withValues(alpha: 0.15);
         fg = const Color(0xFFDC2626);
         break;
       case NotificationType.refillAdded:
-        label = lang == 'bn' ? 'রিফিল' : 'Refill';
+        label = s.badgeRefill;
         bg = const Color(0xFF3B82F6).withValues(alpha: 0.15);
         fg = const Color(0xFF2563EB);
         break;
       case NotificationType.lowStock:
-        label = lang == 'bn' ? 'সতর্কতা' : 'Low Stock';
+        label = s.badgeLowStock;
         bg = const Color(0xFFEA580C).withValues(alpha: 0.15);
         fg = const Color(0xFFC2410C);
         break;
       case NotificationType.medicineAdded:
-        label = lang == 'bn' ? 'নতুন ওষুধ' : 'Added';
+        label = s.badgeAdded;
         bg = const Color(0xFF0D9488).withValues(alpha: 0.15);
         fg = const Color(0xFF0F766E);
         break;
       case NotificationType.medicineUpdated:
-        label = lang == 'bn' ? 'আপডেট' : 'Updated';
+        label = s.badgeUpdated;
         bg = const Color(0xFF6366F1).withValues(alpha: 0.15);
         fg = const Color(0xFF4F46E5);
         break;
       case NotificationType.reminderDue:
       case NotificationType.testAlarm:
-        label = lang == 'bn' ? 'অ্যালার্ম' : 'Alarm';
+        label = s.badgeAlarm;
         bg = const Color(0xFFEC4899).withValues(alpha: 0.15);
         fg = const Color(0xFFDB2777);
         break;
@@ -750,53 +751,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       ),
     );
-  }
-
-  // ==================== TIMESTAMP FORMATTER ====================
-  String _formatNotificationTimestamp(DateTime dt, String lang) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final notifDay = DateTime(dt.year, dt.month, dt.day);
-    final diffDays = today.difference(notifDay).inDays;
-
-    final hour = dt.hour;
-    final minute = dt.minute.toString().padLeft(2, '0');
-    final isPm = hour >= 12;
-    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-    final displayHourStr = displayHour.toString().padLeft(2, '0');
-
-    if (lang == 'bn') {
-      final period = hour < 6 ? 'রাত' : (hour < 12 ? 'সকাল' : (hour < 16 ? 'দুপুর' : (hour < 19 ? 'বিকাল' : 'রাত')));
-      final bnTime = '$period $displayHourStr:$minute'
-          .replaceAll('0', '০')
-          .replaceAll('1', '১')
-          .replaceAll('2', '২')
-          .replaceAll('3', '৩')
-          .replaceAll('4', '৪')
-          .replaceAll('5', '৫')
-          .replaceAll('6', '৬')
-          .replaceAll('7', '৭')
-          .replaceAll('8', '৮')
-          .replaceAll('9', '৯');
-      if (diffDays == 0) {
-        return 'আজ, $bnTime';
-      } else if (diffDays == 1) {
-        return 'গতকাল, $bnTime';
-      } else {
-        final dateFormatted = DateFormat('dd MMM').format(dt);
-        return '$dateFormatted, $bnTime';
-      }
-    } else {
-      final period = isPm ? 'PM' : 'AM';
-      final enTime = '$displayHourStr:$minute $period';
-      if (diffDays == 0) {
-        return 'Today, $enTime';
-      } else if (diffDays == 1) {
-        return 'Yesterday, $enTime';
-      } else {
-        return '${DateFormat('dd MMM').format(dt)}, $enTime';
-      }
-    }
   }
 
   // ==================== CLEAR ALL CONFIRMATION ====================

@@ -387,7 +387,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                       index: 2,
                       icon: Icons.bar_chart_outlined,
                       activeIcon: Icons.bar_chart_rounded,
-                      label: s.code == 'bn' ? 'রিপোর্ট' : (s.code == 'hi' ? 'रिपोर्ट' : 'Reports'),
+                      label: s.reportsTab,
                       activeColor: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
                       isDark: isDark,
                     ),

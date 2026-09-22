@@ -116,9 +116,39 @@ class AppStrings {
   // Localized Date Formatter for Screen Header
   String formatHeaderDate(DateTime date) {
     if (code == 'bn' || code == 'hi') {
-      return '${weekdayFull(date.weekday)}, ${date.day} ${monthName(date.month)}';
+      return '${weekdayFull(date.weekday)}, ${formatNumber(date.day)} ${monthName(date.month)}';
     }
     return '${weekdayFull(date.weekday)}, ${monthName(date.month)} ${date.day}';
+  }
+
+  String formatDayMonthWeekday(DateTime dt) {
+    if (code == 'bn' || code == 'hi') {
+      return '${weekdayFull(dt.weekday)}, ${formatNumber(dt.day)} ${monthName(dt.month)}';
+    }
+    return '${weekdayFull(dt.weekday)}, ${dt.day} ${monthName(dt.month)}';
+  }
+
+  String formatWeekRange(int weekNum, int startDay, int endDay, int month) {
+    if (code == 'bn') {
+      return 'সপ্তাহ ${formatNumber(weekNum)} (${formatNumber(startDay)}-${formatNumber(endDay)} ${monthName(month)})';
+    } else if (code == 'hi') {
+      return 'सप्ताह ${formatNumber(weekNum)} (${formatNumber(startDay)}-${formatNumber(endDay)} ${monthName(month)})';
+    }
+    return 'Week $weekNum ($startDay-$endDay ${monthName(month)})';
+  }
+
+  String formatMonthYear(int month, int year) {
+    if (code == 'bn' || code == 'hi') {
+      return '${monthName(month)} ${formatNumber(year)}';
+    }
+    return '${monthName(month)} $year';
+  }
+
+  String formatDayMonthYear(DateTime dt) {
+    if (code == 'bn' || code == 'hi') {
+      return '${formatNumber(dt.day)} ${monthName(dt.month)} ${formatNumber(dt.year)}';
+    }
+    return '${dt.day} ${monthName(dt.month)} ${dt.year}';
   }
 
   // Family Filter & Profiles
@@ -172,6 +202,7 @@ class AppStrings {
   String get taken => code == 'bn' ? 'নেওয়া হয়েছে' : (code == 'hi' ? 'ली गई' : 'Taken');
   String get takenAt => code == 'bn' ? 'নেওয়া হয়েছে' : (code == 'hi' ? 'ली गई' : 'Taken at');
   String get skipped => code == 'bn' ? 'বাদ দেওয়া হয়েছে' : (code == 'hi' ? 'छोड़ दी गई' : 'Skipped');
+  String get missed => code == 'bn' ? 'ছুটে গেছে' : (code == 'hi' ? 'छूट गई' : 'Missed');
   String get due => code == 'bn' ? 'সময় হয়েছে' : (code == 'hi' ? 'समय हो गया' : 'Due');
   String get snooze10m => code == 'bn' ? '১০ মিনিট পর' : (code == 'hi' ? '१० मिनट बाद' : 'Snooze 10m');
   String get skip => code == 'bn' ? 'বাদ দিন' : (code == 'hi' ? 'छोड़ें' : 'Skip');
@@ -208,10 +239,10 @@ class AppStrings {
   }
 
   // Medicine Forms
-  String get tablet => code == 'bn' ? 'ট্যাবলেট' : (code == 'hi' ? 'টैबलेट' : 'Tablet');
+  String get tablet => code == 'bn' ? 'ট্যাবলেট' : (code == 'hi' ? 'टैबलेट' : 'Tablet');
   String get capsule => code == 'bn' ? 'ক্যাপসুল' : (code == 'hi' ? 'कैप्सूल' : 'Capsule');
   String get syrup => code == 'bn' ? 'সিরাপ' : (code == 'hi' ? 'सिरप' : 'Syrup');
-  String get drops => code == 'bn' ? 'ড্রপস' : (code == 'hi' ? 'ড্রॉप्स' : 'Drops');
+  String get drops => code == 'bn' ? 'ড্রপস' : (code == 'hi' ? 'ड्रॉप्स' : 'Drops');
   String get inhaler => code == 'bn' ? 'ইনহেলার' : (code == 'hi' ? 'इन्हेलर' : 'Inhaler');
   String get injection => code == 'bn' ? 'ইনজেকশন' : (code == 'hi' ? 'इंजेक्शन' : 'Injection');
   String get ointment => code == 'bn' ? 'মলম/ক্রিম' : (code == 'hi' ? 'मरहम/क्रीम' : 'Ointment');
@@ -291,7 +322,7 @@ class AppStrings {
   String get all => code == 'bn' ? 'সব' : (code == 'hi' ? 'सभी' : 'All');
   String get lowStock => code == 'bn' ? 'কম স্টক' : (code == 'hi' ? 'कम स्टॉक' : 'Low Stock');
   String get activeStatus => code == 'bn' ? 'চলমান' : (code == 'hi' ? 'सक्रिय' : 'Active');
-  String get archived => code == 'bn' ? 'আর্কাইভ' : (code == 'hi' ? 'পুরালেখ' : 'Archived');
+  String get archived => code == 'bn' ? 'আর্কাইভ' : (code == 'hi' ? 'पुरालेख' : 'Archived');
   String get leftCount => code == 'bn' ? 'টি বাকি' : (code == 'hi' ? 'बची हैं' : 'left');
   String get runsOutIn => code == 'bn' ? 'শেষ হবে' : (code == 'hi' ? 'समाप्त होगा' : 'Runs out in');
   String get days => code == 'bn' ? 'দিনে' : (code == 'hi' ? 'दिनों में' : 'days');
@@ -384,7 +415,7 @@ class AppStrings {
   String get testAlarmNotifications => code == 'bn' ? 'নোটিফিকেশন অ্যালার্ট টেস্ট' : (code == 'hi' ? 'अलार्म नोटिफिकेशन टेस्ट' : 'Test Alarm Notifications');
   String get testAlarmSub => code == 'bn' ? 'কাস্টম ৩D আইকন ও শব্দের সাথে লাইভ নোটিফিকেশন পরখ করুন।' : (code == 'hi' ? 'कस्टम ३D आइकन और ध्वनि के साथ नोटिफिकेशन जांचें।' : 'Trigger real notifications with custom medicine icons.');
   String get familyMembersProfiles => code == 'bn' ? 'পরিবারের সদস্য ও প্রোফাইল' : (code == 'hi' ? 'परिवार के सदस्य और प्रोफाइल' : 'FAMILY MEMBERS & PROFILES');
-  String get languageOption => code == 'bn' ? 'ভাষা নির্বাচন (LANGUAGE)' : (code == 'hi' ? 'भाषा चयन (LANGUAGE)' : 'LANGUAGE (ভাষা)');
+  String get languageOption => code == 'bn' ? 'ভাষা নির্বাচন' : (code == 'hi' ? 'भाषा चयन' : 'Language');
   String get selectLanguage => code == 'bn' ? 'আপনার পছন্দের ভাষা বেছে নিন' : (code == 'hi' ? 'अपनी पसंदीदा भाषा चुनें' : 'Choose Your Preferred Language');
   String get langEnglish => 'English';
   String get langBengali => 'বাংলা';
@@ -397,12 +428,12 @@ class AppStrings {
   String get welcomeSub => code == 'bn' ? 'সময়মতো ওষুধ গ্রহণ করুন এবং পরিবারের সুস্থতা বজায় রাখুন' : (code == 'hi' ? 'समय पर दवा लें और परिवार की सेहत सुरक्षित रखें' : 'Never miss a dose for you and your loved ones');
   String get exactAlarmsFeature => code == 'bn' ? 'সঠিক সময়ে অ্যালার্ম' : (code == 'hi' ? 'सटीक समय पर अलार्म' : 'Exact Alarms');
   String get familyProfilesFeature => code == 'bn' ? 'পরিবারের প্রতিটি সদস্যের প্রোফাইল' : (code == 'hi' ? 'परिवार के सदस्यों की प्रोफाइल' : 'Family Profiles');
-  String get cloudSyncFeature => code == 'bn' ? 'ক্লাউড ব্যাকআপ ও অফলাইন নিরাপত্তা' : (code == 'hi' ? 'ক্লাউড बैकअप और ऑफलाइन सुरक्षा' : 'Cloud Sync & Offline Safe');
+  String get cloudSyncFeature => code == 'bn' ? 'ক্লাউড ব্যাকআপ ও অফলাইন নিরাপত্তা' : (code == 'hi' ? 'क्लाउड बैकअप और ऑफ़लाइन सुरक्षा' : 'Cloud Sync & Offline Safe');
   String get getStarted => code == 'bn' ? 'শুরু করুন' : (code == 'hi' ? 'शुरू करें' : 'Get Started');
 
   // Alarm Ringing Screen
-  String get timeForMedicine => code == 'bn' ? 'ওষুধ খাওয়ার সময় হয়েছে!' : (code == 'hi' ? 'দवा लेने का समय हो गया है!' : 'Time for your medicine!');
-  String get medicineReminderTag => code == 'bn' ? 'মেডিসিন রিমাইন্ডার' : (code == 'hi' ? 'দवाई रिमाइंडर' : 'MEDICINE REMINDER');
+  String get timeForMedicine => code == 'bn' ? 'ওষুধ খাওয়ার সময় হয়েছে!' : (code == 'hi' ? 'दवा लेने का समय हो गया है!' : 'Time for your medicine!');
+  String get medicineReminderTag => code == 'bn' ? 'মেডিসিন রিমাইন্ডার' : (code == 'hi' ? 'दवाई रिमाइंडर' : 'MEDICINE REMINDER');
 
   // Authentication & Cloud Sync
   String get phoneLoginTitle => code == 'bn' ? 'মোবাইল নম্বর দিয়ে লগইন করুন' : (code == 'hi' ? 'फ़ोन नंबर से लॉगिन करें' : 'Sign In with Mobile');
@@ -458,7 +489,7 @@ class AppStrings {
   String get allDosesCompletedSub => code == 'bn' ? 'আপনি সফলভাবে আজকের ১০০% নিয়ম মেনে চলেছেন। সুস্থ থাকুন!' : (code == 'hi' ? 'आपने आज १००% समय पर दवा ली है। स्वस्थ रहें!' : 'You reached 100% adherence for today. Keep staying healthy!');
 
   // Treatment Course Duration
-  String get treatmentCourse => code == 'bn' ? 'চিকিৎসার মেয়াদ / কোর্স (Treatment Course)' : (code == 'hi' ? 'इलाज की अवधि (Course)' : 'Treatment Course');
+  String get treatmentCourse => code == 'bn' ? 'চিকিৎসার মেয়াদ / কোর্স' : (code == 'hi' ? 'इलाज की अवधि / कोर्स' : 'Treatment Course');
   String get courseOngoing => code == 'bn' ? 'চলমান / নিয়মিত' : (code == 'hi' ? 'दीर्घकालिक / नियमित' : 'Ongoing / Chronic');
   String courseDaysLabel(int days) {
     if (days == 14) return code == 'bn' ? '২ সপ্তাহ' : (code == 'hi' ? '२ सप्ताह' : '2 Weeks');
@@ -472,27 +503,27 @@ class AppStrings {
   String get twentyOneDays => code == 'bn' ? '২১ দিন' : (code == 'hi' ? '२१ दिन' : '21 Days');
   String get oneMonth => code == 'bn' ? '১ মাস' : (code == 'hi' ? '१ महीना' : '1 Month');
   String get customCourse => code == 'bn' ? 'কাস্টম মেয়াদ' : (code == 'hi' ? 'कस्टम अवधि' : 'Custom Course');
-  String get customEndDate => code == 'bn' ? 'কাস্টম শেষ তারিখ' : (code == 'hi' ? 'কাস্টম শেষ তারিখ' : 'Custom End Date');
+  String get customEndDate => code == 'bn' ? 'কাস্টম শেষ তারিখ' : (code == 'hi' ? 'कस्टम अंतिम तिथि' : 'Custom End Date');
   String get courseCompleted => code == 'bn' ? 'কোর্স সম্পন্ন' : (code == 'hi' ? 'कोर्स पूरा हुआ' : 'Course Completed');
   String get courseEndsOn => code == 'bn' ? 'কোর্স শেষ হবে' : (code == 'hi' ? 'कोर्स समाप्त होगा' : 'Ends on');
 
   // Quick Frequency Shortcuts
   String get quickDoseFrequency => code == 'bn' ? '১-ক্লিক ফ্রিকোয়েন্সি শর্টকাট' : (code == 'hi' ? '१-क्लिक खुराक शॉर्टकट' : 'Quick Frequency Shortcuts');
   String get doseOnceDaily => code == 'bn' ? '১ বার (১+০+০)' : (code == 'hi' ? '१ बार (१+०+०)' : 'Once (1-0-0)');
-  String get doseTwiceDaily => code == 'bn' ? '২ বার (১+০+১)' : (code == 'hi' ? '२ बार (१+०+১)' : 'Twice (1-0-1)');
-  String get doseThriceDaily => code == 'bn' ? '৩ বার (১+১+১)' : (code == 'hi' ? '३ बार (१+१+১)' : '3 Times (1-1-1)');
-  String get doseFourDaily => code == 'bn' ? '৪ বার (১+১+১+১)' : (code == 'hi' ? '४ बार (१+१+১+১)' : '4 Times');
-  String get doseAsNeeded => code == 'bn' ? 'প্রয়োজনে (SOS / As Needed)' : (code == 'hi' ? 'ज़रूरत पड़ने पर (SOS)' : 'As Needed (SOS)');
+  String get doseTwiceDaily => code == 'bn' ? '২ বার (১+০+১)' : (code == 'hi' ? '२ बार (१+०+१)' : 'Twice (1-0-1)');
+  String get doseThriceDaily => code == 'bn' ? '৩ বার (১+১+১)' : (code == 'hi' ? '३ बार (१+१+१)' : '3 Times (1-1-1)');
+  String get doseFourDaily => code == 'bn' ? '৪ বার (১+১+১+১)' : (code == 'hi' ? '४ बार (१+१+१+१)' : '4 Times');
+  String get doseAsNeeded => code == 'bn' ? 'প্রয়োজনে' : (code == 'hi' ? 'ज़रूरत पड़ने पर' : 'As Needed');
 
   // Routine & Meal Presets
-  String get routineMealSlot => code == 'bn' ? 'ওষুধ খাওয়ার সময় ও নিয়ম (Taking Time)' : (code == 'hi' ? 'दवा लेने का समय और नियम' : 'Taking Time & Routine');
+  String get routineMealSlot => code == 'bn' ? 'ওষুধ খাওয়ার সময় ও নিয়ম' : (code == 'hi' ? 'दवा लेने का समय और नियम' : 'Taking Time & Routine');
   String get morningSlot => code == 'bn' ? 'সকাল' : (code == 'hi' ? 'सुबह' : 'Morning');
   String get lunchSlot => code == 'bn' ? 'দুপুর' : (code == 'hi' ? 'दोपहर' : 'Lunch');
   String get afternoonSlot => code == 'bn' ? 'বিকাল' : (code == 'hi' ? 'दोपहर बाद' : 'Afternoon');
   String get eveningSlot => code == 'bn' ? 'সন্ধ্যা' : (code == 'hi' ? 'शाम' : 'Evening');
   String get nightSlot => code == 'bn' ? 'রাত্রি' : (code == 'hi' ? 'रात' : 'Night');
 
-  String formatNumber(int n) {
+  String formatNumber(dynamic n) {
     if (code == 'bn') {
       const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
       return n.toString().split('').map((c) {
@@ -541,7 +572,8 @@ class AppStrings {
   String get removePhoto => code == 'bn' ? 'ছবি মুছুন' : (code == 'hi' ? 'हटाएं' : 'Remove');
 
   // Expiry Date
-  String get expiryDateTitle => code == 'bn' ? 'ওষুধের মেয়াদোত্তীর্ণের তারিখ (Expiry Date)' : (code == 'hi' ? 'दवा की समाप्ति तिथि (Expiry Date)' : 'Medicine Expiry Date');
+  String get expiryDateTitle => code == 'bn' ? 'ওষুধের মেয়াদোত্তীর্ণের তারিখ' : (code == 'hi' ? 'दवा की समाप्ति तिथि' : 'Medicine Expiry Date');
+  String get noExpiryDate => code == 'bn' ? 'মেয়াদের কোনো তারিখ নেই' : (code == 'hi' ? 'कोई समाप्ति तिथि निर्धारित नहीं' : 'No expiry date set');
   String get selectExpiryDate => code == 'bn' ? 'মেয়াদ শেষের তারিখ বেছে নিন' : (code == 'hi' ? 'समाप्ति तिथि चुनें' : 'Select Expiry Date');
   String get expiresOn => code == 'bn' ? 'মেয়াদ শেষ:' : (code == 'hi' ? 'समाप्ति:' : 'Expires:');
   String get expiredAlert => code == 'bn' ? 'মেয়াদোত্তীর্ণ!' : (code == 'hi' ? 'समाप्त!' : 'Expired!');
@@ -664,8 +696,8 @@ class AppStrings {
   String get notifAllCaughtUpSub => code == 'bn' ? 'অ্যাপে ওষুধ যোগ, ডোজ গ্রহণ, রিফিল বা পরিবর্তনের সকল নোটিফিকেশন এখানে জমা হবে।' : (code == 'hi' ? 'ऐप में दवा जोड़ने, खुराक लेने, रीफिल या बदलाव की सभी सूचनाएं यहां दिखेंगी।' : 'All medicine activities, dose logs, and refill alerts will appear here.');
   String get notifOverdueBadge => code == 'bn' ? 'বাকি রয়েছে' : (code == 'hi' ? 'अतिदेय' : 'OVERDUE');
   String get notifTakeNowBtn => code == 'bn' ? 'খেয়েছি' : (code == 'hi' ? 'दवा ली' : 'Take Now');
-  String get notifSnooze10mBtn => code == 'bn' ? '১০ মি. পরে' : (code == 'hi' ? '১০ मि. बाद' : 'Snooze 10m');
-  String get notifSnoozeSuccess => code == 'bn' ? '১০ মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে!' : (code == 'hi' ? '১০ मिनट के लिए स्नूज़ किया गया!' : 'Snoozed for 10 minutes!');
+  String get notifSnooze10mBtn => code == 'bn' ? '১০ মি. পরে' : (code == 'hi' ? '१० मि. बाद' : 'Snooze 10m');
+  String get notifSnoozeSuccess => code == 'bn' ? '১০ মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে!' : (code == 'hi' ? '१० मिनट के लिए स्नूज़ किया गया!' : 'Snoozed for 10 minutes!');
   String notifDoseTakenSuccess(String medName) => code == 'bn' ? '$medName ডোজ সম্পূর্ণ হিসেবে রেকর্ড করা হয়েছে!' : (code == 'hi' ? '$medName खुराक पूरी दर्ज की गई!' : '$medName marked as taken!');
   String get notifLowStockWarning => code == 'bn' ? 'স্টক শেষ এলার্ট' : (code == 'hi' ? 'कम स्टॉक चेतावनी' : 'Low Stock Warning');
   String notifLowStockDosesLeft(int stock) => code == 'bn' ? 'মাত্র $stock টি ওষুধ অবশিষ্ট আছে।' : (code == 'hi' ? 'केवल $stock खुराक बची हैं। जल्द रीफिल करें।' : 'Only $stock doses left! Refill soon.');
@@ -745,20 +777,783 @@ class AppStrings {
           ? 'तारीख व दवाएं फिल्टर करके डॉक्टर या अपने रिकॉर्ड के लिए सुंदर PDF रिपोर्ट तैयार करें।'
           : 'Filter by date & medicines to generate a verified, clinical-grade adherence PDF report.');
   String get exportOptionsTitle => code == 'bn' ? 'রিপোর্ট ফিল্টার ও কাস্টমাইজেশন' : (code == 'hi' ? 'रिपोर्ट फिल्टर व कस्टमाइज़ेशन' : 'Report Filters & Customization');
-  String get dateRangeFilter => code == 'bn' ? 'তারিখের পরিসর (Date Range)' : (code == 'hi' ? 'तारीख सीमा (Date Range)' : 'Date Range');
-  String get medicineFilterTitle => code == 'bn' ? 'ওষুধ নির্বাচন (Medicines)' : (code == 'hi' ? 'दवा चयन (Medicines)' : 'Select Medicines');
+  String get dateRangeFilter => code == 'bn' ? 'তারিখের পরিসর' : (code == 'hi' ? 'तारीख सीमा' : 'Date Range');
+  String get medicineFilterTitle => code == 'bn' ? 'ওষুধ নির্বাচন' : (code == 'hi' ? 'दवा चयन' : 'Select Medicines');
   String get selectAllMeds => code == 'bn' ? 'সকল ওষুধ' : (code == 'hi' ? 'सभी दवाएं' : 'All Medicines');
   String get selectedMedsSummary => code == 'bn' ? 'টি ওষুধ নির্বাচিত' : (code == 'hi' ? 'दवाएं चयनित' : 'medicines selected');
   String get includeSections => code == 'bn' ? 'রিপোর্টে কী কী তথ্য থাকবে?' : (code == 'hi' ? 'रिपोर्ट में कौन-सी जानकारी शामिल करें?' : 'Include in Report:');
-  String get secAdherenceStats => code == 'bn' ? 'অনুপালন পরিসংখ্যান ও স্কোর (Adherence KPI)' : (code == 'hi' ? 'अनुपालन आंकड़े व स्कोर' : 'Adherence Statistics & KPI');
-  String get secPrescriptions => code == 'bn' ? 'প্রেসক্রিপশন ও ওষুধের বিবরণ (Prescriptions)' : (code == 'hi' ? 'पर्चे की दवाएं व विवरण' : 'Prescription & Dosage Details');
-  String get secIntakeLog => code == 'bn' ? 'দৈনিক সেবন ইতিহাস লগ (Intake Log)' : (code == 'hi' ? 'दैनिक दवा सेवन लॉग' : 'Daily Dose Intake Log');
-  String get secDoctorNotes => code == 'bn' ? 'ডাক্তারের পরামর্শ ও নোটস বক্স (Doctor Notes)' : (code == 'hi' ? 'डॉक्टर परामर्श व नोट्स बॉक्स' : 'Doctor Notes & Signature Box');
+  String get secAdherenceStats => code == 'bn' ? 'অনুপালন পরিসংখ্যান ও স্কোর' : (code == 'hi' ? 'अनुपालन आंकड़े व स्कोर' : 'Adherence Statistics & KPI');
+  String get secPrescriptions => code == 'bn' ? 'প্রেসক্রিপশন ও ওষুধের বিবরণ' : (code == 'hi' ? 'पर्चे की दवाएं व विवरण' : 'Prescription & Dosage Details');
+  String get secIntakeLog => code == 'bn' ? 'দৈনিক সেবন ইতিহাস লগ' : (code == 'hi' ? 'दैनिक दवा सेवन लॉग' : 'Daily Dose Intake Log');
+  String get secDoctorNotes => code == 'bn' ? 'ডাক্তারের পরামর্শ ও নোটস বক্স' : (code == 'hi' ? 'डॉक्टर परामर्श व नोट्स बॉक्स' : 'Doctor Notes & Signature Box');
   String get generateAndSharePdf => code == 'bn' ? 'PDF তৈরি ও শেয়ার করুন' : (code == 'hi' ? 'PDF बनाएं व साझा करें' : 'Generate & Share PDF');
   String get generatingPdfPrompt => code == 'bn' ? 'PDF তৈরি হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...' : (code == 'hi' ? 'PDF तैयार हो रहा है, कृपया प्रतीक्षा करें...' : 'Generating PDF, please wait...');
   String get exportReportCardBtn => code == 'bn' ? 'রিপোর্ট ডাউনলোড / প্রিন্ট' : (code == 'hi' ? 'रिपोर्ट डाउनलोड / प्रिंट' : 'Download / Print Report');
   String get customDateRangePrompt => code == 'bn' ? 'কাস্টম তারিখ বেছে নিন' : (code == 'hi' ? 'कस्टम तारीख चुनें' : 'Custom Date Range');
   String get noMedsSelectedWarning => code == 'bn' ? 'অনুগ্রহ করে অন্তত একটি ওষুধ নির্বাচন করুন' : (code == 'hi' ? 'कृपया कम से कम एक दवा चुनें' : 'Please select at least one medicine');
+
+  // ==================== TIME SLOTS & TIMINGS ====================
+  String get morningShort => code == 'bn' ? 'সকাল' : (code == 'hi' ? 'सुबह' : 'Morn');
+  String get lunchShort => code == 'bn' ? 'দুপুর' : (code == 'hi' ? 'दोपहर' : 'Lunch');
+  String get afternoonShort => code == 'bn' ? 'বিকাল' : (code == 'hi' ? 'दोपहर बाद' : 'Aft');
+  String get eveningShort => code == 'bn' ? 'সন্ধ্যা' : (code == 'hi' ? 'शाम' : 'Eve');
+  String get nightShort => code == 'bn' ? 'রাত' : (code == 'hi' ? 'रात' : 'Night');
+  String timeSlotScheduled(String slot, String time) => code == 'bn'
+      ? '$slot · নির্ধারিত সময় $time'
+      : (code == 'hi' ? '$slot · निर्धारित समय $time' : '$slot · Scheduled at $time');
+
+  // ==================== TODAY & REMINDERS ====================
+  String get todayDoses => code == 'bn' ? 'আজকের ওষুধ' : (code == 'hi' ? 'आज की दवाएं' : "Today's Doses");
+  String get upcomingMedicines => code == 'bn' ? 'আসন্ন ওষুধ' : (code == 'hi' ? 'आगामी दवाएं' : 'Upcoming Medicines');
+  String get completedToday => code == 'bn' ? 'আজকের সম্পন্ন' : (code == 'hi' ? 'आज पूर्ण' : 'Completed Today');
+  String get backToToday => code == 'bn' ? 'আজকে ফিরুন' : (code == 'hi' ? 'आज पर जाएं' : 'Back to Today');
+  String get reportsTab => code == 'bn' ? 'রিপোর্ট' : (code == 'hi' ? 'रिपोर्ट्स' : 'Reports');
+  String get holdToCorrectStatus => code == 'bn'
+      ? 'হোল্ড প্রেস করে স্ট্যাটাস পরিবর্তন করুন'
+      : (code == 'hi' ? 'दबाकर स्थिति बदलें' : 'Hold to change status');
+  String get markSkippedPrompt => code == 'bn'
+      ? 'ওষুধ খাওয়া হয়নি, বাদ (Skip) হিসেবে চিহ্নিত করুন'
+      : (code == 'hi' ? 'दवा नहीं ली गई, छोड़ दी (Skip) के रूप में चिह्नित करें' : 'Dose not taken, mark as skipped');
+  String get markTakenPrompt => code == 'bn'
+      ? 'ওষুধ নেওয়া সম্পন্ন (Taken) হিসেবে চিহ্নিত করুন'
+      : (code == 'hi' ? 'दवा ले ली गई, पूर्ण (Taken) के रूप में चिह्नित करें' : 'Dose taken, mark as completed');
+  String get resetPendingPrompt => code == 'bn'
+      ? 'স্ট্যাটাস পরিবর্তন করে আবার অপেক্ষারত (Pending) করুন'
+      : (code == 'hi' ? 'स्थिति को फिर से लंबित (Pending) करें' : 'Reset back to pending');
+  String get skippedDosesFilter => code == 'bn' ? 'ছুটে যাওয়া' : (code == 'hi' ? 'छूटी हुई' : 'Missed / Skipped');
+  String get upcomingStatus => code == 'bn' ? 'আসন্ন' : (code == 'hi' ? 'आगामी' : 'Upcoming');
+  String get doneLegend => code == 'bn' ? 'সম্পন্ন' : (code == 'hi' ? 'पूर्ण' : 'Done');
+  String get pendingLegend => code == 'bn' ? 'বাকি' : (code == 'hi' ? 'लंबित' : 'Pending');
+  String get missedLegend => code == 'bn' ? 'ছুটে যাওয়া' : (code == 'hi' ? 'छूटी हुई' : 'Missed');
+  String get scheduledTimePrefix => code == 'bn' ? 'নির্ধারিত সময়' : (code == 'hi' ? 'निर्धारित समय' : 'Scheduled at');
+  String get nextMedicinesBelowNotice => code == 'bn' ? 'নিচের পরবর্তী ওষুধগুলো দেখুন' : (code == 'hi' ? 'नीचे अगली दवाएं देखें' : 'See next medicines below');
+  String get dueNow => code == 'bn' ? 'বাকি আছে' : (code == 'hi' ? 'देरी' : 'Due Now');
+
+  String slotMedicinesHeading(String slot) => code == 'bn' ? '$slot এর ওষুধ' : (code == 'hi' ? '$slot की दवाएं' : '$slot Medicines');
+  String dateMedicinesHeading(dynamic date, [String? month]) {
+    final dStr = formatNumber(date);
+    if (month != null) {
+      if (code == 'bn') return '$dStr $month এর ওষুধ';
+      if (code == 'hi') return '$dStr $month की दवाएं';
+      return '$month $dStr Medicines';
+    }
+    if (code == 'bn') return '$dStr এর ওষুধ';
+    if (code == 'hi') return '$dStr की दवाएं';
+    return '$date Medicines';
+  }
+  String noMedicinesForSlot(String slot) => code == 'bn'
+      ? '$slot এর কোনো ওষুধ নেই'
+      : (code == 'hi' ? '$slot के लिए कोई दवा नहीं' : 'No medicines scheduled for $slot');
+  String get noMedicinesForTimeRange => code == 'bn'
+      ? 'এই সময়ে কোনো ওষুধ নেই'
+      : (code == 'hi' ? 'इस समय कोई दवा नहीं' : 'No medicines in this time range');
+  String noMedicinesForTimeSlot(String range) => code == 'bn'
+      ? '$range এ কোনো ওষুধ নেই'
+      : (code == 'hi' ? '$range में कोई दवा नहीं' : 'No medicines in $range');
+  String dosesRemainingCount(int count) {
+    final numStr = formatNumber(count);
+    if (code == 'bn') return '$numStrটি বাকি';
+    if (code == 'hi') return '$numStr खुराक शेष';
+    return '$count doses remaining';
+  }
+  String dosesDueCount(int count) {
+    final numStr = formatNumber(count);
+    if (code == 'bn') return '$numStrটি নেওয়া বাকি';
+    if (code == 'hi') return '$numStr देय खुराक';
+    return '$count due';
+  }
+  String medicinesCount(int count) {
+    final numStr = formatNumber(count);
+    if (code == 'bn') return '$numStrটি ওষুধ';
+    if (code == 'hi') return '$numStr दवाएं';
+    return '$count Medicines';
+  }
+  String medsCountShort(int count) {
+    final numStr = formatNumber(count);
+    if (code == 'bn') return '$numStrটি';
+    if (code == 'hi') return '$numStr दवाएं';
+    return '$count meds';
+  }
+
+  // ==================== NOTIFICATIONS & ALARMS ====================
+  String get notifActionMarkTaken => code == 'bn' ? 'ওষুধ নেওয়া হয়েছে' : (code == 'hi' ? 'दवा ले ली' : 'Mark Taken');
+  String get notifActionSnooze10m => code == 'bn' ? '১০ মিনিট পর' : (code == 'hi' ? '10 मिनट बाद' : 'Snooze 10m');
+  String get notifActionSkip => code == 'bn' ? 'বাদ দিন' : (code == 'hi' ? 'छोड़ें' : 'Skip');
+  String get notifActionDismiss => code == 'bn' ? 'বাতিল' : (code == 'hi' ? 'खारिज करें' : 'Dismiss');
+  String get doseReminderTitle => code == 'bn' ? 'ওষুধের সময় হয়েছে!' : (code == 'hi' ? 'दवा का समय हो गया!' : 'Medicine Reminder!');
+  String notifTimeForMed(String name, [String? dosage]) {
+    final d = (dosage != null && dosage.isNotEmpty) ? ' ($dosage)' : '';
+    if (code == 'bn') return '$name$d খাওয়ার সময় হয়েছে';
+    if (code == 'hi') return '$name$d लेने का समय हो गया है';
+    return 'Time to take $name$d';
+  }
+  String notifTakeBody(String nameOrInstruction, [String? timeOrDosage, String? extra]) {
+    if (extra != null && extra.isNotEmpty) {
+      if (code == 'bn') return '$nameOrInstruction • নির্ধারিত সময় $timeOrDosage ($extra)';
+      if (code == 'hi') return '$nameOrInstruction • समय $timeOrDosage ($extra)';
+      return '$nameOrInstruction • Time $timeOrDosage ($extra)';
+    }
+    final d = (timeOrDosage != null && timeOrDosage.isNotEmpty) ? ' ($timeOrDosage)' : '';
+    if (code == 'bn') return '$nameOrInstruction$d খাওয়ার সময় হয়েছে।';
+    if (code == 'hi') return '$nameOrInstruction$d लेने का समय हो गया है।';
+    return 'Time to take $nameOrInstruction$d.';
+  }
+  String notifTakeBigText(String name, String dosage, [String? timeSlot]) {
+    final slot = (timeSlot != null && timeSlot.isNotEmpty) ? ' • $timeSlot' : '';
+    if (code == 'bn') return '$name ($dosage)$slot\nদয়া করে সময়মতো ওষুধ গ্রহণ করুন।';
+    if (code == 'hi') return '$name ($dosage)$slot\nकृपया समय पर अपनी दवा लें।';
+    return '$name ($dosage)$slot\nPlease take your medicine on time.';
+  }
+  String notifSnoozedTitle(String name, [String? dosage]) => code == 'bn' ? '$name (স্নুজ করা হয়েছে)' : (code == 'hi' ? '$name (स्नूज़ किया गया)' : '$name (Snoozed)');
+  String notifSnoozedBody(String name, [dynamic dosageOrMinutes = 10, dynamic minutes = 10]) {
+    final m = (dosageOrMinutes is int) ? dosageOrMinutes : (minutes is int ? minutes : 10);
+    final mStr = formatNumber(m);
+    if (code == 'bn') return '$name খাওয়ার জন্য $mStr মিনিট পর পুনরায় রিমাইন্ডার দেওয়া হবে।';
+    if (code == 'hi') return '$name के लिए $mStr मिनट बाद पुनः रिमाइंडर मिलेगा।';
+    return 'Reminder for $name snoozed for $m minutes.';
+  }
+  String notifLowStockTitle(String name, [dynamic stock]) => code == 'bn' ? 'স্টক সতর্কতা: $name' : (code == 'hi' ? 'स्टॉक अलर्ट: $name' : 'Low Stock Alert: $name');
+  String notifLowStockBody(dynamic nameOrStock, [dynamic stockOrUnit]) {
+    if (stockOrUnit != null) {
+      final sStr = formatNumber(stockOrUnit);
+      if (code == 'bn') return '$nameOrStock এর মাত্র $sStrটি ওষুধ বাকি আছে। শীঘ্রই সংগ্রহ করুন!';
+      if (code == 'hi') return '$nameOrStock की केवल $sStr दवाएं बची हैं। जल्द रीफिल करें!';
+      return 'Only $stockOrUnit units left for $nameOrStock. Please refill soon!';
+    } else {
+      final sStr = formatNumber(nameOrStock);
+      if (code == 'bn') return 'মাত্র $sStrটি ওষুধ বাকি আছে। শীঘ্রই সংগ্রহ করুন!';
+      if (code == 'hi') return 'केवल $sStr दवाएं बची हैं। जल्द रीफिल करें!';
+      return 'Only $nameOrStock units left! Please refill soon!';
+    }
+  }
+  String get notifTestTitle => code == 'bn' ? 'টেস্ট নোটিফিকেশন' : (code == 'hi' ? 'परीक्षण सूचना' : 'Test Notification');
+  String get notifTestBody => code == 'bn'
+      ? 'MediRemind অ্যালার্ম ও নোটিফিকেশন সিস্টেম সঠিকভাবে কাজ করছে।'
+      : (code == 'hi' ? 'MediRemind अलार्म और सूचना प्रणाली ठीक से काम कर रही है।' : 'MediRemind reminder notifications are working perfectly.');
+  String formatNotifTimestamp(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) {
+      return code == 'bn' ? 'এখনই' : (code == 'hi' ? 'अभी' : 'Just now');
+    } else if (diff.inMinutes < 60) {
+      final m = formatNumber(diff.inMinutes);
+      return code == 'bn' ? '$m মিনিট আগে' : (code == 'hi' ? '$m मिनट पहले' : '${diff.inMinutes}m ago');
+    } else if (diff.inHours < 24) {
+      final h = formatNumber(diff.inHours);
+      return code == 'bn' ? '$h ঘণ্টা আগে' : (code == 'hi' ? '$h घंटे पहले' : '${diff.inHours}h ago');
+    } else {
+      final d = formatNumber(diff.inDays);
+      return code == 'bn' ? '$d দিন আগে' : (code == 'hi' ? '$d दिन पहले' : '${diff.inDays}d ago');
+    }
+  }
+
+  // ==================== MISSED SHEET & HISTORY ====================
+  String get missedMedicinesSheetTitle => code == 'bn' ? 'ছুটে যাওয়া ওষুধ' : (code == 'hi' ? 'छूटी हुई दवाएं' : 'Missed Medicines');
+  String get allCaughtUpTitle => code == 'bn' ? 'কোনো ওষুধ বাকি নেই 🎉' : (code == 'hi' ? 'सब कुछ पूरा है 🎉' : 'All caught up! 🎉');
+  String missedDosesSubtitle(int count) {
+    final numStr = formatNumber(count);
+    if (code == 'bn') return '$numStrটি ওষুধের ডোজ গ্রহণ করা হয়নি';
+    if (code == 'hi') return '$numStr दवाओं की खुराक छूट गई';
+    return '$count missed dose(s) pending';
+  }
+  String get allMissedClearedTitle => code == 'bn' ? 'সব মিসড ওষুধ ক্লিয়ার হয়েছে!' : (code == 'hi' ? 'सभी छूटी दवाएं साफ़ हो गईं!' : 'All Missed Doses Cleared!');
+  String get allMissedClearedSubtitle => code == 'bn'
+      ? 'আপনার আর কোনো ছুটে যাওয়া ওষুধ বাকি নেই।'
+      : (code == 'hi' ? 'आपकी कोई छूटी हुई दवा लंबित नहीं है।' : 'You have no unresolved missed medicines.');
+  String get gotIt => code == 'bn' ? 'ঠিক আছে' : (code == 'hi' ? 'समझ गया' : 'Got it');
+  String get takeLate => code == 'bn' ? 'দেরিতে খেয়েছি' : (code == 'hi' ? 'देर से ली' : 'Take Late');
+  String get todayMissedLabel => code == 'bn' ? 'আজকের' : (code == 'hi' ? 'आज' : 'Today');
+  String yesterdayMissedLabel(String date) => code == 'bn' ? 'গতকাল ($date)' : (code == 'hi' ? 'कल ($date)' : 'Yesterday ($date)');
+  String get filterByDateTooltip => code == 'bn' ? 'তারিখ দিয়ে ফিল্টার করুন' : (code == 'hi' ? 'तारीख से फ़िल्टर करें' : 'Filter by Date');
+  String get showingHistoryForDateOnly => code == 'bn'
+      ? 'তারিখের ওষুধের ইতিহাস দেখানো হচ্ছে'
+      : (code == 'hi' ? 'दवा का इतिहास दिखाया जा रहा है' : 'Showing logs for selected date only');
+  String showingHistoryForDate(String date) => code == 'bn'
+      ? '$date তারিখের ওষুধের ইতিহাস দেখানো হচ্ছে'
+      : (code == 'hi' ? '$date की दवा का इतिहास दिखाया जा रहा है' : 'Showing logs for $date only');
+  String get clearFilterTooltip => code == 'bn' ? 'ফিল্টার মুছুন' : (code == 'hi' ? 'फ़िल्टर हटाएं' : 'Clear filter');
+  String get noHistoryForThisDate => code == 'bn' ? 'এই তারিখে কোনো ইতিহাস নেই' : (code == 'hi' ? 'इस तारीख का कोई इतिहास नहीं' : 'No dose records for this date');
+  String get historyDateToday => code == 'bn' ? 'আজ' : (code == 'hi' ? 'आज' : 'Today');
+  String get historyDateYesterday => code == 'bn' ? 'গতকাল' : (code == 'hi' ? 'कल' : 'Yesterday');
+
+  // ==================== SETTINGS & BACKUP ====================
+  String get appearanceAndThemeHeader => code == 'bn' ? 'অ্যাপের থিম ও মোড' : (code == 'hi' ? 'ऐप थीम और स्वरूप' : 'APPEARANCE & THEME');
+  String get backupAndRestoreHeader => code == 'bn' ? 'ডাটা ব্যাকআপ ও রিস্টোর' : (code == 'hi' ? 'डेटा बैकअप व रीस्टोर' : 'LOCAL BACKUP & RESTORE');
+  String get appearanceThemeTitle => code == 'bn' ? 'অ্যাপের থিম ও মোড' : (code == 'hi' ? 'ऐप थीम और स्वरूप' : 'App Theme & Appearance');
+  String get appearanceThemeSub => code == 'bn'
+      ? 'ক্রিস্টাল লাইট বা অবসিডিয়ান ডার্ক মোড বেছে নিন।'
+      : (code == 'hi' ? 'क्रिस्टल लाइट या ऑब्सीडियन डार्क मोड चुनें।' : 'Choose between Crystal Light or Obsidian Dark mode.');
+  String get deviceLocalBackupTitle => code == 'bn' ? 'ডিভাইস লোকাল ব্যাকআপ' : (code == 'hi' ? 'डिवाइस लोकल बैकअप' : 'Device Local Backup');
+  String get deviceLocalBackupSub => code == 'bn'
+      ? '১০০% অফলাইন ও সুরক্ষিত। সম্পূর্ণ ডাটা আপনার ফোনে সেভ থাকবে।'
+      : (code == 'hi' ? '100% ऑफलाइन और सुरक्षित। पूरा डेटा आपके फोन में रहेगा।' : '100% offline & secure. Complete data stays safely on your phone.');
+  String latestBackupDate(String formatted) => code == 'bn' ? 'সর্বশেষ ব্যাকআপ: $formatted' : (code == 'hi' ? 'अंतिम बैकअप: $formatted' : 'Last backup: $formatted');
+  String get noBackupFound => code == 'bn' ? 'কোনো ব্যাকআপ ফাইল সেভ করা নেই' : (code == 'hi' ? 'कोई बैकअप फ़ाइल सुरक्षित नहीं है' : 'No local backup found yet');
+  String get exportBackupBtn => code == 'bn' ? 'ব্যাকআপ এক্সপোর্ট' : (code == 'hi' ? 'बैकअप निर्यात' : 'Export Backup');
+  String get restoreBackupBtn => code == 'bn' ? 'ব্যাকআপ রিস্টোর' : (code == 'hi' ? 'बैकअप रीस्टोर' : 'Restore Backup');
+  String get restoreBackupConfirmTitle => code == 'bn' ? 'ব্যাকআপ রিস্টোর করবেন?' : (code == 'hi' ? 'बैकअप रीस्टोर करें?' : 'Restore Backup?');
+  String get restoreBackupConfirmDesc => code == 'bn'
+      ? 'ডিভাইসের ফাইল স্টোরেজ থেকে আপনার MediRemind JSON ব্যাকআপ ফাইল নির্বাচন করুন। আপনার ওষুধ, প্রোফাইল এবং শিডিউল রিস্টোর হবে।'
+      : (code == 'hi'
+          ? 'स्टोरेज से अपनी MediRemind JSON बैकअप फ़ाइल चुनें। आपकी दवाएं, प्रोफाइल और शेड्यूल रीस्टोर हो जाएंगे।'
+          : 'Select your MediRemind JSON backup file from device storage. Your medicines, profiles, and schedules will be restored.');
+  String get selectFileBtn => code == 'bn' ? 'ফাইল সিলেক্ট করুন' : (code == 'hi' ? 'फ़ाइल चुनें' : 'Select File');
+
+  // ==================== REPORTS & ANALYTICS ====================
+  String get adherenceReportTitle => code == 'bn' ? 'মেডিসিন অনুপালন রিপোর্ট' : (code == 'hi' ? 'दवा अनुपालन रिपोर्ट' : 'Medication Adherence');
+  String get weeklyPeriod => code == 'bn' ? 'সাপ্তাহিক' : (code == 'hi' ? 'साप्ताहिक' : 'Weekly');
+  String get monthlyPeriod => code == 'bn' ? 'মাসিক' : (code == 'hi' ? 'मासिक' : 'Monthly');
+  String get yearlyPeriod => code == 'bn' ? 'বার্ষিক' : (code == 'hi' ? 'वार्षिक' : 'Yearly');
+  String get adherenceRateLabel => code == 'bn' ? 'অনুপালনের হার' : (code == 'hi' ? 'अनुपालन दर' : 'Adherence Rate');
+  String get inProgressLabel => code == 'bn' ? 'চলমান' : (code == 'hi' ? 'प्रगति में' : 'In Progress');
+  String get pendingCompletionLabel => code == 'bn' ? 'দিন শেষে যুক্ত হবে' : (code == 'hi' ? 'दिन के अंत में जुड़ेगा' : 'Pending completion');
+  String get noDosesLabel => code == 'bn' ? 'কোনো ওষুধ নেই' : (code == 'hi' ? 'कोई खुराक नहीं' : 'No Doses');
+  String get forPeriodLabel => code == 'bn' ? 'এই সময়ের জন্য' : (code == 'hi' ? 'इस अवधि के लिए' : 'For period');
+  String get historicalReportsFinalize => code == 'bn'
+      ? 'আজকের ওষুধ চক্র শেষ হলে রিপোর্ট এখানে চূড়ান্ত হবে।'
+      : (code == 'hi' ? 'आज का दवा चक्र पूरा होने पर रिपोर्ट यहां अंतिम रूप लेगी।' : 'Historical reports finalize as daily cycles complete.');
+  String get noMedDataForPeriod => code == 'bn'
+      ? 'এই সময়ের জন্য কোনো ওষুধের তথ্য নেই।'
+      : (code == 'hi' ? 'इस अवधि के लिए कोई दवा डेटा नहीं है।' : 'No medication data for this period.');
+  String scheduledDosesTakenCount(int taken, int total) {
+    final tStr = formatNumber(taken);
+    final totStr = formatNumber(total);
+    if (code == 'bn') return '$totStrটি নির্ধারিত ওষুধের মধ্যে $tStrটি নেওয়া হয়েছে';
+    if (code == 'hi') return '$totStr निर्धारित दवाओं में से $tStr ली गईं';
+    return '$taken of $total scheduled doses taken';
+  }
+  String get missedOrSkipped => code == 'bn' ? 'মিস / বাদ' : (code == 'hi' ? 'छूटी / छोड़ी' : 'Missed');
+  String get totalDue => code == 'bn' ? 'মোট সম্পন্ন' : (code == 'hi' ? 'कुल देय' : 'Total Due');
+  String get dailyAdherenceRatio => code == 'bn' ? 'দৈনিক গ্রহণের অনুপাত' : (code == 'hi' ? 'दैनिक सेवन अनुपात' : 'Daily Adherence');
+  String get monthlyTrend => code == 'bn' ? 'মাসিক ট্রেন্ড' : (code == 'hi' ? 'मासिक रुझान' : 'Monthly Trend');
+  String get yearlyTrend => code == 'bn' ? 'বার্ষিক ট্রেন্ড' : (code == 'hi' ? 'वार्षिक रुझान' : 'Yearly Trend');
+  String get tapBarForDetails => code == 'bn' ? 'বারে ট্যাপ করে বিস্তারিত দেখুন' : (code == 'hi' ? 'विवरण देखने के लिए बार पर टैप करें' : 'Tap bar for details');
+  String get medicationConsistency => code == 'bn' ? 'ওষুধ গ্রহণের ধারাবাহিকতা' : (code == 'hi' ? 'दवा लेने की निरंतरता' : 'Medication Consistency');
+  String streakSummaryText(int current, int best) {
+    final curStr = formatNumber(current);
+    final bstStr = formatNumber(best);
+    if (code == 'bn') return 'বর্তমান স্ট্রিক: $curStr দিন  ·  সেরা: $bstStr দিন';
+    if (code == 'hi') return 'वर्तमान स्ट्रीक: $curStr दिन  ·  सर्वश्रेष्ठ: $bstStr दिन';
+    return 'Current streak: $curStr days  ·  Best: $bstStr days';
+  }
+  String get noMedicinesInCabinet => code == 'bn' ? 'ওষুধ তালিকায় কোনো ওষুধ নেই' : (code == 'hi' ? 'दवा सूची में कोई दवा नहीं है' : 'No medicines in cabinet');
+  String get noMedicinesInCabinetDesc => code == 'bn'
+      ? 'দৈনিক ওষুধ গ্রহণ রেকর্ড করতে এবং রিপোর্ট দেখতে ওষুধ যুক্ত করুন।'
+      : (code == 'hi' ? 'दैनिक दवा सेवन रिकॉर्ड करने व रिपोर्ट देखने के लिए दवाएं जोड़ें।' : 'Add medicines to track daily doses and visualize health reports.');
+  String get sevenDayTracker => code == 'bn' ? 'সাপ্তাহিক ক্যালেন্ডার ট্র্যাকার' : (code == 'hi' ? 'साप्ताहिक कैलेंडर ट्रैकर' : '7-Day Week Tracker');
+  String get tapPastDayForReport => code == 'bn' ? 'আগের দিনে ট্যাপ করে রিপোর্ট দেখুন' : (code == 'hi' ? 'रिपोर्ट देखने के लिए पिछले दिन पर टैप करें' : 'Tap past day for report');
+  String get pastDayReport => code == 'bn' ? 'পূর্ববর্তী দিনের রিপোর্ট' : (code == 'hi' ? 'पिछले दिन की रिपोर्ट' : 'Past Day Report');
+  String get archivedLabel => code == 'bn' ? 'সংরক্ষিত' : (code == 'hi' ? 'संग्रहीत' : 'Archived');
+  String get totalLabel => code == 'bn' ? 'মোট ওষুধ' : (code == 'hi' ? 'कुल दवाएं' : 'Total');
+  String get adherenceLabel => code == 'bn' ? 'অনুপালন' : (code == 'hi' ? 'अनुपालन' : 'Adherence');
+  String get noMedsScheduledDate => code == 'bn' ? 'এই দিনে কোনো ওষুধ নির্ধারিত ছিল না' : (code == 'hi' ? 'इस तारीख को कोई दवा निर्धारित नहीं थी' : 'No medicines were scheduled on this date');
+  String get allMedsTaken100 => code == 'bn'
+      ? '১০০% অনুপালন সম্পন্ন! সব ওষুধ নেওয়া হয়েছে।'
+      : (code == 'hi' ? '100% पूरा हुआ! सभी निर्धारित दवाएं ली गईं।' : '100% Complete! All scheduled medicines were taken.');
+  String partiallyCompletedText(int taken, int total, int missed) {
+    final tStr = formatNumber(taken);
+    final totStr = formatNumber(total);
+    final mStr = formatNumber(missed);
+    if (code == 'bn') return 'আংশিক সম্পন্ন: $totStrটির মধ্যে $tStrটি নেওয়া হয়েছে, $mStrটি মিস হয়েছে।';
+    if (code == 'hi') return 'आंशिक पूर्ण: $totStr में से $tStr ली गईं, $mStr छूट गईं।';
+    return 'Partially completed: $tStr of $totStr taken, $mStr missed.';
+  }
+  String allMedsMissedText(int missed) {
+    final mStr = formatNumber(missed);
+    if (code == 'bn') return 'সব ওষুধ মিস হয়েছে ($mStrটি ওষুধ নেওয়া হয়নি)।';
+    if (code == 'hi') return 'सभी दवाएं छूट गईं ($mStr दवाएं नहीं ली गईं)।';
+    return 'All medicines were missed on this day ($mStr missed).';
+  }
+  String get medicationDetailsList => code == 'bn' ? 'ওষুধের বিস্তারিত তালিকা' : (code == 'hi' ? 'दवाओं की विस्तृत सूची' : 'Medication Details');
+  String get futureDate => code == 'bn' ? 'ভবিষ্যতের তারিখ' : (code == 'hi' ? 'भविष्य की तारीख' : 'Future date');
+  String get noScheduledDoses => code == 'bn' ? 'কোনো ওষুধ নির্ধারিত নেই' : (code == 'hi' ? 'कोई दवा निर्धारित नहीं' : 'No scheduled doses');
+  String dosesTakenOngoing(int taken, int total) {
+    final tStr = formatNumber(taken);
+    final totStr = formatNumber(total);
+    if (code == 'bn') return '$tStr/$totStr নেওয়া হয়েছে (চলমান)';
+    if (code == 'hi') return '$tStr/$totStr ली गईं (जारी)';
+    return '$tStr/$totStr taken (ongoing)';
+  }
+  String dosesTakenWithPercent(int taken, int total, int pct) {
+    final tStr = formatNumber(taken);
+    final totStr = formatNumber(total);
+    final pStr = formatNumber(pct);
+    if (code == 'bn') return '$tStr/$totStr নেওয়া হয়েছে ($pStr%)';
+    if (code == 'hi') return '$tStr/$totStr ली गईं ($pStr%)';
+    return '$tStr/$totStr taken ($pStr%)';
+  }
+  String get dayInspectionHeading => code == 'bn' ? 'তারিখের ওষুধের বিবরণ' : (code == 'hi' ? 'तारीख का दवा विवरण' : 'Day Dose Inspection');
+  String get allDoneShort => code == 'bn' ? 'সব নেওয়া' : (code == 'hi' ? 'सभी पूर्ण' : 'All Done');
+  String missedCountShort(int count) {
+    final numStr = formatNumber(count);
+    if (code == 'bn') return '$numStrটি মিস';
+    if (code == 'hi') return '$numStr छूटी';
+    return '$numStr Missed';
+  }
+  String get scheduledShort => code == 'bn' ? 'নির্ধারিত' : (code == 'hi' ? 'निर्धारित' : 'Scheduled');
+  String get scheduledSchedule => code == 'bn' ? 'বাকি শিডিউল' : (code == 'hi' ? 'शेष शेड्यूल' : 'Scheduled');
+  String get pastLabel => code == 'bn' ? 'অতীত' : (code == 'hi' ? 'पिछला' : 'Past');
+
+  // ==================== ADD / EDIT / CABINET ====================
+  String get quickStockSelect => code == 'bn' ? 'কুইক স্টক সিলেক্ট করুন:' : (code == 'hi' ? 'त्वरित चयन:' : 'Quick Select:');
+  String get stockRefillTitle => code == 'bn' ? 'স্টক ও রিফিল ট্র্যাকিং' : (code == 'hi' ? 'स्टॉक व रीफ़िल ट्रैकिंग' : 'STOCK & REFILL');
+  String get howManyMedsHave => code == 'bn' ? 'আপনার কাছে কতগুলো ওষুধ আছে?' : (code == 'hi' ? 'दवा का वर्तमान स्टॉक कितना है?' : 'How much stock do you have?');
+  String get autoCalculateCourse => code == 'bn' ? 'কোর্স অনুযায়ী স্বয়ংক্রিয় হিসাব' : (code == 'hi' ? 'कोर्स अनुसार स्वचालित गणना' : 'Smart Course Calculation');
+  String get whenRefillAlertPrompt => code == 'bn' ? 'কতটিতে নামলে রিফিল সতর্কতা চান?' : (code == 'hi' ? 'रीफिल अलर्ट कितने पर चाहिए?' : 'Refill alert when below:');
+  String get fiftyPercentAutoAlert => code == 'bn' ? '৫০% স্টক বাকি থাকলে স্বয়ংক্রিয় এলার্ট' : (code == 'hi' ? '50% स्टॉक बचने पर अलर्ट' : 'Triggers alert at 50% stock');
+  String get fiftyPercentAuto => code == 'bn' ? '৫০% অটো' : (code == 'hi' ? '50% ऑटो' : '50% Auto');
+  String get setAtFiftyPercent => code == 'bn' ? '৫০% এ সেট' : (code == 'hi' ? '50% पर सेट' : 'Set 50%');
+  String get confirmStockAndSetReminders => code == 'bn' ? 'স্টক নিশ্চিত করুন ও রিমাইন্ডার সেট করুন' : (code == 'hi' ? 'स्टॉक पुष्टि करें और रिमाइंडर सेट करें' : 'Confirm Stock & Set Reminders');
+  String get skipStockForNow => code == 'bn' ? 'এখন স্টক দেব না (পরে কার্ড থেকে দেব)' : (code == 'hi' ? 'अभी स्टॉक छोड़ें (बाद में जोड़ें)' : 'Skip stock for now (0 stock)');
+  String get startDateHeader => code == 'bn' ? 'শুরুর তারিখ' : (code == 'hi' ? 'शुरुआती तारीख' : 'Start Date');
+  String get ongoingTreatmentNoEndDate => code == 'bn' ? 'চলমান চিকিৎসা (কোর্সের নির্দিষ্ট মেয়াদ নেই)' : (code == 'hi' ? 'चल रहा इलाज (कोई समाप्ति तारीख नहीं)' : 'Ongoing treatment (No end date)');
+  String get pleaseSelectCourseOrOngoing => code == 'bn' ? 'যেকোনো একটি কোর্স বা চলমান অপশন বাছুন *' : (code == 'hi' ? 'कृपया एक कोर्स या चालू विकल्प चुनें *' : 'Please select a course or ongoing *');
+  String get customTime => code == 'bn' ? 'কাস্টম সময়' : (code == 'hi' ? 'कस्टम समय' : 'Custom Time');
+  String get tapToSetFoodRoutinePrompt => code == 'bn'
+      ? 'সকাল, দুপুর, বিকাল, সন্ধ্যা বা রাত্রিতে ট্যাপ করে খাবারের আগে বা পরে সেট করুন'
+      : (code == 'hi' ? 'सुबह, दोपहर, शाम या रात पर टैप करके भोजन से पहले या बाद सेट करें' : 'Tap morning, lunch, afternoon, evening, or night to set before/after meal');
+  String get quickAddMode => code == 'bn' ? '⚡ সুপার-ফাস্ট ওষুধ যোগ' : (code == 'hi' ? '⚡ त्वरित दवा जोड़ें' : '⚡ Quick Add Mode');
+  String get quickAddModeSub => code == 'bn'
+      ? 'স্টক সংখ্যা, ওষুধের ছবি, এক্সপায়ারি ডেট ও নোট যেকোনো সময় কার্ডের "Info & Stock" অপশন থেকে আপডেট করতে পারবেন।'
+      : (code == 'hi' ? 'स्टॉक संख्या, फोटो, समाप्ति तारीख व नोट्स बाद में कार्ड के "Info & Stock" से अपडेट कर सकते हैं।' : 'Stock count, photo, expiry date, and notes can be updated anytime from the medicine card.');
+  String deleteMedicinePrompt(String name) => code == 'bn' ? 'আপনি কি নিশ্চিত যে "$name" মুছে ফেলতে চান?' : (code == 'hi' ? 'क्या आप वाकई "$name" को हटाना चाहते हैं?' : 'Are you sure you want to delete "$name"?');
+  String get enterMedicineNamePrompt => code == 'bn' ? 'ওষুধের নাম লিখুন' : (code == 'hi' ? 'दवा का नाम दर्ज करें' : 'Enter medicine name');
+  String get enterDosePrompt => code == 'bn' ? 'ডোজ উল্লেখ করুন' : (code == 'hi' ? 'खुराक दर्ज करें' : 'Dose');
+  String fillRequiredFieldsPrompt(String missingList) => code == 'bn' ? 'প্রয়োজনীয় তথ্য পূরণ করুন: $missingList' : (code == 'hi' ? 'कृपया आवश्यक जानकारी भरें: $missingList' : 'Please fill required fields: $missingList');
+  String get noTimeSelectedYet => code == 'bn' ? 'কোনো সময় এখনও নির্বাচন করা হয়নি' : (code == 'hi' ? 'अभी कोई समय नहीं चुना गया' : 'No time selected yet');
+  String get tapTimeToSetSchedule => code == 'bn' ? 'ওপরে সকাল, দুপুর, বিকাল, সন্ধ্যা বা রাত্রিতে ট্যাপ করে সময় সেট করুন' : (code == 'hi' ? 'ऊपर सुबह, दोपहर, शाम या रात पर टैप करके समय सेट करें' : 'Tap morning, lunch, afternoon, evening, or night above to set time');
+  String get dailyRoutineAndDosage => code == 'bn' ? 'ওষুধ খাওয়ার দৈনন্দিন নিয়ম ও মাপ' : (code == 'hi' ? 'दवा लेने का दैनिक नियम व मात्रा' : 'Daily Routine & Dosage');
+  String timeSlotsCount(int count) {
+    final numStr = formatNumber(count);
+    if (code == 'bn') return '$numStrটি সময়';
+    if (code == 'hi') return '$numStr समय';
+    return '$count timings';
+  }
+  String get tenStripsLabel => code == 'bn' ? '১০টি (১ পাতা)' : (code == 'hi' ? '10 (1 पत्ता)' : '10 (1 strip)');
+  String get twentyStripsLabel => code == 'bn' ? '২০টি (২ পাতা)' : (code == 'hi' ? '20 (2 पत्ते)' : '20 (2 strips)');
+  String get thirtyUnitsLabel => code == 'bn' ? '৩০টি' : (code == 'hi' ? '30 इकाइयाँ' : '30 units');
+  String proposedCourseCount(dynamic count) {
+    final cStr = formatNumber(count);
+    if (code == 'bn') return 'প্রস্তাবিত কোর্স: $cStrটি';
+    if (code == 'hi') return 'प्रस्तावित कोर्स: $cStr';
+    return 'Recommended: $count units';
+  }
+  String halfCourseCount(dynamic count) {
+    final cStr = formatNumber(count);
+    if (code == 'bn') return 'অর্ধেক: $cStrটি';
+    if (code == 'hi') return 'आधा कोर्स: $cStr';
+    return 'Half Course: $count';
+  }
+  String oneMonthCount(dynamic count) {
+    final cStr = formatNumber(count);
+    if (code == 'bn') return '১ মাস: $cStrটি';
+    if (code == 'hi') return '1 महीना: $cStr';
+    return '1 Month: $count';
+  }
+  String get prescriptionCopiedSnackbar => code == 'bn' ? '📋 ওষুধের প্রেসক্রিপশন ক্লিপবোর্ডে কপি হয়েছে!' : (code == 'hi' ? '📋 पर्चा क्लिपबोर्ड पर कॉपी हो गया!' : '📋 Prescription copied to clipboard!');
+  String deleteReminderConfirm(String medName, String time) => code == 'bn' ? '$medName এর $time এর অ্যালার্ম কি মুছে ফেলতে চান?' : (code == 'hi' ? 'क्या आप $medName का $time वाला अलार्म हटाना चाहते हैं?' : 'Are you sure you want to delete the $time alarm for $medName?');
+  String get deleteReminderTitle => code == 'bn' ? 'সময় মুছবেন?' : (code == 'hi' ? 'अलार्म हटाएं?' : 'Delete Reminder Time?');
+  String get deleteTimeTooltip => code == 'bn' ? 'সময় মুছুন' : (code == 'hi' ? 'समय हटाएं' : 'Delete Time');
+  String get deleteBtn => code == 'bn' ? 'মুছুন' : (code == 'hi' ? 'हटाएं' : 'Delete');
+  String get deleteFutureRemindersAndHistoryWarning => code == 'bn'
+      ? 'এটি এর ভবিষ্যৎ সকল রিমাইন্ডার এবং ওষুধের ইতিহাস মুছে ফেলবে।'
+      : (code == 'hi' ? 'यह भविष्य के सभी रिमाइंडर और दवा का इतिहास हटा देगा।' : 'This will remove all upcoming reminders and dose history for this medicine.');
+  String get resetBtn => code == 'bn' ? 'রিসেট' : (code == 'hi' ? 'रीसेट' : 'Reset');
+
+  // Alarm Screen
+  String get doseTime => code == 'bn' ? 'ওষুধের সময়' : (code == 'hi' ? 'दवा का समय' : 'Dose Reminder');
+
+  // Cabinet Tabs
+  String get activeLabel => code == 'bn' ? 'সক্রিয়' : (code == 'hi' ? 'सक्रिय' : 'Active');
+  String get pausedLabel => code == 'bn' ? 'স্থগিত' : (code == 'hi' ? 'रोकी गई' : 'Paused');
+  String get outOfStockLabel => code == 'bn' ? 'স্টক শেষ' : (code == 'hi' ? 'स्टॉक खत्म' : 'Out of stock');
+  String get viewDetails => code == 'bn' ? 'বিস্তারিত তথ্য' : (code == 'hi' ? 'विवरण' : 'Details');
+  String leftStockCount(int count) {
+    final numStr = formatNumber(count);
+    if (code == 'bn') return '$numStrটি বাকি';
+    if (code == 'hi') return '$numStr शेष';
+    return '$count left';
+  }
+
+  // Export Presets
+  String get last7Days => code == 'bn' ? 'গত ৭ দিন' : (code == 'hi' ? 'पिछले 7 दिन' : 'Last 7 Days');
+  String get last14Days => code == 'bn' ? 'গত ১৪ দিন' : (code == 'hi' ? 'पिछले 14 दिन' : 'Last 14 Days');
+  String get thisMonth => code == 'bn' ? 'এই মাস' : (code == 'hi' ? 'इस महीने' : 'This Month');
+  String get last30Days => code == 'bn' ? 'গত ৩০ দিন' : (code == 'hi' ? 'पिछले 30 दिन' : 'Last 30 Days');
+  String get customRange => code == 'bn' ? 'কাস্টম রেঞ্জ' : (code == 'hi' ? 'कस्टम रेंज' : 'Custom Range');
+  String get deselectAll => code == 'bn' ? 'সব বাতিল' : (code == 'hi' ? 'सभी अचयनित करें' : 'Deselect All');
+  String get noActiveMedsAvailable => code == 'bn' ? 'কোনো সক্রিয় ওষুধ নেই' : (code == 'hi' ? 'कोई सक्रिय दवा उपलब्ध नहीं' : 'No active medicines available');
+  // ==================== ADD / EDIT MEDICINE & STOCK ====================
+  String calcFormulaOngoing(int dailyDose, int calculatedStock) {
+    final dStr = formatNumber(dailyDose);
+    final cStr = formatNumber(calculatedStock);
+    if (code == 'bn') return 'নিয়মিত ওষুধ • ৩০ দিনের স্টক (দিনে $dStr বার = $cStrটি ওষুধ)';
+    if (code == 'hi') return 'नियमित दवा • 30 दिन का स्टॉक (दिन में $dStr बार = $cStr दवा)';
+    return 'Ongoing treatment • 30-day supply ($dailyDose times daily = $calculatedStock units)';
+  }
+  String calcFormulaCourse(int courseDays, int dailyDose, int calculatedStock) {
+    final cDaysStr = formatNumber(courseDays);
+    final dStr = formatNumber(dailyDose);
+    final cStr = formatNumber(calculatedStock);
+    if (code == 'bn') return '$cDaysStr দিনের কোর্স × দিনে $dStr বার = $cStrটি ওষুধের স্বয়ংক্রিয় হিসাব';
+    if (code == 'hi') return '$cDaysStr दिन का कोर्स × दिन में $dStr बार = $cStr दवा की स्वचालित गणना';
+    return '$courseDays days course × $dailyDose times daily = $calculatedStock units calculated';
+  }
+  String alertInfoTextRefill(int threshold) {
+    final tStr = formatNumber(threshold);
+    if (code == 'bn') return '🔔 ৫০% রিফিল এলার্ট: $tStrটি ওষুধ বাকি থাকলে সতর্কবার্তা আসবে';
+    if (code == 'hi') return '🔔 50% रीफिल अलर्ट: $tStr दवा बचने पर अलर्ट आएगा';
+    return '🔔 50% Refill Alert: Notified when remaining stock reaches $threshold units';
+  }
+  String get quickSelectLabel => code == 'bn' ? 'কুইক স্টক সিলেক্ট করুন:' : (code == 'hi' ? 'त्वरित स्टॉक चुनें:' : 'Quick Select:');
+  String deleteConfirmMedicine(String name) => code == 'bn' ? 'আপনি কি নিশ্চিত যে "$name" মুছে ফেলতে চান?' : (code == 'hi' ? 'क्या आप वाकई "$name" को हटाना चाहते हैं?' : 'Are you sure you want to delete "$name"?');
+  String get newMedicinePrompt => code == 'bn' ? 'ওষুধের নাম লিখুন' : (code == 'hi' ? 'दवा का नाम दर्ज करें' : 'New Medicine');
+  String get fieldMedicineName => code == 'bn' ? 'ওষুধের নাম' : (code == 'hi' ? 'दवा का नाम' : 'Medicine name');
+  String get fieldDosage => code == 'bn' ? 'ডোজ' : (code == 'hi' ? 'खुराक' : 'Dosage');
+  String get fieldTreatmentCourse => code == 'bn' ? 'চিকিৎসার মেয়াদ/কোর্স' : (code == 'hi' ? 'उपचार अवधि/कोर्स' : 'Treatment course');
+  String get fieldTakingRoutine => code == 'bn' ? 'খাওয়ার সময়/রুটিন' : (code == 'hi' ? 'दवा समय/रूटीन' : 'Taking routine');
+  String get noTimingSelectedYet => code == 'bn' ? 'কোনো সময় এখনও নির্বাচন করা হয়নি' : (code == 'hi' ? 'कोई समय अभी तक नहीं चुना गया' : 'No Timing Selected Yet');
+  String get tapAnySlotAbovePrompt => code == 'bn' ? 'ওপরে সকাল, দুপুর, বিকাল, সন্ধ্যা বা রাত্রিতে ট্যাপ করে সময় সেট করুন' : (code == 'hi' ? 'समय सेट करने के लिए ऊपर किसी स्लॉट पर टैप करें' : 'Tap any slot above to set routine time');
+
+  // ==================== TIME SLOT MODAL & ROUTINES ====================
+  String get mealDescBeforeLunch => code == 'bn' ? 'খাবারের আগে' : (code == 'hi' ? 'भोजन से पहले' : 'Before lunch');
+  String get mealDescAfterLunch => code == 'bn' ? 'খাবারের পরে' : (code == 'hi' ? 'भोजन के बाद' : 'After lunch');
+  String get mealDescBeforeSnacks => code == 'bn' ? 'নাস্তার আগে' : (code == 'hi' ? 'नाश्ते से पहले' : 'Before snacks');
+  String get mealDescAfterSnacks => code == 'bn' ? 'নাস্তার পরে' : (code == 'hi' ? 'नाश्ते के बाद' : 'After snacks');
+  String get mealDescBedtime => code == 'bn' ? 'ঘুমানোর আগে' : (code == 'hi' ? 'सोने से पहले' : 'Bedtime');
+  String get mealDescBeforeDinner => code == 'bn' ? 'খাবারের আগে' : (code == 'hi' ? 'रात के खाने से पहले' : 'Before dinner');
+  String get mealDescAfterDinner => code == 'bn' ? 'খাবারের পরে' : (code == 'hi' ? 'रात के खाने के बाद' : 'After dinner');
+
+  String get morningTimingTitle => code == 'bn' ? 'সকালের ওষুধের সময় ও নিয়ম' : (code == 'hi' ? 'सुबह की दवा का समय और नियम' : 'Morning Dose Timing');
+  String get lunchTimingTitle => code == 'bn' ? 'দুপুরের ওষুধের সময় ও নিয়ম' : (code == 'hi' ? 'दोपहर की दवा का समय और नियम' : 'Lunch Dose Timing');
+  String get afternoonTimingTitle => code == 'bn' ? 'বিকালের ওষুধের সময় ও নিয়ম' : (code == 'hi' ? 'दोपहर बाद की दवा का समय और नियम' : 'Afternoon Dose Timing');
+  String get eveningTimingTitle => code == 'bn' ? 'সন্ধ্যার ওষুধের সময় ও নিয়ম' : (code == 'hi' ? 'शाम की दवा का समय और नियम' : 'Evening Dose Timing');
+  String get nightTimingTitle => code == 'bn' ? 'রাতের ওষুধের সময় ও নিয়ম' : (code == 'hi' ? 'रात की दवा का समय और नियम' : 'Night Dose Timing');
+
+  String get optBeforeBreakfastLabel => code == 'bn' ? 'সকালের নাস্তার আগে' : (code == 'hi' ? 'नाश्ते से पहले' : 'Before Breakfast');
+  String get optBeforeBreakfastSub => code == 'bn' ? 'সকালের নাস্তার ৩০ মিনিট আগে' : (code == 'hi' ? 'नाश्ते से 30 मिनट पहले' : '30 min before breakfast');
+  String get optAfterBreakfastLabel => code == 'bn' ? 'সকালের নাস্তার পরে' : (code == 'hi' ? 'नाश्ते के बाद' : 'After Breakfast');
+  String get optAfterBreakfastSub => code == 'bn' ? 'সকালের নাস্তার ৩০ মিনিটের মধ্যে' : (code == 'hi' ? 'नाश्ते के 30 मिनट के भीतर' : 'Within 30 min after breakfast');
+  String get optEmptyStomachLabel => code == 'bn' ? 'খালি পেটে' : (code == 'hi' ? 'खाली पेट' : 'Empty Stomach');
+  String get optEmptyStomachSub => code == 'bn' ? 'সকালে ঘুম থেকে উঠে ১ গ্লাস পানিসহ' : (code == 'hi' ? 'सुबह उठकर 1 गिलास पानी के साथ' : 'Right after waking up with water');
+
+  String get optBeforeLunchLabel => code == 'bn' ? 'দুপুরের খাবারের আগে' : (code == 'hi' ? 'दोपहर भोजन से पहले' : 'Before Lunch');
+  String get optBeforeLunchSub => code == 'bn' ? 'দুপুরের খাওয়ার ৩০ মিনিট আগে' : (code == 'hi' ? 'दोपहर भोजन से 30 मिनट पहले' : '30 min before lunch');
+  String get optAfterLunchLabel => code == 'bn' ? 'দুপুরের খাবারের পরে' : (code == 'hi' ? 'दोपहर भोजन के बाद' : 'After Lunch');
+  String get optAfterLunchSub => code == 'bn' ? 'দুপুরের খাওয়ার ৩০ মিনিটের মধ্যে' : (code == 'hi' ? 'दोपहर भोजन के 30 मिनट के भीतर' : 'Within 30 min after lunch');
+  String get optWithMealLabel => code == 'bn' ? 'খাবারের সাথে' : (code == 'hi' ? 'भोजन के साथ' : 'With Meal');
+  String get optWithMealSub => code == 'bn' ? 'দুপুরের খাবার খাওয়ার সাথে' : (code == 'hi' ? 'दोपहर भोजन के साथ' : 'While having lunch');
+
+  String get optBeforeSnacksLabel => code == 'bn' ? 'নাস্তার আগে' : (code == 'hi' ? 'नाश्ते से पहले' : 'Before Snacks');
+  String get optBeforeSnacksSub => code == 'bn' ? 'বিকালের নাস্তা বা চা খাওয়ার আগে' : (code == 'hi' ? 'नाश्ते या चाय से पहले' : 'Before afternoon snacks');
+  String get optAfterSnacksLabel => code == 'bn' ? 'নাস্তার পরে' : (code == 'hi' ? 'नाश्ते के बाद' : 'After Snacks');
+  String get optAfterSnacksSub => code == 'bn' ? 'বিকালের নাস্তা বা চা খাওয়ার পর' : (code == 'hi' ? 'नाश्ते या चाय के बाद' : 'After afternoon snacks');
+  String get optAnytimeAfternoonLabel => code == 'bn' ? 'বিকালের যে কোনো সময়' : (code == 'hi' ? 'दोपहर बाद कभी भी' : 'Anytime Afternoon');
+  String get optAnytimeAfternoonSub => code == 'bn' ? 'বিকালের যে কোনো সময়' : (code == 'hi' ? 'दोपहर बाद के समय में' : 'Anytime during afternoon');
+
+  String get optBeforeEveningSnacksLabel => code == 'bn' ? 'সন্ধ্যার নাস্তার আগে' : (code == 'hi' ? 'शाम के नाश्ते से पहले' : 'Before Evening Snacks');
+  String get optBeforeEveningSnacksSub => code == 'bn' ? 'সন্ধ্যার নাস্তা বা চা খাওয়ার ৩০ মিনিট আগে' : (code == 'hi' ? 'शाम के नाश्ते से 30 मिनट पहले' : '30 min before evening snacks');
+  String get optAfterEveningSnacksLabel => code == 'bn' ? 'সন্ধ্যার নাস্তার পরে' : (code == 'hi' ? 'शाम के नाश्ते के बाद' : 'After Evening Snacks');
+  String get optAfterEveningSnacksSub => code == 'bn' ? 'সন্ধ্যার নাস্তা বা চা খাওয়ার ৩০ মিনিটের মধ্যে' : (code == 'hi' ? 'शाम के नाश्ते के 30 मिनट के भीतर' : 'Within 30 min after evening snacks');
+  String get optAnytimeEveningLabel => code == 'bn' ? 'সন্ধ্যার যে কোনো সময়' : (code == 'hi' ? 'शाम को कभी भी' : 'Anytime Evening');
+  String get optAnytimeEveningSub => code == 'bn' ? 'সন্ধ্যার যে কোনো সুবিধাজনক সময়' : (code == 'hi' ? 'शाम के किसी भी समय' : 'Anytime during evening hours');
+
+  String get optBeforeDinnerLabel => code == 'bn' ? 'রাতের খাবারের আগে' : (code == 'hi' ? 'रात के खाने से पहले' : 'Before Dinner');
+  String get optBeforeDinnerSub => code == 'bn' ? 'রাতের খাওয়ার ৩০ মিনিট আগে' : (code == 'hi' ? 'रात के खाने से 30 मिनट पहले' : '30 min before dinner');
+  String get optAfterDinnerLabel => code == 'bn' ? 'রাতের খাবারের পরে' : (code == 'hi' ? 'रात के खाने के बाद' : 'After Dinner');
+  String get optAfterDinnerSub => code == 'bn' ? 'রাতের খাওয়ার ৩০ মিনিটের মধ্যে' : (code == 'hi' ? 'रात के खाने के 30 मिनट के भीतर' : 'Within 30 min after dinner');
+  String get optBedtimeLabel => code == 'bn' ? 'ঘুমানোর আগে' : (code == 'hi' ? 'सोने से पहले' : 'At Bedtime');
+  String get optBedtimeSub => code == 'bn' ? 'রাতে ঘুমানোর ঠিক আগে' : (code == 'hi' ? 'रात को सोने से ठीक पहले' : 'Right before sleeping');
+
+  String get chooseFoodTimingPrompt => code == 'bn' ? 'ওষুধ খাওয়ার নিয়ম বেছে নিন' : (code == 'hi' ? 'दवा लेने का नियम चुनें' : 'Choose food timing & instruction');
+  String get alarmTimePrefix => code == 'bn' ? 'অ্যালার্মের সময়:' : (code == 'hi' ? 'अलार्म का समय:' : 'Alarm Time:');
+  String get removeBtn => code == 'bn' ? 'মুছুন' : (code == 'hi' ? 'हटाएं' : 'Remove');
+  String get updateReminderBtn => code == 'bn' ? 'সময় আপডেট করুন' : (code == 'hi' ? 'समय अपडेट करें' : 'Update Reminder');
+  String get confirmReminderBtn => code == 'bn' ? 'রিমাইন্ডার সেট করুন' : (code == 'hi' ? 'रिमाइंडर सेट करें' : 'Confirm Reminder');
+
+
+  String get customCourseDurationDialogTitle => code == 'bn' ? 'কাস্টম কোর্সের মেয়াদ' : (code == 'hi' ? 'कस्टम कोर्स अवधि' : 'Custom Course Duration');
+  String get howManyDaysMedicinePrompt => code == 'bn' ? 'কত দিন ওষুধটি চলবে?' : (code == 'hi' ? 'यह दवा कितने दिन चलेगी?' : 'How many days should this medicine be taken?');
+  String get daysSuffix => code == 'bn' ? 'দিন' : (code == 'hi' ? 'दिन' : 'Days');
+  String get pickEndDateCalendar => code == 'bn' ? 'ক্যালেন্ডার থেকে শেষ তারিখ বাছুন' : (code == 'hi' ? 'कैलेंडर से अंतिम तिथि चुनें' : 'Pick end date from calendar');
+  String get tapToSetSlot => code == 'bn' ? 'সেট করুন' : (code == 'hi' ? 'सेट करें' : 'Tap to set');
+  String get mealDescBeforeBreakfast => code == 'bn' ? 'খাবারের আগে' : (code == 'hi' ? 'नाश्ते से पहले' : 'Before breakfast');
+  String get mealDescAfterBreakfast => code == 'bn' ? 'খাবারের পরে' : (code == 'hi' ? 'नाश्ते के बाद' : 'After breakfast');
+
+
+  // Types
+  String get typeTablet => code == 'bn' ? 'ট্যাবলেট' : (code == 'hi' ? 'टैबलेट' : 'Tablet');
+  String get typeSyrup => code == 'bn' ? 'সিরাপ' : (code == 'hi' ? 'सिरप' : 'Syrup');
+  String get typeCapsule => code == 'bn' ? 'ক্যাপসুল' : (code == 'hi' ? 'कैप्सूल' : 'Capsule');
+  String get typeDrops => code == 'bn' ? 'ড্রপ' : (code == 'hi' ? 'ड्रॉप' : 'Drops');
+  String get typeInhaler => code == 'bn' ? 'ইনহেলার' : (code == 'hi' ? 'इन्हेलर' : 'Inhaler');
+
+  // Alarm action buttons
+  String get takeDoseAction => code == 'bn' ? 'ওষুধ নিয়েছি' : (code == 'hi' ? 'दवा ले ली' : 'Take Dose');
+  String get snooze10mAction => code == 'bn' ? '১০ মিনিট পর' : (code == 'hi' ? '१० मिनट बाद' : 'Snooze 10m');
+  String get completed => code == 'bn' ? 'সম্পন্ন' : (code == 'hi' ? 'पूर्ण' : 'Completed');
+
+  // Notification Badges
+  String get badgeTaken => code == 'bn' ? 'নেওয়া হয়েছে' : (code == 'hi' ? 'ली गई' : 'Taken');
+  String get badgeSkipped => code == 'bn' ? 'বাদ দেওয়া হয়েছে' : (code == 'hi' ? 'छोड़ी गई' : 'Skipped');
+  String get badgeSnoozed => code == 'bn' ? 'স্থগিত' : (code == 'hi' ? 'स्नूज़' : 'Snoozed');
+  String get badgeMissed => code == 'bn' ? 'ছুটে গেছে' : (code == 'hi' ? 'छूट गई' : 'Missed');
+  String get badgeRefill => code == 'bn' ? 'রিফিল' : (code == 'hi' ? 'रीफिल' : 'Refill');
+  String get badgeLowStock => code == 'bn' ? 'কম স্টক' : (code == 'hi' ? 'कम स्टॉक' : 'Low Stock');
+  String get badgeAdded => code == 'bn' ? 'যোগ করা হয়েছে' : (code == 'hi' ? 'जोड़ी गई' : 'Added');
+  String get badgeUpdated => code == 'bn' ? 'আপডেট' : (code == 'hi' ? 'अपडेट' : 'Updated');
+  String get badgeAlarm => code == 'bn' ? 'অ্যালার্ম' : (code == 'hi' ? 'अलार्म' : 'Alarm');
+
+  // Notification Titles & Messages for AppNotification & MedicineProvider
+  String notifDoseTakenTitle(String name) => code == 'bn' ? '$name ওষুধ গ্রহণ সম্পন্ন' : (code == 'hi' ? '$name खुराक पूरी' : '$name Dose Taken');
+  String notifDoseTakenMsg(dynamic dosage, [dynamic time]) {
+    final tStr = time != null ? ' • সময়: $time' : '';
+    if (code == 'bn') return 'ডোজ: $dosage$tStr (ওষুধ সেবন সম্পন্ন)';
+    if (code == 'hi') return 'खुराक: $dosage$tStr (दवा ली गई)';
+    return 'Dose: $dosage$tStr (Completed)';
+  }
+
+  String notifDoseSkippedTitle(String name) => code == 'bn' ? '$name বাদ দেওয়া হয়েছে' : (code == 'hi' ? '$name छोड़ी गई' : '$name Dose Skipped');
+  String notifDoseSkippedMsg(dynamic dosage, [dynamic time]) {
+    final tStr = time != null ? ' • সময়: $time' : '';
+    if (code == 'bn') return 'ডোজ: $dosage$tStr (বাদ দেওয়া হয়েছে)';
+    if (code == 'hi') return 'खुराक: $dosage$tStr (छोड़ दी गई)';
+    return 'Dose: $dosage$tStr (Skipped)';
+  }
+
+  String notifDoseMissedTitle(String name) => code == 'bn' ? '$name এর ডোজ মিস হয়েছে' : (code == 'hi' ? '$name खुराक छूट गई' : '$name Dose Missed');
+  String notifDoseMissedMsg(dynamic dosage, [dynamic time]) {
+    final tStr = time != null ? ' • নির্ধারিত সময়: $time' : '';
+    if (code == 'bn') return 'ডোজ: $dosage$tStr (নেওয়া হয়নি)';
+    if (code == 'hi') return 'खुराक: $dosage$tStr (छूट गई)';
+    return 'Dose: $dosage$tStr (Missed)';
+  }
+
+  String notifDoseSnoozedTitle(String name) => code == 'bn' ? '$name স্থগিত করা হয়েছে' : (code == 'hi' ? '$name स्थगित' : '$name Snoozed');
+  String notifDoseSnoozedMsg(dynamic minutes, [dynamic time]) {
+    final mStr = formatNumber(minutes);
+    if (code == 'bn') return '$mStr মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে';
+    if (code == 'hi') return '$mStr मिनट के लिए रिमाइंडर स्थगित किया गया';
+    return 'Reminder snoozed for $minutes minutes';
+  }
+
+  String notifMedAddedTitle(String name) => code == 'bn' ? 'নতুন ওষুধ যোগ: $name' : (code == 'hi' ? 'नई दवा जोड़ी गई: $name' : 'New Medicine Added: $name');
+  String notifMedAddedMsg(dynamic dosage, [dynamic stock, dynamic instruction]) {
+    final sStr = stock != null ? ' • মজুদ: $stock' : '';
+    final iStr = instruction != null ? ' • $instruction' : '';
+    if (code == 'bn') return 'ডোজ: $dosage$sStr$iStr';
+    if (code == 'hi') return 'खुराक: $dosage$sStr$iStr';
+    return 'Dose: $dosage$sStr$iStr';
+  }
+
+  String notifMedUpdatedTitle(String name) => code == 'bn' ? 'ওষুধের তথ্য আপডেট: $name' : (code == 'hi' ? 'दवा अपडेट: $name' : 'Medicine Updated: $name');
+  String notifMedUpdatedMsg(dynamic dosage, [dynamic stock, dynamic unit]) {
+    final sStr = stock != null ? ' • মজুদ: ${formatNumber(stock)} ${unit ?? ""}' : '';
+    if (code == 'bn') return 'ডোজ: $dosage$sStr';
+    if (code == 'hi') return 'खुराक: $dosage$sStr';
+    return 'Dose: $dosage$sStr';
+  }
+
+  String notifRefillTitle(String name) => code == 'bn' ? 'স্টক রিফিল সম্পন্ন: $name' : (code == 'hi' ? 'स्टॉक रीफिल: $name' : 'Stock Refilled: $name');
+  String notifRefillAddedTitle(String name) => notifRefillTitle(name);
+  String notifRefillMsg(dynamic added, [dynamic stock, dynamic unit]) {
+    final aStr = formatNumber(added);
+    final sStr = stock != null ? ' (মোট মজুদ: ${formatNumber(stock)} ${unit ?? ""})' : '';
+    if (code == 'bn') return '$aStrটি যোগ করা হয়েছে$sStr';
+    if (code == 'hi') return '$aStr दवाएं जोड़ी गईं$sStr';
+    return '$added units added$sStr';
+  }
+
+  String notifLowStockWarningTitle(String name) => code == 'bn' ? 'কম স্টক সতর্কতা: $name' : (code == 'hi' ? 'कम स्टॉक चेतावनी: $name' : 'Low Stock Alert: $name');
+  String notifLowStockWarningMsg(dynamic stock, [dynamic unit]) {
+    final sStr = formatNumber(stock);
+    final uStr = unit != null ? ' $unit' : '';
+    if (code == 'bn') return 'বর্তমান মজুদ মাত্র $sStr$uStr। দ্রুত রিফিল করুন।';
+    if (code == 'hi') return 'वर्तमान स्टॉक केवल $sStr$uStr। कृपया रीफिल करें।';
+    return 'Current stock only $stock$uStr. Please refill soon.';
+  }
+
+  // Date Formatting Methods
+  String formatFullDate(DateTime dt) {
+    if (code == 'bn') {
+      const weekdays = ['সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার', 'রবিবার'];
+      const months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+      final weekday = weekdays[dt.weekday - 1];
+      final month = months[dt.month - 1];
+      return '$weekday, ${formatNumber(dt.day)} $month ${formatNumber(dt.year)}';
+    } else if (code == 'hi') {
+      const weekdays = ['सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार', 'रविवार'];
+      const months = ['जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
+      final weekday = weekdays[dt.weekday - 1];
+      final month = months[dt.month - 1];
+      return '$weekday, ${formatNumber(dt.day)} $month ${formatNumber(dt.year)}';
+    }
+    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    final weekday = weekdays[dt.weekday - 1];
+    final month = months[dt.month - 1];
+    return '$weekday, ${dt.day} $month ${dt.year}';
+  }
+
+  String formatDateRange(DateTime start, DateTime end) {
+    if (code == 'bn') {
+      const monthsShort = ['জানু', 'ফেব্রু', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টে', 'অক্টো', 'নভে', 'ডিসে'];
+      final m1 = monthsShort[start.month - 1];
+      final m2 = monthsShort[end.month - 1];
+      return '${formatNumber(start.day)} $m1 – ${formatNumber(end.day)} $m2 ${formatNumber(end.year)}';
+    } else if (code == 'hi') {
+      const monthsShort = ['जन', 'फ़र', 'मार्च', 'अप्रै', 'मई', 'जून', 'जुला', 'अग', 'सितं', 'अक्टू', 'नव', 'दिसं'];
+      final m1 = monthsShort[start.month - 1];
+      final m2 = monthsShort[end.month - 1];
+      return '${formatNumber(start.day)} $m1 – ${formatNumber(end.day)} $m2 ${formatNumber(end.year)}';
+    }
+    const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final m1 = monthsShort[start.month - 1];
+    final m2 = monthsShort[end.month - 1];
+    return '${start.day} $m1 – ${end.day} $m2 ${end.year}';
+  }
+
+  String formatWeekdayShort(int weekday) {
+    if (code == 'bn') {
+      const w = ['সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি', 'রবি'];
+      return w[(weekday - 1) % 7];
+    } else if (code == 'hi') {
+      const w = ['सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि', 'रवि'];
+      return w[(weekday - 1) % 7];
+    }
+    const w = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    return w[(weekday - 1) % 7];
+  }
+
+  // Stock, Refill, and Badges
+  String get livePreviewBadge => code == 'bn' ? 'লাইভ প্রিভিউ' : (code == 'hi' ? 'लाइव पूर्वावलोकन' : 'LIVE 3D PREVIEW');
+  String get stockRemainingLabel => code == 'bn' ? 'অবশিষ্ট স্টক' : (code == 'hi' ? 'शेष स्टॉक' : 'Stock Remaining');
+  String get lowStockWarningLabel => code == 'bn' ? 'কম স্টক সতর্কতা' : (code == 'hi' ? 'कम स्टॉक चेतावनी' : 'Low Stock Warning');
+  String unitsLeftText(dynamic count, String unit) {
+    final cStr = formatNumber(count);
+    if (code == 'bn') return '$cStr $unit বাকি';
+    if (code == 'hi') return '$cStr $unit शेष';
+    return '$count $unit left';
+  }
+  String get refillBtn => code == 'bn' ? '+ রিফিল' : (code == 'hi' ? '+ रीफिल' : '+ Refill');
+  String get editBtn => code == 'bn' ? 'এডিট' : (code == 'hi' ? 'संपादित' : 'Edit');
+  String get infoAndStockBtn => code == 'bn' ? 'তথ্য ও স্টক' : (code == 'hi' ? 'जानकारी व स्टॉक' : 'Info & Stock');
+  String get pauseReminders => code == 'bn' ? 'রিমাইন্ডার স্থগিত করুন' : (code == 'hi' ? 'रिमाइंडर रोकें' : 'Pause Reminders');
+  String get resumeReminders => code == 'bn' ? 'রিমাইন্ডার চালু করুন' : (code == 'hi' ? 'रिमाइंडर चालू करें' : 'Resume Reminders');
+  String get refillOrUpdateStock => code == 'bn' ? 'স্টক রিফিল / আপডেট' : (code == 'hi' ? 'स्टॉक रीफिल / अपडेट' : 'Refill / Update Stock');
+  String get duplicate => code == 'bn' ? 'ডুপ্লিকেট' : (code == 'hi' ? 'डुप्लिकेट' : 'Duplicate');
+
+  // Streak & Slot Take/Skip
+  String dayStreakText(dynamic streak) {
+    final sStr = formatNumber(streak);
+    if (code == 'bn') return '$sStr-দিনের স্ট্রিক! চালিয়ে যান!';
+    if (code == 'hi') return '$sStr-दिन का स्ट्रीक! जारी रखें!';
+    return '$streak-Day Streak! Keep going!';
+  }
+  String slotTakeCount(dynamic count) {
+    final cStr = formatNumber(count);
+    if (code == 'bn') return '$cStrটি নেওয়া';
+    if (code == 'hi') return '$cStr ली गई';
+    return '$count Take';
+  }
+  String slotSkipCount(dynamic count) {
+    final cStr = formatNumber(count);
+    if (code == 'bn') return '$cStrটি বাদ';
+    if (code == 'hi') return '$cStr छोड़ी';
+    return '$count Skip';
+  }
+
+  String get dailyAdherenceBadge => code == 'bn' ? 'দৈনিক অনুপালন' : (code == 'hi' ? 'दैनिक अनुपालन' : 'DAILY ADHERENCE');
+
+  String getMonthName(int month) {
+    if (code == 'bn') {
+      const months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+      return months[(month - 1).clamp(0, 11)];
+    } else if (code == 'hi') {
+      const months = ['जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
+      return months[(month - 1).clamp(0, 11)];
+    }
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return months[(month - 1).clamp(0, 11)];
+  }
+
+  // Reminder Controls & Alarms
+  String get reminderSoundTitle => code == 'bn' ? 'রিমাইন্ডার সাউন্ড' : (code == 'hi' ? 'रिमाइंडर ध्वनि' : 'Reminder Sound');
+  String get reminderSoundDesc => code == 'bn'
+      ? 'নির্ধারিত ওষুধের সময় শ্রবণযোগ্য সতর্কবার্তা বাজান'
+      : (code == 'hi' ? 'निर्धारित दवा के समय श्रव्य चेतावनी बजाएं' : 'Play auditory alert during scheduled dose reminders');
+  String get vibrationTitle => code == 'bn' ? 'কম্পন (ভাইব্রেশন)' : (code == 'hi' ? 'कंपन (वाइब्रेशन)' : 'Vibration');
+  String get vibrationDesc => code == 'bn'
+      ? 'ওষুধের অ্যালার্ম বাজার সময় ফোনটি কম্পিত করুন'
+      : (code == 'hi' ? 'दवा का अलार्म बजने पर फोन में कंपन करें' : 'Vibrate phone when a medication alarm rings');
+  String get defaultSnoozeTitle => code == 'bn' ? 'ডিফল্ট স্নুজ' : (code == 'hi' ? 'डिफ़ॉल्ट स्नूज़' : 'Default Snooze');
+  String get defaultSnoozeDesc => code == 'bn' ? 'স্নুজে ট্যাপ করার পর পুনরায় বাজার ব্যবধান' : (code == 'hi' ? 'स्नूज़ दबाने पर अलार्म का अंतराल' : 'Interval when tapping Snooze');
+  String get minShort => code == 'bn' ? 'মি.' : (code == 'hi' ? 'मि.' : 'min');
+  String get reminderStyleTitle => code == 'bn' ? 'রিমাইন্ডার ধরন' : (code == 'hi' ? 'रिमाइंडर शैली' : 'Reminder Style');
+  String get reminderStyleDesc => code == 'bn'
+      ? 'স্থায়ী ফুল অ্যালার্ম অথবা স্ট্যান্ডার্ড নোটিফিকেশন এলার্ট'
+      : (code == 'hi' ? 'लगातार पूर्ण अलार्म या सामान्य सूचना अलर्ट' : 'Persistent full alarm or standard notification alert');
+  String get languageHeader => code == 'bn' ? 'ভাষা নির্বাচন' : (code == 'hi' ? 'भाषा चुनें' : 'LANGUAGE');
+
+  // Settings & System Sections
+  String get dataAndPrivacyHeader => code == 'bn' ? 'ডাটা ও গোপনীয়তা' : (code == 'hi' ? 'डेटा और गोपनीयता' : 'DATA & PRIVACY');
+  String get clearHistoryTitle => code == 'bn' ? 'ইনটেক ইতিহাস মুছুন' : (code == 'hi' ? 'सेवन इतिहास साफ़ करें' : 'Clear Intake History');
+  String get clearHistorySubtitle => code == 'bn' ? 'ওষুধ না মুছে অতীতের ডোজ রেকর্ড রিসেট করুন' : (code == 'hi' ? 'दवा हटाए बिना पिछले खुराक रिकॉर्ड रीसेट करें' : 'Reset past dose logs without removing medicines');
+  String get deleteAllDataTitle => code == 'bn' ? 'সব মেডি-রিমাইন্ড ডাটা মুছুন' : (code == 'hi' ? 'सभी डेटा हटाएं' : 'Delete All MediRemind Data');
+  String get deleteAllDataSubtitle => code == 'bn' ? 'ফোনের সব ওষুধ, অ্যালার্ম ও ইতিহাস স্থায়ীভাবে মুছে ফেলুন' : (code == 'hi' ? 'सभी स्थानीय दवाएं, अलार्म और इतिहास स्थायी रूप से हटाएं' : 'Permanently erase all local medicines, alarms, and history');
+  String get aboutAndTrustHeader => code == 'bn' ? 'পরিচিতি ও সুরক্ষা' : (code == 'hi' ? 'परिचय और सुरक्षा' : 'ABOUT & TRUST');
+  String get safeMedicationCompanion => code == 'bn' ? 'v1.0.0 · নিরাপদ ওষুধ সঙ্গী' : (code == 'hi' ? 'v1.0.0 · सुरक्षित दवा साथी' : 'v1.0.0 · Safe Medication Companion');
+  String get aboutDisclaimer => code == 'bn'
+      ? 'মেডি-রিমাইন্ড হলো ব্যক্তিগত ওষুধ ব্যবস্থাপনা ও সময়সূচী অনুসরণের একটি টুল। এটি চিকিৎসকের পরামর্শের বিকল্প নয়।'
+      : (code == 'hi'
+          ? 'मेडी-रिमाइंडर एक व्यक्तिगत दवा प्रबंधन और अनुसूची ट्रैकिंग साधन है। यह पेशेवर चिकित्सा सलाह का विकल्प नहीं है।'
+          : 'MediRemind is a personal medication management and schedule tracking utility. It is not intended to diagnose, treat, or replace professional medical advice.');
+  String get replayOnboarding => code == 'bn' ? 'ওয়েলকাম ও অনবোর্ডিং গাইড পুনরায় দেখুন' : (code == 'hi' ? 'स्वागत और ऑनबोर्डिंग गाइड दोबारा देखें' : 'Replay Welcome & Onboarding Guide');
+  String get founderRole => code == 'bn' ? 'প্রধান ডেভেলপার ও ইউআই/ইউএক্স ডিজাইনার / প্রতিষ্ঠাতা' : (code == 'hi' ? 'मुख्य डेवलपर और यूआई/यूएक्स डिज़ाइनर / संस्थापक' : 'Lead Developer & UI/UX Designer / Founder & Creator');
+  String get manageFamilyMembers => code == 'bn' ? 'পরিবারের সদস্যদের পরিচালনা করুন' : (code == 'hi' ? 'परिवार के सदस्यों का प्रबंधन' : 'Manage Family Members');
+  String get remindersAndAlarmsHeader => code == 'bn' ? 'রিমাইন্ডার ও অ্যালার্ম' : (code == 'hi' ? 'रिमाइंडर और अलार्म' : 'REMINDERS & ALARMS');
+  String get systemPermissionsHeader => code == 'bn' ? 'সিস্টেম অনুমতিসমূহ' : (code == 'hi' ? 'सिस्टम अनुमतियां' : 'SYSTEM PERMISSIONS');
+  String get permissionsRequiredTitle => code == 'bn' ? 'অনুমতি প্রয়োজন' : (code == 'hi' ? 'अनुमतियां आवश्यक' : 'Permissions Required');
+  String get permissionsRequiredSubtitle => code == 'bn' ? 'অ্যালার্ম নির্ভুলভাবে বাজানোর জন্য অনুমতি প্রদান করুন' : (code == 'hi' ? 'सटीक अलार्म के लिए अनुमतियां प्रदान करें' : 'Grant permissions to guarantee alarms fire accurately.');
+  String get fixAllBtn => code == 'bn' ? 'সব ঠিক করুন' : (code == 'hi' ? 'सभी ठीक करें' : 'Fix All');
+  String get notifPermissionTitle => code == 'bn' ? 'নোটিফিকেশন অনুমতি' : (code == 'hi' ? 'सूचना अनुमति' : 'Notification Permission');
+  String get notifPermissionDesc => code == 'bn' ? 'মেডি-রিমাইন্ডকে ওষুধের রিমাইন্ডার সতর্কতা দেখানোর অনুমতি দেয়।' : (code == 'hi' ? 'मेडी-रिमाइंडर को दवा रिमाइंडर अलर्ट दिखाने की अनुमति देता है।' : 'Allows MediRemind to show medicine reminder alerts.');
+  String get exactAlarmTitle => code == 'bn' ? 'সঠিক অ্যালার্ম অনুমতি' : (code == 'hi' ? 'सटीक अलार्म अनुमति' : 'Exact Alarm Permission');
+  String get exactAlarmDesc => code == 'bn' ? 'নির্ধারিত ডোজ অ্যালার্ম যেন সঠিক মিনিটে বাজে তা নিশ্চিত করে।' : (code == 'hi' ? 'सुनिश्चित करता है कि निर्धारित अलार्म सही मिनट पर बजे।' : 'Ensures scheduled dose alarms trigger on the exact minute.');
+  String get batteryOptimizationTitle => code == 'bn' ? 'ব্যাটারি অপ্টিমাইজেশন' : (code == 'hi' ? 'बैटरी अनुकूलन' : 'Battery Optimization');
+  String get batteryOptimizationDesc => code == 'bn' ? 'অ্যান্ড্রয়েড সিস্টেমকে ব্যাকগ্রাউন্ড ডোজ অ্যালার্ম বিলম্ব করা থেকে বিরত রাখে।' : (code == 'hi' ? 'एंड्रॉइड सिस्टम को बैकग्राउंड अलार्म में देरी करने से रोकता है।' : 'Prevents Android system from delaying background dose alarms.');
+  String get standardAlert => code == 'bn' ? 'সাধারণ সতর্কতা' : (code == 'hi' ? 'सामान्य अलर्ट' : 'Standard Alert');
+  String get persistentAlarm => code == 'bn' ? 'স্থায়ী অ্যালার্ম' : (code == 'hi' ? 'लगातार अलार्म' : 'Persistent Alarm');
+  String get clearHistoryDialogTitle => code == 'bn' ? 'ইনটেক ইতিহাস মুছে ফেলবেন?' : (code == 'hi' ? 'क्या सेवन इतिहास साफ़ करें?' : 'Clear Intake History?');
+  String get clearHistoryDialogContent => code == 'bn'
+      ? 'এটি অতীতের সমস্ত ডোজ লগ এবং গ্রহণের চার্ট রিসেট করে শূন্য করে দেবে। আপনার ওষুধের সময়সূচী সক্রিয় থাকবে।\n\nআপনি কি নিশ্চিত যে ইতিহাস সাফ করতে চান?'
+      : (code == 'hi'
+          ? 'यह पिछले सभी खुराक लॉग और चार्ट को शून्य कर देगा। आपकी दवा की अनुसूची सक्रिय रहेगी।\n\nक्या आप वाकई इतिहास साफ़ करना चाहते हैं?'
+          : 'This will reset all past dose logs and adherence charts to zero. Your medicine schedule will remain active.\n\nAre you sure you want to clear history?');
+  String get deleteAllDialogTitle => code == 'bn' ? 'সমস্ত ডাটা মুছে ফেলবেন?' : (code == 'hi' ? 'क्या सभी डेटा हटाएं?' : 'Delete All Data?');
+  String get deleteAllDialogContent => code == 'bn'
+      ? 'এটি স্থায়ীভাবে মুছে ফেলবে:\n• ক্যাবিনেটের সমস্ত ওষুধ\n• সমস্ত নির্ধারিত রিমাইন্ডার অ্যালার্ম\n• সম্পূর্ণ ডোজ গ্রহণ ও অনুসরণের ইতিহাস\n• কাস্টম পারিবারিক প্রোফাইল\n\nএই ক্রিয়াটি ফিরিয়ে নেওয়া যাবে না।'
+      : (code == 'hi'
+          ? 'यह स्थायी रूप से हटा देगा:\n• कैबिनेट की सभी दवाएं\n• सभी निर्धारित रिमाइंडर अलार्म\n• पूरा खुराक इतिहास\n• परिवार के प्रोफाइल\n\nइस क्रिया को वापस नहीं लाया जा सकता।'
+          : 'This will permanently delete:\n• All medicines in cabinet\n• All scheduled reminder alarms\n• Complete intake and adherence history\n• Custom family profiles\n\nThis action cannot be undone.');
+  String get deleteEverythingBtn => code == 'bn' ? 'সবকিছু মুছে ফেলুন' : (code == 'hi' ? 'सब कुछ हटाएं' : 'Delete Everything');
+  String get allDataErasedMsg => code == 'bn' ? 'মেডি-রিমাইন্ডের সমস্ত লোকাল ডাটা মুছে ফেলা হয়েছে।' : (code == 'hi' ? 'सभी स्थानीय डेटा हटा दिया गया है।' : 'All local MediRemind data has been erased.');
+
+  // Medicine Details & Extra Labels
+  String get active => code == 'bn' ? 'সক্রিয়' : (code == 'hi' ? 'सक्रिय' : 'Active');
+  String get inactive => code == 'bn' ? 'নিষ্ক্রিয়' : (code == 'hi' ? 'निष्क्रिय' : 'Inactive');
+  String get category => code == 'bn' ? 'ক্যাটাগরি' : (code == 'hi' ? 'श्रेणी' : 'Category');
+  String get frequency => code == 'bn' ? 'ফ্রিকোয়েন্সি' : (code == 'hi' ? 'आवृत्ति' : 'Frequency');
+  String get timesPerDay => code == 'bn' ? 'বার/দিন' : (code == 'hi' ? 'बार/दिन' : 'times/day');
+  String get time => code == 'bn' ? 'সময়' : (code == 'hi' ? 'समय' : 'Time');
+  String get startDate => code == 'bn' ? 'শুরুর তারিখ' : (code == 'hi' ? 'आरंभ तिथि' : 'Start Date');
+  String get notes => code == 'bn' ? 'নোটস' : (code == 'hi' ? 'नोट्स' : 'Notes');
+  String get stock => code == 'bn' ? 'স্টক' : (code == 'hi' ? 'स्टॉक' : 'Stock');
+  String get edit => code == 'bn' ? 'সম্পাদনা' : (code == 'hi' ? 'संपादित करें' : 'Edit');
+  String get editMedicineDetails => code == 'bn' ? 'ওষুধের তথ্য সম্পাদনা' : (code == 'hi' ? 'दवा का विवरण संपादित करें' : 'Edit Medicine Details');
+  String get viewHistory => code == 'bn' ? 'ইতিহাস দেখুন' : (code == 'hi' ? 'इतिहास देखें' : 'View History');
+  String get sharePrescription => code == 'bn' ? 'প্রেসক্রিপশন শেয়ার করুন' : (code == 'hi' ? 'पर्चा साझा करें' : 'Share Prescription');
+  String get deleteMedicineConfirm => code == 'bn' ? 'আপনি কি নিশ্চিত এই ওষুধটি মুছে ফেলতে চান?' : (code == 'hi' ? 'क्या आप वाकई इस दवा को हटाना चाहते हैं?' : 'Are you sure you want to delete this medicine?');
 }
 
 

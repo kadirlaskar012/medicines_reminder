@@ -112,7 +112,7 @@ class MissedMedicinesSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        s.code == 'bn' ? 'ছুটে যাওয়া ওষুধ' : (s.code == 'hi' ? 'छूटी हुई दवाएं' : 'Missed Medicines'),
+                        s.missedMedicinesSheetTitle,
                         style: GoogleFonts.outfit(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -123,10 +123,8 @@ class MissedMedicinesSheet extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         missedDoses.isEmpty
-                            ? (s.code == 'bn' ? 'কোনো ওষুধ বাকি নেই 🎉' : 'All caught up! 🎉')
-                            : (s.code == 'bn'
-                                ? '${missedDoses.length}টি ওষুধের ডোজ গ্রহণ করা হয়নি'
-                                : '${missedDoses.length} missed dose(s) pending'),
+                            ? s.allCaughtUpTitle
+                            : s.missedDosesSubtitle(missedDoses.length),
                         style: GoogleFonts.outfit(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
@@ -245,7 +243,7 @@ class MissedMedicinesSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            s.code == 'bn' ? 'সব মিসড ওষুধ ক্লিয়ার হয়েছে!' : 'All Missed Doses Cleared!',
+            s.allMissedClearedTitle,
             style: GoogleFonts.outfit(
               fontSize: 16,
               fontWeight: FontWeight.w800,
@@ -254,9 +252,7 @@ class MissedMedicinesSheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            s.code == 'bn'
-                ? 'আপনার আর কোনো ছুটে যাওয়া ওষুধ বাকি নেই।'
-                : 'You have no unresolved missed medicines.',
+            s.allMissedClearedSubtitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.outfit(
               fontSize: 13,
@@ -275,7 +271,7 @@ class MissedMedicinesSheet extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
             ),
             child: Text(
-              s.code == 'bn' ? 'ঠিক আছে' : 'Got it',
+              s.gotIt,
               style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13.5),
             ),
           ),
@@ -465,7 +461,7 @@ class MissedMedicinesSheet extends StatelessWidget {
                         ),
                         const SizedBox(width: 5),
                         Text(
-                          s.code == 'bn' ? 'দেরিতে খেয়েছি' : (s.code == 'hi' ? 'देर से ली' : 'Take Late'),
+                          s.takeLate,
                           style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -552,42 +548,18 @@ class MissedMedicinesSheet extends StatelessWidget {
     final diffDays = today.difference(target).inDays;
 
     if (diffDays == 0) {
-      return s.code == 'bn' ? 'আজকের (Today)' : 'Today';
+      return s.todayMissedLabel;
     } else if (diffDays == 1) {
-      return s.code == 'bn' ? 'গতকাল (${DateFormat('d MMM').format(date)})' : 'Yesterday (${DateFormat('d MMM').format(date)})';
+      final dateStr = s.code == 'bn' || s.code == 'hi'
+          ? '${s.formatNumber(date.day)} ${s.monthName(date.month)}'
+          : DateFormat('d MMM').format(date);
+      return s.yesterdayMissedLabel(dateStr);
     } else {
-      return DateFormat('EEEE, d MMM').format(date);
+      return s.formatDayMonthWeekday(date);
     }
   }
 
   String _getTimeSlotTitle(TimeSlot slot, AppStrings s) {
-    if (s.code == 'bn') {
-      switch (slot) {
-        case TimeSlot.morning:
-          return 'সকাল';
-        case TimeSlot.lunch:
-          return 'দুপুর';
-        case TimeSlot.afternoon:
-          return 'বিকাল';
-        case TimeSlot.evening:
-          return 'সন্ধ্যা';
-        case TimeSlot.night:
-          return 'রাত';
-      }
-    } else if (s.code == 'hi') {
-      switch (slot) {
-        case TimeSlot.morning:
-          return 'सुबह';
-        case TimeSlot.lunch:
-          return 'दोपहर (लंच)';
-        case TimeSlot.afternoon:
-          return 'दोपहर बाद';
-        case TimeSlot.evening:
-          return 'शाम';
-        case TimeSlot.night:
-          return 'रात';
-      }
-    }
-    return slot.title;
+    return slot.titleLocalized(s);
   }
 }

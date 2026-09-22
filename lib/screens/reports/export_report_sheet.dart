@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/services/report_and_alert_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -308,11 +307,11 @@ class _ExportReportSheetState extends State<ExportReportSheet> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _buildPresetChip('7d', s.code == 'bn' ? 'গত ৭ দিন' : 'Last 7 Days'),
-                    _buildPresetChip('14d', s.code == 'bn' ? 'গত ১৪ দিন' : 'Last 14 Days'),
-                    _buildPresetChip('month', s.code == 'bn' ? 'এই মাস' : 'This Month'),
-                    _buildPresetChip('30d', s.code == 'bn' ? 'গত ৩০ দিন' : 'Last 30 Days'),
-                    _buildPresetChip('custom', s.code == 'bn' ? 'কাস্টম রেঞ্জ' : 'Custom Range', isCustom: true),
+                    _buildPresetChip('7d', s.last7Days),
+                    _buildPresetChip('14d', s.last14Days),
+                    _buildPresetChip('month', s.thisMonth),
+                    _buildPresetChip('30d', s.last30Days),
+                    _buildPresetChip('custom', s.customRange, isCustom: true),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -339,7 +338,7 @@ class _ExportReportSheetState extends State<ExportReportSheet> {
                             const Icon(Icons.date_range_rounded, size: 18, color: Color(0xFF7C3AED)),
                             const SizedBox(width: 8),
                             Text(
-                              '${DateFormat('dd MMM yyyy').format(_startDate)}  —  ${DateFormat('dd MMM yyyy').format(_endDate)}',
+                              s.formatDateRange(_startDate, _endDate),
                               style: GoogleFonts.outfit(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -381,7 +380,7 @@ class _ExportReportSheetState extends State<ExportReportSheet> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         child: Text(
-                          allSelected ? (s.code == 'bn' ? 'সব বাতিল' : 'Deselect All') : s.selectAllMeds,
+                          allSelected ? s.deselectAll : s.selectAllMeds,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -403,7 +402,7 @@ class _ExportReportSheetState extends State<ExportReportSheet> {
                     ),
                     child: Center(
                       child: Text(
-                        s.code == 'bn' ? 'কোনো সক্রিয় ওষুধ নেই' : 'No active medicines available',
+                        s.noActiveMedsAvailable,
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark ? AppColors.darkTextMuted : AppColors.textMuted,

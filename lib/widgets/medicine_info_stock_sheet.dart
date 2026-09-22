@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../models/medicine.dart';
+import '../providers/language_provider.dart';
 import '../providers/medicine_provider.dart';
 import 'medicine_visual.dart';
 
@@ -198,6 +198,7 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.watch<LanguageProvider>().strings;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final availableUnits = widget.medicine.type.availableUnits;
 
@@ -595,7 +596,7 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
                   // 3. Expiry Date & Shelf Life Tracker
                   _buildSectionCard(
                     isDark: isDark,
-                    title: 'Medicine Expiry Date',
+                    title: s.expiryDateTitle,
                     icon: Icons.event_available_rounded,
                     iconColor: AppColors.accentAmber,
                     child: Column(
@@ -608,8 +609,8 @@ class _MedicineInfoStockSheetState extends State<MedicineInfoStockSheet> {
                               children: [
                                 Text(
                                   _expiryDate != null
-                                      ? DateFormat('d MMMM yyyy').format(_expiryDate!)
-                                      : 'No expiry date set',
+                                      ? s.formatDayMonthYear(_expiryDate!)
+                                      : s.noExpiryDate,
                                   style: GoogleFonts.outfit(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,

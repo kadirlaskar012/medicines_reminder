@@ -289,7 +289,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           // 0. APPEARANCE & THEME (Light / Dark Switcher)
           _buildSectionHeader(
-            s.code == 'bn' ? 'অ্যাপের থিম ও মোড' : 'APPEARANCE & THEME',
+            s.appearanceAndThemeHeader,
             icon: Icons.palette_rounded,
             accentColor: const Color(0xFF8B5CF6),
             isDark: isDark,
@@ -301,7 +301,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // 1. LOCAL DATA BACKUP & RESTORE
           _buildSectionHeader(
-            s.code == 'bn' ? 'ডাটা ব্যাকআপ ও রিস্টোর' : 'LOCAL BACKUP & RESTORE',
+            s.backupAndRestoreHeader,
             icon: Icons.backup_rounded,
             accentColor: const Color(0xFF0D9488),
             isDark: isDark,
@@ -313,7 +313,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // 2. FAMILY & PROFILES
           _buildSectionHeader(
-            'FAMILY & PROFILES',
+            s.familyMembersProfiles,
             icon: Icons.badge_rounded,
             accentColor: const Color(0xFF10B981),
             isDark: isDark,
@@ -325,13 +325,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // 3. REMINDERS (Sound, Vibration, Snooze, Behavior)
           _buildSectionHeader(
-            'REMINDERS & ALARMS',
+            s.remindersAndAlarmsHeader,
             icon: Icons.alarm_rounded,
             accentColor: const Color(0xFF8B5CF6),
             isDark: isDark,
           ),
           const SizedBox(height: 8),
-          _buildReminderControlsCard(isDark),
+          _buildReminderControlsCard(isDark, s),
 
           const SizedBox(height: 24),
 
@@ -340,7 +340,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildSectionHeader(
-                'SYSTEM PERMISSIONS',
+                s.systemPermissionsHeader,
                 icon: Icons.security_rounded,
                 accentColor: const Color(0xFFF59E0B),
                 isDark: isDark,
@@ -363,13 +363,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
 
           if (hasMissingPermission) ...[
-            _buildPermissionAttentionBanner(isDark),
+            _buildPermissionAttentionBanner(isDark, s),
             const SizedBox(height: 12),
           ],
 
           _buildPermissionTile(
-            title: 'Notification Permission',
-            description: 'Allows MediRemind to show medicine reminder alerts.',
+            title: s.notifPermissionTitle,
+            description: s.notifPermissionDesc,
             icon: Icons.notifications_active_rounded,
             gradientColors: const [Color(0xFF4F46E5), Color(0xFF6366F1)],
             isGranted: isNotifGranted,
@@ -382,8 +382,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 10),
 
           _buildPermissionTile(
-            title: 'Exact Alarm Permission',
-            description: 'Ensures scheduled dose alarms trigger on the exact minute.',
+            title: s.exactAlarmTitle,
+            description: s.exactAlarmDesc,
             icon: Icons.alarm_on_rounded,
             gradientColors: const [Color(0xFFEA580C), Color(0xFFF97316)],
             isGranted: isAlarmGranted,
@@ -398,8 +398,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 10),
 
           _buildPermissionTile(
-            title: 'Battery Optimization',
-            description: 'Prevents Android system from delaying background dose alarms.',
+            title: s.batteryOptimizationTitle,
+            description: s.batteryOptimizationDesc,
             icon: Icons.battery_charging_full_rounded,
             gradientColors: const [Color(0xFF059669), Color(0xFF10B981)],
             isGranted: isBatteryGranted,
@@ -411,7 +411,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // 5. LANGUAGE
           _buildSectionHeader(
-            'LANGUAGE',
+            s.languageHeader,
             icon: Icons.translate_rounded,
             accentColor: const Color(0xFF0D9488),
             isDark: isDark,
@@ -423,19 +423,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // 7. DATA & PRIVACY
           _buildSectionHeader(
-            'DATA & PRIVACY',
+            s.dataAndPrivacyHeader,
             icon: Icons.shield_outlined,
             accentColor: const Color(0xFFE11D48),
             isDark: isDark,
           ),
           const SizedBox(height: 8),
-          _buildDataAndPrivacyCard(context, provider, isDark),
+          _buildDataAndPrivacyCard(context, provider, isDark, s),
 
           const SizedBox(height: 24),
 
           // 8. ABOUT & MEDICAL TRUST
           _buildSectionHeader(
-            'ABOUT & TRUST',
+            s.aboutAndTrustHeader,
             icon: Icons.info_outline_rounded,
             accentColor: const Color(0xFF0EA5E9),
             isDark: isDark,
@@ -454,7 +454,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     AppStrings s,
     bool isDark,
   ) {
-    final isBn = s.code == 'bn';
     final currentMode = themeProvider.themeMode;
 
     Widget buildOption({
@@ -551,7 +550,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isBn ? 'অ্যাপের থিম ও মোড' : 'App Theme & Appearance',
+                      s.appearanceThemeTitle,
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -560,9 +559,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      isBn
-                          ? 'ক্রিস্টাল লাইট বা অবসিডিয়ান ডার্ক মোড বেছে নিন।'
-                          : 'Select Crystal Light or Obsidian Dark mode.',
+                      s.appearanceThemeSub,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -611,7 +608,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     AppStrings s,
     bool isDark,
   ) {
-    final isBn = s.code == 'bn';
     return _buildCardContainer(
       isDark: isDark,
       accentGlow: const Color(0xFF0D9488),
@@ -632,7 +628,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isBn ? 'ডিভাইস লোকাল ব্যাকআপ' : 'Device Local Backup',
+                      s.deviceLocalBackupTitle,
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -641,9 +637,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      isBn
-                          ? '১০০% অফলাইন ও সুরক্ষিত। সম্পূর্ণ ডাটা আপনার ফোনে সেভ থাকবে।'
-                          : '100% offline & private. All data stays safe on your device.',
+                      s.deviceLocalBackupSub,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -674,13 +668,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _lastBackupFormatted != null
-                        ? (isBn
-                            ? 'সর্বশেষ ব্যাকআপ: $_lastBackupFormatted'
-                            : 'Last Backup: $_lastBackupFormatted')
-                        : (isBn
-                            ? 'কোনো ব্যাকআপ ফাইল সেভ করা নেই'
-                            : 'Device Storage · No backup exported yet'),
+                    _lastBackupFormatted != null ? s.latestBackupDate(_lastBackupFormatted!) : s.noBackupFound,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
@@ -701,7 +689,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: () => _performLocalExport(context),
                   icon: const Icon(Icons.upload_file_rounded, size: 17),
                   label: Text(
-                    isBn ? 'ব্যাকআপ এক্সপোর্ট' : 'Export Backup',
+                    s.exportBackupBtn,
                     style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -717,10 +705,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _confirmLocalRestore(context, provider, isBn),
+                  onPressed: () => _confirmLocalRestore(context, provider, s),
                   icon: const Icon(Icons.download_rounded, size: 17, color: Color(0xFF0D9488)),
                   label: Text(
-                    isBn ? 'ব্যাকআপ রিস্টোর' : 'Restore Backup',
+                    s.restoreBackupBtn,
                     style: GoogleFonts.outfit(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
@@ -776,7 +764,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _confirmLocalRestore(BuildContext context, MedicineProvider provider, bool isBn) {
+  void _confirmLocalRestore(BuildContext context, MedicineProvider provider, AppStrings s) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -792,22 +780,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                isBn ? 'ব্যাকআপ রিস্টোর করবেন?' : 'Restore Backup?',
+                s.restoreBackupConfirmTitle,
                 style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 18),
               ),
             ),
           ],
         ),
         content: Text(
-          isBn
-              ? 'ডিভাইসের ফাইল স্টোরেজ থেকে আপনার MediRemind JSON ব্যাকআপ ফাইল নির্বাচন করুন। আপনার ঔষধ, প্রোফাইল এবং শিডিউল রিস্টোর হবে।'
-              : 'Select a previously exported MediRemind JSON backup file. Your medicines, schedules, and history will be safely restored and merged on this device.',
+          s.restoreBackupConfirmDesc,
           style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.45),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(isBn ? 'বাতিল' : 'Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+            child: Text(s.cancelBtn, style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
@@ -843,7 +829,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             },
             icon: const Icon(Icons.file_open_rounded, size: 16),
-            label: Text(isBn ? 'ফাইল সিলেক্ট করুন' : 'Select File', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+            label: Text(s.selectFileBtn, style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -965,7 +951,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Manage Family Members',
+                      s.manageFamilyMembers,
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -1018,7 +1004,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ================= 3. REMINDERS =================
-  Widget _buildReminderControlsCard(bool isDark) {
+  Widget _buildReminderControlsCard(bool isDark, AppStrings s) {
     final snoozeOptions = [5, 10, 15, 30];
 
     return _buildCardContainer(
@@ -1040,7 +1026,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Reminder Sound',
+                      s.reminderSoundTitle,
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700,
                         fontSize: 14.5,
@@ -1048,7 +1034,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     Text(
-                      'Play auditory alert during scheduled dose reminders',
+                      s.reminderSoundDesc,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11.5,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1085,7 +1071,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Vibration',
+                      s.vibrationTitle,
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700,
                         fontSize: 14.5,
@@ -1093,7 +1079,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     Text(
-                      'Vibrate phone when a medication alarm rings',
+                      s.vibrationDesc,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11.5,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1130,7 +1116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Default Snooze',
+                      s.defaultSnoozeTitle,
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700,
                         fontSize: 14.5,
@@ -1138,7 +1124,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     Text(
-                      'Interval when tapping Snooze',
+                      s.defaultSnoozeDesc,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11.5,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1183,7 +1169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        '$min min',
+                        '${s.formatNumber(min)} ${s.minShort}',
                         style: GoogleFonts.outfit(
                           fontSize: 12.5,
                           fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
@@ -1216,7 +1202,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Reminder Style',
+                      s.reminderStyleTitle,
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700,
                         fontSize: 14.5,
@@ -1224,7 +1210,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     Text(
-                      'Persistent full alarm or standard notification alert',
+                      s.reminderStyleDesc,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11.5,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1275,7 +1261,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Persistent Alarm',
+                          s.persistentAlarm,
                           style: GoogleFonts.outfit(
                             fontSize: 12.5,
                             fontWeight: _reminderBehavior == 'persistent' ? FontWeight.w800 : FontWeight.w600,
@@ -1326,7 +1312,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Standard Alert',
+                          s.standardAlert,
                           style: GoogleFonts.outfit(
                             fontSize: 12.5,
                             fontWeight: _reminderBehavior == 'normal' ? FontWeight.w800 : FontWeight.w600,
@@ -1348,7 +1334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ================= 4. SYSTEM PERMISSIONS =================
-  Widget _buildPermissionAttentionBanner(bool isDark) {
+  Widget _buildPermissionAttentionBanner(bool isDark, AppStrings s) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1377,7 +1363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Permissions Required',
+                  s.permissionsRequiredTitle,
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
@@ -1385,7 +1371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 Text(
-                  'Grant permissions to guarantee alarms fire accurately.',
+                  s.permissionsRequiredSubtitle,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11.5,
                     color: isDark ? Colors.white70 : const Color(0xFFC2410C),
@@ -1404,7 +1390,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               elevation: 2,
             ),
-            child: Text('Fix All', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700)),
+            child: Text(s.fixAllBtn, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1640,6 +1626,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     BuildContext context,
     MedicineProvider provider,
     bool isDark,
+    AppStrings s,
   ) {
     return _buildCardContainer(
       isDark: isDark,
@@ -1648,7 +1635,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         children: [
           InkWell(
-            onTap: () => _confirmClearHistory(context, provider),
+            onTap: () => _confirmClearHistory(context, provider, s),
             borderRadius: BorderRadius.circular(14),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -1666,7 +1653,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Clear Intake History',
+                          s.clearHistoryTitle,
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
@@ -1674,7 +1661,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         Text(
-                          'Reset past dose logs without removing medicines',
+                          s.clearHistorySubtitle,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1692,7 +1679,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Divider(color: isDark ? Colors.white10 : const Color(0xFFF1F5F9), height: 1),
           const SizedBox(height: 6),
           InkWell(
-            onTap: () => _confirmDeleteAllData(context, provider),
+            onTap: () => _confirmDeleteAllData(context, provider, s),
             borderRadius: BorderRadius.circular(14),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -1710,7 +1697,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Delete All MediRemind Data',
+                          s.deleteAllDataTitle,
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
@@ -1718,7 +1705,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         Text(
-                          'Permanently erase all local medicines, alarms, and history',
+                          s.deleteAllDataSubtitle,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1737,20 +1724,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _confirmClearHistory(BuildContext context, MedicineProvider provider) {
+  void _confirmClearHistory(BuildContext context, MedicineProvider provider, AppStrings s) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Clear Intake History?', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+        title: Text(s.clearHistoryDialogTitle, style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
         content: Text(
-          'This will reset all past dose logs and adherence charts to zero. Your medicine schedule will remain active.\n\nAre you sure you want to clear history?',
+          s.clearHistoryDialogContent,
           style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.45),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+            child: Text(s.cancel, style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1763,21 +1750,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               await provider.clearIntakeHistory();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Intake history cleared successfully.'),
+                  SnackBar(
+                    content: Text(s.clearHistoryTitle),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
-            child: Text('Clear History', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+            child: Text(s.clearHistoryTitle, style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
     );
   }
 
-  void _confirmDeleteAllData(BuildContext context, MedicineProvider provider) {
+  void _confirmDeleteAllData(BuildContext context, MedicineProvider provider, AppStrings s) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1786,17 +1773,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 24),
             const SizedBox(width: 8),
-            Text('Delete All Data?', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: AppColors.error)),
+            Text(s.deleteAllDialogTitle, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: AppColors.error)),
           ],
         ),
         content: Text(
-          'This will permanently delete:\n• All medicines in cabinet\n• All scheduled reminder alarms\n• Complete intake and adherence history\n• Custom family profiles\n\nThis action cannot be undone.',
+          s.deleteAllDialogContent,
           style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+            child: Text(s.cancel, style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1809,15 +1796,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               await provider.deleteAllAppData();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('All local MediRemind data has been erased.'),
+                  SnackBar(
+                    content: Text(s.allDataErasedMsg),
                     backgroundColor: AppColors.error,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
-            child: Text('Delete Everything', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+            child: Text(s.deleteEverythingBtn, style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1877,7 +1864,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        'v1.0.0 · Safe Medication Companion',
+                        s.safeMedicationCompanion,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
@@ -1892,7 +1879,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'MediRemind is a personal medication management and schedule tracking utility. It is not intended to diagnose, treat, or replace professional medical advice.',
+            s.aboutDisclaimer,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11.5,
               color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1928,7 +1915,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Replay Welcome & Onboarding Guide',
+                      s.replayOnboarding,
                       style: GoogleFonts.outfit(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -1947,7 +1934,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 10),
           InkWell(
-            onTap: () => _showDeveloperCreditsSheet(context, isDark),
+            onTap: () => _showDeveloperCreditsSheet(context, isDark, s),
             borderRadius: BorderRadius.circular(14),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1988,7 +1975,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         Text(
-                          'Lead Developer & UI/UX Designer / Founder & Creator',
+                          s.founderRole,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -2012,7 +1999,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showDeveloperCreditsSheet(BuildContext context, bool isDark) {
+  void _showDeveloperCreditsSheet(BuildContext context, bool isDark, AppStrings s) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -2100,7 +2087,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Role & Title
               Text(
-                'Lead Developer & UI/UX Designer',
+                s.founderRole,
+                textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
