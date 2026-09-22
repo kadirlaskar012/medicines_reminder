@@ -85,7 +85,8 @@ class AppNotification {
         case NotificationType.doseMissed:
           return s.notifDoseMissedMsg(dosage, time);
         case NotificationType.medicineAdded:
-          return s.notifMedAddedMsg(dosage, '${s.formatNumber(stock)} $unit', instruction);
+          final instName = instruction.isNotEmpty ? s.foodInstructionName(instruction) : '';
+          return s.notifMedAddedMsg(dosage, '${s.formatNumber(stock)} $unit', instName.isNotEmpty ? instName : null);
         case NotificationType.medicineUpdated:
           return s.notifMedUpdatedMsg(dosage, stock, unit);
         case NotificationType.refillAdded:
@@ -103,7 +104,11 @@ class AppNotification {
     String msg = message;
     if (s.code == 'en') {
       msg = msg.replaceAll('ডোজ:', 'Dose:')
+               .replaceAll('খुराक:', 'Dose:')
                .replaceAll('মজুদ:', 'Stock:')
+               .replaceAll('স্টক:', 'Stock:')
+               .replaceAll('সময়:', 'Time:')
+               .replaceAll('নির্ধারিত সময়:', 'Scheduled:')
                .replaceAll('এর ডোজ গ্রহণ করা হয়েছে', 'dose taken')
                .replaceAll('এর ডোজ বাদ দেওয়া হয়েছে', 'dose skipped')
                .replaceAll('এর ডোজ মিস হয়েছে', 'dose missed')
@@ -112,19 +117,53 @@ class AppNotification {
                .replaceAll('যোগ করা হয়েছে (মোট মজুদ:', 'added (Total stock:')
                .replaceAll('বর্তমান মজুদ মাত্র', 'Current stock only')
                .replaceAll('। দ্রুত রিফিল করুন।', '. Please refill soon.')
+               .replaceAll('• afterMeal', '• After Meal')
+               .replaceAll('• beforeMeal', '• Before Meal')
+               .replaceAll('• withMeal', '• With Meal')
+               .replaceAll('• bedtime', '• Bedtime')
+               .replaceAll('• emptyStomach', '• Empty Stomach')
+               .replaceAll('• anytime', '• Anytime')
                .replaceAll('লকস্ক্রিন ও সিস্টেম নোটিফিকেশন টেস্ট সফলভাবে যাচাই করা হয়েছে।', 'Lock screen & system notification test verified.');
     } else if (s.code == 'hi') {
       msg = msg.replaceAll('ডোজ:', 'खुराक:')
+               .replaceAll('Dose:', 'खुराक:')
                .replaceAll('মজুদ:', 'स्टॉक:')
+               .replaceAll('Stock:', 'स्टॉक:')
+               .replaceAll('সময়:', 'समय:')
+               .replaceAll('Time:', 'समय:')
+               .replaceAll('নির্ধারিত সময়:', 'निर्धारित समय:')
+               .replaceAll('Scheduled:', 'निर्धारित समय:')
                .replaceAll('এর ডোজ গ্রহণ করা হয়েছে', 'की खुराक ली गई')
                .replaceAll('এর ডোজ বাদ দেওয়া হয়েছে', 'की खुराक छोड़ दी गई')
                .replaceAll('এর ডোজ মিস হয়েছে', 'की खुराक छूट गई')
                .replaceAll('এর ডোজ সময়মতো নেওয়া হয়নি', 'की खुराक समय पर नहीं ली गई')
                .replaceAll('মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে', 'मिनट के लिए रिमाइंडर स्थगित किया गया')
                .replaceAll('যোগ করা হয়েছে (মোট মজুদ:', 'जोड़े गए (कुल स्टॉक:')
+               .replaceAll('added (Total stock:', 'जोड़े गए (कुल स्टॉक:')
                .replaceAll('বর্তমান মজুদ মাত্র', 'वर्तमान स्टॉक केवल')
+               .replaceAll('Current stock only', 'वर्तमान स्टॉक केवल')
                .replaceAll('। দ্রুত রিফিল করুন।', '। कृपया शीघ्र रीफिल करें।')
+               .replaceAll('• afterMeal', '• भोजन के बाद')
+               .replaceAll('• beforeMeal', '• भोजन से पहले')
+               .replaceAll('• withMeal', '• भोजन के साथ')
+               .replaceAll('• bedtime', '• सोने से पहले')
+               .replaceAll('• emptyStomach', '• खाली पेट')
+               .replaceAll('• anytime', '• किसी भी समय')
                .replaceAll('লকস্ক্রিন ও সিস্টেম নোটিফিকেশন টেস্ট সফলভাবে যাচাই করা হয়েছে।', 'लॉकस्क्रीन और सिस्टम नोटिफिकेशन टेस्ट सफलतापूर्वक सत्यापित हुआ।');
+    } else if (s.code == 'bn') {
+      msg = msg.replaceAll('Dose:', 'ডোজ:')
+               .replaceAll('खुराक:', 'ডোজ:')
+               .replaceAll('Stock:', 'মজুদ:')
+               .replaceAll('स्टॉक:', 'মজুদ:')
+               .replaceAll('Time:', 'সময়:')
+               .replaceAll('समय:', 'সময়:')
+               .replaceAll('Scheduled:', 'নির্ধারিত সময়:')
+               .replaceAll('• afterMeal', '• খাওয়ার পর')
+               .replaceAll('• beforeMeal', '• খাওয়ার আগে')
+               .replaceAll('• withMeal', '• খাবারের সাথে')
+               .replaceAll('• bedtime', '• ঘুমানোর আগে')
+               .replaceAll('• emptyStomach', '• খালি পেটে')
+               .replaceAll('• anytime', '• যেকোনো সময়');
     }
     return msg;
   }

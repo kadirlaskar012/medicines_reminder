@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medicines_reminder/core/localization/app_strings.dart';
+import 'package:medicines_reminder/models/app_notification.dart';
 
 void main() {
   group('Strict 3-Way Localization Isolation Tests', () {
@@ -42,6 +43,10 @@ void main() {
         s.yearlyPeriod,
         s.notifActionMarkTaken,
         s.notifActionSnooze10m,
+        s.notifMedAddedMsg('500', 3, 'Bedtime'),
+        s.notifMedUpdatedMsg('500', 3, 'Tablets'),
+        s.notifRefillMsg(5, 10, 'Tablets'),
+        s.notifDoseTakenMsg('500', '10:00 AM'),
         s.notifTimeForMed('Paracetamol', '500mg'),
         s.notifTakeBody('Paracetamol', '500mg'),
         s.notifSnoozedBody('Paracetamol', 10),
@@ -174,6 +179,52 @@ void main() {
         expect(str.contains('(Before Breakfast)'), isFalse);
         expect(hiRegex.hasMatch(str), isTrue, reason: 'Expected Hindi characters in "$str"');
       }
+    });
+
+    test('Notification messages and legacy conversions must not leak Bengali into English', () {
+      final sEn = AppStrings.en;
+      final sHi = AppStrings.hi;
+      final sBn = AppStrings.bn;
+
+      // Direct message generation
+      final addedMsgEn = sEn.notifMedAddedMsg('500', '3 Tablets', 'Bedtime');
+      expect(bnRegex.hasMatch(addedMsgEn), isFalse);
+      expect(addedMsgEn, 'Dose: 500 • Stock: 3 Tablets • Bedtime');
+
+      final updatedMsgEn = sEn.notifMedUpdatedMsg('500', 3, 'Tablets');
+      expect(bnRegex.hasMatch(updatedMsgEn), isFalse);
+      expect(updatedMsgEn, 'Dose: 500 • Stock: 3 Tablets');
+
+      // Legacy fallback conversion for existing DB notifications
+      final legacyNotif1 = AppNotification(
+        id: '1',
+        type: NotificationType.medicineUpdated,
+        title: 'Medicine Updated: test',
+        message: 'Dose: 500 • মজুদ: 3 Tablets',
+        timestamp: DateTime.now(),
+      );
+      expect(legacyNotif1.localizedMessage(sEn), 'Dose: 500 • Stock: 3 Tablets');
+      expect(bnRegex.hasMatch(legacyNotif1.localizedMessage(sEn)), isFalse);
+
+      final legacyNotif2 = AppNotification(
+        id: '2',
+        type: NotificationType.medicineAdded,
+        title: 'New Medicine Added: test',
+        message: 'Dose: 500 • মজুদ: 3 Tablets • bedtime',
+        timestamp: DateTime.now(),
+      );
+      expect(legacyNotif2.localizedMessage(sEn), 'Dose: 500 • Stock: 3 Tablets • Bedtime');
+      expect(bnRegex.hasMatch(legacyNotif2.localizedMessage(sEn)), isFalse);
+
+      final legacyNotif3 = AppNotification(
+        id: '3',
+        type: NotificationType.medicineAdded,
+        title: 'New Medicine Added: test',
+        message: 'Dose: 500 • মজুদ: 3 Tablets • afterMeal',
+        timestamp: DateTime.now(),
+      );
+      expect(legacyNotif3.localizedMessage(sEn), 'Dose: 500 • Stock: 3 Tablets • After Meal');
+      expect(bnRegex.hasMatch(legacyNotif3.localizedMessage(sEn)), isFalse);
     });
   });
 }

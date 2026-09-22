@@ -687,7 +687,7 @@ class AppStrings {
   String get notifFilterAction => code == 'bn' ? 'অ্যাকশন চাই' : (code == 'hi' ? 'कार्रवाई आवश्यक' : 'Action Needed');
   String get notifFilterUpcoming => code == 'bn' ? 'আসন্ন' : (code == 'hi' ? 'आगामी' : 'Upcoming');
   String get notifFilterStock => code == 'bn' ? 'স্টক এলার্ট' : (code == 'hi' ? 'स्टॉक अलर्ट' : 'Stock Alert');
-  String get notifFilterStockRefill => code == 'bn' ? 'স্টক ও রিফিল' : (code == 'hi' ? 'स्टॉक व रीफ़िल' : 'Stock & Refills');
+  String get notifFilterStockRefill => code == 'bn' ? 'স্টক ও রিফিল' : (code == 'hi' ? 'स्टॉक व रीफ़িল' : 'Stock & Refills');
   String get notifFilterDoses => code == 'bn' ? 'ওষুধ ডোজ' : (code == 'hi' ? 'दवा खुराक' : 'Doses');
   String get notifFilterMedicines => code == 'bn' ? 'ওষুধ তথ্য' : (code == 'hi' ? 'दवा जानकारी' : 'Medicines');
   String get notifFilterBoxTitle => code == 'bn' ? 'ফিল্টার নির্বাচন' : (code == 'hi' ? 'फ़िल्टर चुनें' : 'Filter Categories');
@@ -960,6 +960,67 @@ class AppStrings {
       final d = formatNumber(diff.inDays);
       return code == 'bn' ? '$d দিন আগে' : (code == 'hi' ? '$d दिन पहले' : '${diff.inDays}d ago');
     }
+  }
+
+  String notifDoseTakenTitle(String name) => code == 'bn' ? '$name ওষুধ গ্রহণ সম্পন্ন' : (code == 'hi' ? '$name खुराक पूरी' : '$name Dose Taken');
+  String notifDoseTakenMsg(dynamic dosage, [dynamic time]) {
+    final tStr = time != null ? (code == 'bn' ? ' • সময়: $time' : (code == 'hi' ? ' • समय: $time' : ' • Time: $time')) : '';
+    if (code == 'bn') return 'ডোজ: $dosage$tStr (ওষুধ সেবন সম্পন্ন)';
+    if (code == 'hi') return 'खुराक: $dosage$tStr (दवा ली गई)';
+    return 'Dose: $dosage$tStr (Completed)';
+  }
+
+  String notifDoseSkippedTitle(String name) => code == 'bn' ? '$name বাদ দেওয়া হয়েছে' : (code == 'hi' ? '$name छोड़ी गई' : '$name Dose Skipped');
+  String notifDoseSkippedMsg(dynamic dosage, [dynamic time]) {
+    final tStr = time != null ? (code == 'bn' ? ' • সময়: $time' : (code == 'hi' ? ' • समय: $time' : ' • Time: $time')) : '';
+    if (code == 'bn') return 'ডোজ: $dosage$tStr (বাদ দেওয়া হয়েছে)';
+    if (code == 'hi') return 'खुराक: $dosage$tStr (छोड़ दी गई)';
+    return 'Dose: $dosage$tStr (Skipped)';
+  }
+
+  String notifDoseMissedTitle(String name) => code == 'bn' ? '$name এর ডোজ মিস হয়েছে' : (code == 'hi' ? '$name खुराक छूट गई' : '$name Dose Missed');
+  String notifDoseMissedMsg(dynamic dosage, [dynamic time]) {
+    final tStr = time != null ? (code == 'bn' ? ' • নির্ধারিত সময়: $time' : (code == 'hi' ? ' • निर्धारित समय: $time' : ' • Scheduled: $time')) : '';
+    if (code == 'bn') return 'ডোজ: $dosage$tStr (নেওয়া হয়নি)';
+    if (code == 'hi') return 'खुराक: $dosage$tStr (छूट गई)';
+    return 'Dose: $dosage$tStr (Missed)';
+  }
+
+  String notifDoseSnoozedTitle(String name) => code == 'bn' ? '$name স্থগিত করা হয়েছে' : (code == 'hi' ? '$name स्थगित' : '$name Snoozed');
+  String notifDoseSnoozedMsg(dynamic minutes, [dynamic time]) {
+    final mStr = formatNumber(minutes);
+    if (code == 'bn') return '$mStr মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে';
+    if (code == 'hi') return '$mStr मिनट के लिए रिमाइंडर स्थगित किया गया';
+    return 'Reminder snoozed for $minutes minutes';
+  }
+
+  String notifMedAddedTitle(String name) => code == 'bn' ? 'নতুন ওষুধ যোগ: $name' : (code == 'hi' ? 'नई दवा जोड़ी गई: $name' : 'New Medicine Added: $name');
+  String notifMedAddedMsg(dynamic dosage, [dynamic stock, dynamic instruction]) {
+    final sStr = stock != null ? (code == 'bn' ? ' • মজুদ: ${formatNumber(stock)}' : (code == 'hi' ? ' • स्टॉक: ${formatNumber(stock)}' : ' • Stock: ${formatNumber(stock)}')) : '';
+    final iStr = instruction != null && instruction.toString().isNotEmpty ? ' • $instruction' : '';
+    if (code == 'bn') return 'ডোজ: $dosage$sStr$iStr';
+    if (code == 'hi') return 'खुराक: $dosage$sStr$iStr';
+    return 'Dose: $dosage$sStr$iStr';
+  }
+
+  String notifMedUpdatedTitle(String name) => code == 'bn' ? 'ওষুধের তথ্য আপডেট: $name' : (code == 'hi' ? 'दवा अपडेट: $name' : 'Medicine Updated: $name');
+  String notifMedUpdatedMsg(dynamic dosage, [dynamic stock, dynamic unit]) {
+    final sVal = stock != null ? '${formatNumber(stock)} ${unit ?? ""}'.trim() : '';
+    final sStr = sVal.isNotEmpty ? (code == 'bn' ? ' • মজুদ: $sVal' : (code == 'hi' ? ' • स्टॉक: $sVal' : ' • Stock: $sVal')) : '';
+    if (code == 'bn') return 'ডোজ: $dosage$sStr';
+    if (code == 'hi') return 'खुराक: $dosage$sStr';
+    return 'Dose: $dosage$sStr';
+  }
+
+  String notifRefillTitle(String name) => code == 'bn' ? 'স্টক রিফিল সম্পন্ন: $name' : (code == 'hi' ? 'स्टॉक रीफिल: $name' : 'Stock Refilled: $name');
+  String notifRefillAddedTitle(String name) => notifRefillTitle(name);
+  String notifRefillMsg(dynamic added, [dynamic stock, dynamic unit]) {
+    final aStr = formatNumber(added);
+    final sVal = stock != null ? '${formatNumber(stock)} ${unit ?? ""}'.trim() : '';
+    final sStr = sVal.isNotEmpty ? (code == 'bn' ? ' (মোট মজুদ: $sVal)' : (code == 'hi' ? ' (कुल स्टॉक: $sVal)' : ' (Total stock: $sVal)')) : '';
+    if (code == 'bn') return '$aStrটি যোগ করা হয়েছে$sStr';
+    if (code == 'hi') return '$aStr दवाएं जोड़ी गईं$sStr';
+    return '$added units added$sStr';
   }
 
   // ==================== MISSED SHEET & HISTORY ====================
@@ -1318,66 +1379,6 @@ class AppStrings {
   String get badgeAdded => code == 'bn' ? 'যোগ করা হয়েছে' : (code == 'hi' ? 'जोड़ी गई' : 'Added');
   String get badgeUpdated => code == 'bn' ? 'আপডেট' : (code == 'hi' ? 'अपडेट' : 'Updated');
   String get badgeAlarm => code == 'bn' ? 'অ্যালার্ম' : (code == 'hi' ? 'अलार्म' : 'Alarm');
-
-  // Notification Titles & Messages for AppNotification & MedicineProvider
-  String notifDoseTakenTitle(String name) => code == 'bn' ? '$name ওষুধ গ্রহণ সম্পন্ন' : (code == 'hi' ? '$name खुराक पूरी' : '$name Dose Taken');
-  String notifDoseTakenMsg(dynamic dosage, [dynamic time]) {
-    final tStr = time != null ? ' • সময়: $time' : '';
-    if (code == 'bn') return 'ডোজ: $dosage$tStr (ওষুধ সেবন সম্পন্ন)';
-    if (code == 'hi') return 'खुराक: $dosage$tStr (दवा ली गई)';
-    return 'Dose: $dosage$tStr (Completed)';
-  }
-
-  String notifDoseSkippedTitle(String name) => code == 'bn' ? '$name বাদ দেওয়া হয়েছে' : (code == 'hi' ? '$name छोड़ी गई' : '$name Dose Skipped');
-  String notifDoseSkippedMsg(dynamic dosage, [dynamic time]) {
-    final tStr = time != null ? ' • সময়: $time' : '';
-    if (code == 'bn') return 'ডোজ: $dosage$tStr (বাদ দেওয়া হয়েছে)';
-    if (code == 'hi') return 'खुराक: $dosage$tStr (छोड़ दी गई)';
-    return 'Dose: $dosage$tStr (Skipped)';
-  }
-
-  String notifDoseMissedTitle(String name) => code == 'bn' ? '$name এর ডোজ মিস হয়েছে' : (code == 'hi' ? '$name खुराक छूट गई' : '$name Dose Missed');
-  String notifDoseMissedMsg(dynamic dosage, [dynamic time]) {
-    final tStr = time != null ? ' • নির্ধারিত সময়: $time' : '';
-    if (code == 'bn') return 'ডোজ: $dosage$tStr (নেওয়া হয়নি)';
-    if (code == 'hi') return 'खुराक: $dosage$tStr (छूट गई)';
-    return 'Dose: $dosage$tStr (Missed)';
-  }
-
-  String notifDoseSnoozedTitle(String name) => code == 'bn' ? '$name স্থগিত করা হয়েছে' : (code == 'hi' ? '$name स्थगित' : '$name Snoozed');
-  String notifDoseSnoozedMsg(dynamic minutes, [dynamic time]) {
-    final mStr = formatNumber(minutes);
-    if (code == 'bn') return '$mStr মিনিটের জন্য রিমাইন্ডার স্থগিত করা হয়েছে';
-    if (code == 'hi') return '$mStr मिनट के लिए रिमाइंडर स्थगित किया गया';
-    return 'Reminder snoozed for $minutes minutes';
-  }
-
-  String notifMedAddedTitle(String name) => code == 'bn' ? 'নতুন ওষুধ যোগ: $name' : (code == 'hi' ? 'नई दवा जोड़ी गई: $name' : 'New Medicine Added: $name');
-  String notifMedAddedMsg(dynamic dosage, [dynamic stock, dynamic instruction]) {
-    final sStr = stock != null ? ' • মজুদ: $stock' : '';
-    final iStr = instruction != null ? ' • $instruction' : '';
-    if (code == 'bn') return 'ডোজ: $dosage$sStr$iStr';
-    if (code == 'hi') return 'खुराक: $dosage$sStr$iStr';
-    return 'Dose: $dosage$sStr$iStr';
-  }
-
-  String notifMedUpdatedTitle(String name) => code == 'bn' ? 'ওষুধের তথ্য আপডেট: $name' : (code == 'hi' ? 'दवा अपडेट: $name' : 'Medicine Updated: $name');
-  String notifMedUpdatedMsg(dynamic dosage, [dynamic stock, dynamic unit]) {
-    final sStr = stock != null ? ' • মজুদ: ${formatNumber(stock)} ${unit ?? ""}' : '';
-    if (code == 'bn') return 'ডোজ: $dosage$sStr';
-    if (code == 'hi') return 'खुराक: $dosage$sStr';
-    return 'Dose: $dosage$sStr';
-  }
-
-  String notifRefillTitle(String name) => code == 'bn' ? 'স্টক রিফিল সম্পন্ন: $name' : (code == 'hi' ? 'स्टॉक रीफिल: $name' : 'Stock Refilled: $name');
-  String notifRefillAddedTitle(String name) => notifRefillTitle(name);
-  String notifRefillMsg(dynamic added, [dynamic stock, dynamic unit]) {
-    final aStr = formatNumber(added);
-    final sStr = stock != null ? ' (মোট মজুদ: ${formatNumber(stock)} ${unit ?? ""})' : '';
-    if (code == 'bn') return '$aStrটি যোগ করা হয়েছে$sStr';
-    if (code == 'hi') return '$aStr दवाएं जोड़ी गईं$sStr';
-    return '$added units added$sStr';
-  }
 
   String notifLowStockWarningTitle(String name) => code == 'bn' ? 'কম স্টক সতর্কতা: $name' : (code == 'hi' ? 'कम स्टॉक चेतावनी: $name' : 'Low Stock Alert: $name');
   String notifLowStockWarningMsg(dynamic stock, [dynamic unit]) {
