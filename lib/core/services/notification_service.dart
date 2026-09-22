@@ -545,7 +545,7 @@ class NotificationService {
     final channelId = reminder.isAlarm ? alarmChannelId : gentleChannelId;
     final channelName = reminder.isAlarm ? alarmChannelName : gentleChannelName;
 
-    final smallIcon = getSmallIconForType(medicine.type);
+    const smallIcon = '@drawable/ic_notification';
     final largeIcon = getLargeIconForType(medicine.type);
     final emoji = getEmojiForType(medicine.type);
 
@@ -559,7 +559,18 @@ class NotificationService {
     }
 
     final instructionStr = s.foodInstructionName(medicine.instruction.name);
-    final medTitle = s.notifTimeForMed(medicine.name, medicine.dosage);
+    final timeStr = reminder.formattedTime;
+    final doseStr = medicine.dosage;
+
+    final notifTitle = '$emoji ${s.timeToTake}: ${medicine.name}';
+    final notifBody = '$doseStr • $instructionStr ($timeStr)';
+    final contentTitleExpanded = '$emoji <b>${s.timeToTake}</b>';
+    final bigTextFormatted = s.notifDoseBigText(
+      medicineName: medicine.name,
+      dosage: doseStr,
+      instruction: instructionStr,
+      timeStr: timeStr,
+    );
 
     final androidDetails = AndroidNotificationDetails(
       channelId,
@@ -575,15 +586,15 @@ class NotificationService {
       icon: smallIcon,
       largeIcon: largeIconBitmap,
       color: medicine.colorValue != 0 ? Color(medicine.colorValue) : brandPrimaryColor,
-      ticker: '$emoji $medTitle',
+      ticker: '$emoji ${medicine.name} - ${s.timeToTake}',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       playSound: true,
       vibrationPattern: reminder.isAlarm ? Int64List.fromList([0, 1000, 500, 1000, 500, 1000]) : null,
       styleInformation: BigTextStyleInformation(
-        s.notifTakeBigText(instructionStr, reminder.formattedTime, medicine.dosage),
+        bigTextFormatted,
         htmlFormatBigText: true,
-        contentTitle: '$emoji <b>$medTitle</b>',
+        contentTitle: contentTitleExpanded,
         htmlFormatContentTitle: true,
       ),
       actions: [
@@ -609,8 +620,6 @@ class NotificationService {
     );
 
     final notificationDetails = NotificationDetails(android: androidDetails);
-    final notifTitle = '$emoji $medTitle';
-    final notifBody = s.notifTakeBody(instructionStr, reminder.formattedTime, medicine.dosage);
 
     // Schedule for each day in daysOfWeek
     for (final dayOfWeek in reminder.daysOfWeek) {
@@ -714,7 +723,7 @@ class NotificationService {
 
     final channelId = reminder.isAlarm ? alarmChannelId : gentleChannelId;
     final channelName = reminder.isAlarm ? alarmChannelName : gentleChannelName;
-    final smallIcon = getSmallIconForType(medicine.type);
+    const smallIcon = '@drawable/ic_notification';
     final largeIcon = getLargeIconForType(medicine.type);
     final emoji = getEmojiForType(medicine.type);
 
@@ -728,7 +737,18 @@ class NotificationService {
     }
 
     final instructionStr = s.foodInstructionName(medicine.instruction.name);
-    final medTitle = s.notifTimeForMed(medicine.name, medicine.dosage);
+    final timeStr = reminder.formattedTime;
+    final doseStr = medicine.dosage;
+
+    final notifTitle = '$emoji ${s.timeToTake}: ${medicine.name}';
+    final notifBody = '$doseStr • $instructionStr ($timeStr)';
+    final contentTitleExpanded = '$emoji <b>${s.timeToTake}</b>';
+    final bigTextFormatted = s.notifDoseBigText(
+      medicineName: medicine.name,
+      dosage: doseStr,
+      instruction: instructionStr,
+      timeStr: timeStr,
+    );
 
     final androidDetails = AndroidNotificationDetails(
       channelId,
@@ -744,13 +764,13 @@ class NotificationService {
       icon: smallIcon,
       largeIcon: largeIconBitmap,
       color: medicine.colorValue != 0 ? Color(medicine.colorValue) : brandPrimaryColor,
-      ticker: '$emoji $medTitle',
+      ticker: '$emoji ${medicine.name} - ${s.timeToTake}',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       styleInformation: BigTextStyleInformation(
-        s.notifTakeBigText(instructionStr, reminder.formattedTime, medicine.dosage),
+        bigTextFormatted,
         htmlFormatBigText: true,
-        contentTitle: '$emoji <b>$medTitle</b>',
+        contentTitle: contentTitleExpanded,
         htmlFormatContentTitle: true,
       ),
       actions: [
@@ -786,8 +806,8 @@ class NotificationService {
     try {
       await _notificationsPlugin.zonedSchedule(
         id: uniqueNotificationId,
-        title: '$emoji $medTitle',
-        body: s.notifTakeBody(instructionStr, reminder.formattedTime, medicine.dosage),
+        title: notifTitle,
+        body: notifBody,
         scheduledDate: scheduledDate,
         notificationDetails: NotificationDetails(android: androidDetails),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -823,7 +843,7 @@ class NotificationService {
     // Unique snooze ID per medicine so multiple medicines can be independently snoozed
     final int snoozeId = 880000 + (medicineId != null ? medicineId.hashCode.abs() % 100000 : medicineName.hashCode.abs() % 100000);
 
-    final smallIcon = getSmallIconForType(type);
+    const smallIcon = '@drawable/ic_notification';
     final largeIcon = getLargeIconForType(type);
     final emoji = getEmojiForType(type);
 
@@ -948,7 +968,7 @@ class NotificationService {
 
   Future<void> showStockForecastAlert(Medicine medicine, int daysLeft, String runOutDateStr) async {
     final s = await _getStrings();
-    final smallIcon = getSmallIconForType(medicine.type);
+    const smallIcon = '@drawable/ic_notification';
     final largeIcon = getLargeIconForType(medicine.type);
 
     final androidDetails = AndroidNotificationDetails(
@@ -972,7 +992,7 @@ class NotificationService {
 
   Future<void> showRefillAlert(Medicine medicine) async {
     final s = await _getStrings();
-    final smallIcon = getSmallIconForType(medicine.type);
+    const smallIcon = '@drawable/ic_notification';
     final largeIcon = getLargeIconForType(medicine.type);
 
     final androidDetails = AndroidNotificationDetails(
@@ -1058,11 +1078,20 @@ class NotificationService {
       'isTest': true,
     });
 
-    final smallIcon = getSmallIconForType(type);
+    const smallIcon = '@drawable/ic_notification';
     final largeIcon = getLargeIconForType(type);
     final emoji = getEmojiForType(type);
-    final titleStr = '$emoji ${s.notifTimeForMed(medName, dosage)}';
-    final bigText = s.notifTakeBigText(instruction, 'Just Now', dosage);
+    final timeStr = s.formatNotifTimestamp(DateTime.now());
+
+    final titleCollapsed = '$emoji ${s.timeToTake}: $medName';
+    final bodyCollapsed = '$dosage • $instruction ($timeStr)';
+    final contentTitleExpanded = '$emoji <b>${s.timeToTake}</b>';
+    final bigTextFormatted = s.notifDoseBigText(
+      medicineName: medName,
+      dosage: dosage,
+      instruction: instruction,
+      timeStr: timeStr,
+    );
 
     final androidDetails = AndroidNotificationDetails(
       alarmChannelId,
@@ -1077,13 +1106,13 @@ class NotificationService {
       icon: smallIcon,
       largeIcon: DrawableResourceAndroidBitmap(largeIcon),
       color: brandPrimaryColor,
-      ticker: titleStr,
+      ticker: '$emoji $medName - ${s.timeToTake}',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       styleInformation: BigTextStyleInformation(
-        bigText,
+        bigTextFormatted,
         htmlFormatBigText: true,
-        contentTitle: titleStr,
+        contentTitle: contentTitleExpanded,
         htmlFormatContentTitle: true,
       ),
       actions: [
@@ -1104,8 +1133,8 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       id: 99990 + type.index,
-      title: titleStr,
-      body: s.notifTakeBody(instruction, 'Just Now', dosage),
+      title: titleCollapsed,
+      body: bodyCollapsed,
       notificationDetails: NotificationDetails(android: androidDetails),
       payload: payload,
     );

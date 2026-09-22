@@ -881,6 +881,21 @@ class AppStrings {
   String get notifActionSkip => code == 'bn' ? 'বাদ দিন' : (code == 'hi' ? 'छोड़ें' : 'Skip');
   String get notifActionDismiss => code == 'bn' ? 'বাতিল' : (code == 'hi' ? 'खारिज करें' : 'Dismiss');
   String get doseReminderTitle => code == 'bn' ? 'ওষুধের সময় হয়েছে!' : (code == 'hi' ? 'दवा का समय हो गया!' : 'Medicine Reminder!');
+  String get timeToTake => code == 'bn' ? 'ওষুধ খাওয়ার সময় হয়েছে' : (code == 'hi' ? 'दवा लेने का समय' : 'Time to take');
+  String get pleaseTakeMedicineOnTime => code == 'bn' ? 'দয়া করে সময়মতো ওষুধ গ্রহণ করুন।' : (code == 'hi' ? 'कृपया समय पर अपनी दवा लें।' : 'Please take your medicine on time.');
+  String notifDoseBigText({
+    required String medicineName,
+    required String dosage,
+    required String instruction,
+    required String timeStr,
+  }) {
+    if (code == 'bn') {
+      return '<b><big>$medicineName</big></b><br>$dosage<br><br>$instruction ($timeStr) • দয়া করে সময়মতো ওষুধ গ্রহণ করুন।';
+    } else if (code == 'hi') {
+      return '<b><big>$medicineName</big></b><br>$dosage<br><br>$instruction ($timeStr) • कृपया समय पर अपनी दवा लें।';
+    }
+    return '<b><big>$medicineName</big></b><br>$dosage<br><br>$instruction ($timeStr) • Please take your medicine on time.';
+  }
   String notifTimeForMed(String name, [String? dosage]) {
     final d = (dosage != null && dosage.isNotEmpty) ? ' ($dosage)' : '';
     if (code == 'bn') return '$name$d খাওয়ার সময় হয়েছে';
