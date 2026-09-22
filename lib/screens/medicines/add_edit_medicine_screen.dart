@@ -690,51 +690,69 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                       );
                     }),
                     const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
-                              const SizedBox(width: 8),
-                              Text(
-                                s.code == 'bn' ? 'অ্যালার্মের সময়:' : 'Alarm Time:',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                customTime.format(context),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primary,
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: customTime,
+                        );
+                        if (picked != null) {
+                          setModalState(() {
+                            customTime = picked;
+                          });
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDarkModal ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: slotColor.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
+                                const SizedBox(width: 8),
+                                Text(
+                                  s.code == 'bn' ? 'অ্যালার্মের সময়:' : 'Alarm Time:',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                 ),
-                              ),
-                            ],
-                          ),
-                          TextButton.icon(
-                            onPressed: () async {
-                              final picked = await showTimePicker(
-                                context: context,
-                                initialTime: customTime,
-                              );
-                              if (picked != null) {
-                                setModalState(() {
-                                  customTime = picked;
-                                });
-                              }
-                            },
-                            icon: const Icon(Icons.edit_rounded, size: 16),
-                            label: Text(s.change),
-                            style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                          ),
-                        ],
+                                const SizedBox(width: 8),
+                                Text(
+                                  customTime.format(context),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            TextButton.icon(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: customTime,
+                                );
+                                if (picked != null) {
+                                  setModalState(() {
+                                    customTime = picked;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.edit_rounded, size: 16),
+                              label: Text(s.change),
+                              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -792,7 +810,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             ),
                             child: Text(
-                              s.code == 'bn' ? 'রিমাইন্ডার সেট করুন' : 'Confirm Reminder',
+                              s.code == 'bn'
+                                  ? (existingIndex >= 0 ? 'সময় আপডেট করুন' : 'রিমাইন্ডার সেট করুন')
+                                  : (existingIndex >= 0 ? 'Update Reminder' : 'Confirm Reminder'),
                               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                             ),
                           ),
@@ -807,6 +827,30 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         );
       },
     );
+  }
+
+  // --- Edit Existing Reminder Time ---
+  void _editExistingReminderTime(int idx) async {
+    final rem = _reminders[idx];
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: rem.hour, minute: rem.minute),
+    );
+
+    if (pickedTime != null) {
+      setState(() {
+        _reminders[idx] = ReminderTime(
+          id: rem.id,
+          medicineId: rem.medicineId,
+          hour: pickedTime.hour,
+          minute: pickedTime.minute,
+          daysOfWeek: rem.daysOfWeek,
+          isAlarm: rem.isAlarm,
+          notificationId: rem.notificationId,
+        );
+        _reminders.sort((a, b) => (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute));
+      });
+    }
   }
 
   // --- Add Custom Reminder via TimePicker ---
@@ -2080,31 +2124,40 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   children: [
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: slotColor.withValues(alpha: isDark ? 0.22 : 0.14),
+                        Tooltip(
+                          message: s.tapToChangeTime,
+                          child: InkWell(
+                            onTap: () => _editExistingReminderTime(idx),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: slotColor.withValues(alpha: 0.35),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(slotIcon, size: 16, color: slotColor),
-                              const SizedBox(width: 6),
-                              Text(
-                                rem.formattedTime,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: slotColor,
-                                  letterSpacing: 0.3,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: slotColor.withValues(alpha: isDark ? 0.22 : 0.14),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: slotColor.withValues(alpha: 0.35),
+                                  width: 1,
                                 ),
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(slotIcon, size: 16, color: slotColor),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    rem.formattedTime,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: slotColor,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.edit_rounded, size: 13, color: slotColor.withValues(alpha: 0.75)),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -2168,6 +2221,17 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                                 ],
                               ),
                             ],
+                          ),
+                        ),
+                        Tooltip(
+                          message: s.editTiming,
+                          child: InkWell(
+                            onTap: () => _editExistingReminderTime(idx),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Icon(Icons.edit_rounded, color: slotColor, size: 20),
+                            ),
                           ),
                         ),
                         Transform.scale(

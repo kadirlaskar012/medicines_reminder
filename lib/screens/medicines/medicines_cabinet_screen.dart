@@ -499,7 +499,7 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                     PopupMenuButton<String>(
                                       icon: const Icon(Icons.more_vert_rounded),
                                       onSelected: (val) async {
-                                        if (val == 'details') {
+                                        if (val == 'details' || val == 'timings') {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
@@ -544,13 +544,23 @@ class _MedicinesCabinetScreenState extends State<MedicinesCabinetScreen> {
                                         }
                                       },
                                       itemBuilder: (context) => [
-                                        const PopupMenuItem(
+                                        PopupMenuItem(
                                           value: 'details',
                                           child: Row(
                                             children: [
-                                              Icon(Icons.info_outline_rounded, size: 18),
-                                              SizedBox(width: 8),
-                                              Text('Details'),
+                                              const Icon(Icons.info_outline_rounded, size: 18),
+                                              const SizedBox(width: 8),
+                                              Text(s.code == 'bn' ? 'বিস্তারিত তথ্য' : 'Details'),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'timings',
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.alarm_rounded, size: 18, color: AppColors.primary),
+                                              const SizedBox(width: 8),
+                                              Text(s.scheduledAlarmsTitle),
                                             ],
                                           ),
                                         ),

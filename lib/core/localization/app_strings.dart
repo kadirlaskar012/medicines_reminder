@@ -316,6 +316,14 @@ class AppStrings {
   String get pillColorTag => code == 'bn' ? 'রঙিন ট্যাগ' : (code == 'hi' ? 'रंग का टैग' : 'Pill Color Tag');
   String get foodTimingInstruction => code == 'bn' ? 'খাওয়ার নিয়ম (ফুড টাইমিং)' : (code == 'hi' ? 'दवा लेने का नियम (भोजन समय)' : 'Intake Instruction (Food Timing)');
   String get reminderSchedules => code == 'bn' ? 'অ্যালার্ম সময়সূচী' : (code == 'hi' ? 'अलार्म का समय' : 'Reminder Schedules');
+  String get scheduledAlarmsTitle => code == 'bn' ? 'ওষুধ খাওয়ার সময় ও অ্যালার্ম' : (code == 'hi' ? 'दवा लेने का समय और अलार्म' : 'Dose Timings & Alarms');
+  String get editTiming => code == 'bn' ? 'সময় পরিবর্তন করুন' : (code == 'hi' ? 'समय बदलें' : 'Edit Time');
+  String get updateTiming => code == 'bn' ? 'সময় আপডেট করুন' : (code == 'hi' ? 'समय अपडेट करें' : 'Update Time');
+  String get addTiming => code == 'bn' ? 'নতুন সময় যোগ করুন' : (code == 'hi' ? 'नया समय जोड़ें' : 'Add Time');
+  String get reminderUpdatedSuccess => code == 'bn' ? 'ওষুধের সময় সফলভাবে আপডেট হয়েছে' : (code == 'hi' ? 'दवा का समय सफलतापूर्वक अपडेट हो गया' : 'Reminder time updated successfully');
+  String get reminderDeletedSuccess => code == 'bn' ? 'রিমাইন্ডারের সময় মুছে ফেলা হয়েছে' : (code == 'hi' ? 'रिमाइंडर का समय हटा दिया गया है' : 'Reminder time removed');
+  String get confirmTimeChange => code == 'bn' ? 'সময় নিশ্চিত করুন' : (code == 'hi' ? 'समय की पुष्टि करें' : 'Confirm Time');
+  String get tapToChangeTime => code == 'bn' ? 'সময় পরিবর্তন করতে ট্যাপ করুন' : (code == 'hi' ? 'समय बदलने के लिए टैप करें' : 'Tap to change time');
   String get addTime => code == 'bn' ? 'সময় যোগ করুন' : (code == 'hi' ? 'समय जोड़ें' : 'Add Time');
   String get loudAlarm => code == 'bn' ? 'ফুল স্ক্রিন অ্যালার্ম ও রিংটোন' : (code == 'hi' ? 'फुल स्क्रीन अलार्म व रिंगटोन' : 'Loud Alarm (Screen + Sound)');
   String get gentleNotification => code == 'bn' ? 'সহজ নোটিফিকেশন' : (code == 'hi' ? 'साधारण सूचना' : 'Gentle Notification');

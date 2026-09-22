@@ -726,6 +726,62 @@ class MedicineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateReminderTime({
+    required Medicine medicine,
+    required ReminderTime oldReminder,
+    required int newHour,
+    required int newMinute,
+    List<int>? daysOfWeek,
+    bool? isAlarm,
+  }) async {
+    final currentReminders = List<ReminderTime>.from(_remindersByMedicine[medicine.id] ?? []);
+    final idx = currentReminders.indexWhere((r) => r.id == oldReminder.id);
+    if (idx >= 0) {
+      currentReminders[idx] = ReminderTime(
+        id: oldReminder.id,
+        medicineId: medicine.id,
+        hour: newHour,
+        minute: newMinute,
+        daysOfWeek: daysOfWeek ?? oldReminder.daysOfWeek,
+        isAlarm: isAlarm ?? oldReminder.isAlarm,
+        notificationId: oldReminder.notificationId,
+      );
+      currentReminders.sort((a, b) => (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute));
+      await updateMedicine(medicine: medicine, reminders: currentReminders);
+    }
+  }
+
+  Future<void> addReminderTimeToMedicine({
+    required Medicine medicine,
+    required int hour,
+    required int minute,
+    List<int> daysOfWeek = const [1, 2, 3, 4, 5, 6, 7],
+    bool isAlarm = true,
+  }) async {
+    final currentReminders = List<ReminderTime>.from(_remindersByMedicine[medicine.id] ?? []);
+    final newRem = ReminderTime(
+      id: _uuid.v4(),
+      medicineId: medicine.id,
+      hour: hour,
+      minute: minute,
+      daysOfWeek: daysOfWeek,
+      isAlarm: isAlarm,
+      notificationId: DateTime.now().millisecondsSinceEpoch % 100000,
+    );
+    currentReminders.add(newRem);
+    currentReminders.sort((a, b) => (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute));
+    await updateMedicine(medicine: medicine, reminders: currentReminders);
+  }
+
+  Future<void> deleteReminderTimeFromMedicine({
+    required Medicine medicine,
+    required ReminderTime reminder,
+  }) async {
+    final currentReminders = List<ReminderTime>.from(_remindersByMedicine[medicine.id] ?? []);
+    currentReminders.removeWhere((r) => r.id == reminder.id);
+    await updateMedicine(medicine: medicine, reminders: currentReminders);
+  }
+
   Future<void> toggleMedicineActive(Medicine medicine) async {
     final updated = medicine.copyWith(isActive: !medicine.isActive);
     final reminders = _remindersByMedicine[medicine.id] ?? [];
