@@ -109,14 +109,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       if (resolvedMed == null && medicineId != null) {
         resolvedMed = await DBHelper.instance.getMedicineById(medicineId);
       }
+      final typeStr = data['medicineType'] as String? ?? 'tablet';
+      final colorVal = data['colorValue'] as int? ?? 0xFF0D9488;
+      final photoPath = data['photoPath'] as String?;
+      final medType = MedicineType.fromString(typeStr);
+
       final med = resolvedMed ??
           Medicine(
             id: medicineId ?? 'dose_${DateTime.now().millisecondsSinceEpoch}',
             profileId: 'default_me',
             name: medicineName,
             dosage: dosage,
-            type: MedicineType.tablet,
-            colorValue: 0xFF0D9488,
+            type: medType,
+            colorValue: colorVal,
+            photoPath: photoPath,
             instruction: FoodInstruction.afterMeal,
             createdAt: DateTime.now(),
           );

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -237,13 +238,32 @@ class NotificationService {
       case MedicineType.supplement:
         return 'ic_med_supplement';
       case MedicineType.other:
-        return 'ic_med_capsule';
+        return 'ic_med_other';
     }
   }
 
-  /// Returns clean monochrome vector stencil for status bar & small badge (Official MediRemind logo)
+  /// Returns clean monochrome vector stencil for status bar & small badge matching the medicine type
   static String getSmallIconForType(MedicineType type) {
-    return '@drawable/ic_notification';
+    switch (type) {
+      case MedicineType.tablet:
+        return '@drawable/ic_notif_tablet';
+      case MedicineType.capsule:
+        return '@drawable/ic_notif_capsule';
+      case MedicineType.syrup:
+        return '@drawable/ic_notif_syrup';
+      case MedicineType.drops:
+        return '@drawable/ic_notif_drops';
+      case MedicineType.inhaler:
+        return '@drawable/ic_notif_inhaler';
+      case MedicineType.injection:
+        return '@drawable/ic_notif_injection';
+      case MedicineType.ointment:
+        return '@drawable/ic_notif_ointment';
+      case MedicineType.supplement:
+        return '@drawable/ic_notif_supplement';
+      case MedicineType.other:
+        return '@drawable/ic_notif_tablet';
+    }
   }
 
   /// Returns appropriate medicine emoji
@@ -517,6 +537,15 @@ class NotificationService {
     final largeIcon = getLargeIconForType(medicine.type);
     final emoji = getEmojiForType(medicine.type);
 
+    final AndroidBitmap<Object> largeIconBitmap;
+    if (medicine.photoPath != null &&
+        medicine.photoPath!.isNotEmpty &&
+        File(medicine.photoPath!).existsSync()) {
+      largeIconBitmap = FilePathAndroidBitmap(medicine.photoPath!);
+    } else {
+      largeIconBitmap = DrawableResourceAndroidBitmap(largeIcon);
+    }
+
     final androidDetails = AndroidNotificationDetails(
       channelId,
       channelName,
@@ -528,8 +557,8 @@ class NotificationService {
       fullScreenIntent: reminder.isAlarm,
       category: reminder.isAlarm ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
       icon: smallIcon,
-      largeIcon: DrawableResourceAndroidBitmap(largeIcon),
-      color: brandPrimaryColor,
+      largeIcon: largeIconBitmap,
+      color: medicine.colorValue != 0 ? Color(medicine.colorValue) : brandPrimaryColor,
       ticker: '$emoji Time for ${medicine.name} • ${medicine.dosage}',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
@@ -574,6 +603,8 @@ class NotificationService {
         'medicineName': medicine.name,
         'dosage': medicine.dosage,
         'medicineType': medicine.type.name,
+        'colorValue': medicine.colorValue,
+        'photoPath': medicine.photoPath,
         'instruction': medicine.instruction.title,
         'reminderTimeId': reminder.id,
         'isAlarm': reminder.isAlarm,
@@ -667,6 +698,15 @@ class NotificationService {
     final largeIcon = getLargeIconForType(medicine.type);
     final emoji = getEmojiForType(medicine.type);
 
+    final AndroidBitmap<Object> largeIconBitmap;
+    if (medicine.photoPath != null &&
+        medicine.photoPath!.isNotEmpty &&
+        File(medicine.photoPath!).existsSync()) {
+      largeIconBitmap = FilePathAndroidBitmap(medicine.photoPath!);
+    } else {
+      largeIconBitmap = DrawableResourceAndroidBitmap(largeIcon);
+    }
+
     final androidDetails = AndroidNotificationDetails(
       channelId,
       channelName,
@@ -678,8 +718,8 @@ class NotificationService {
       fullScreenIntent: reminder.isAlarm,
       category: reminder.isAlarm ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
       icon: smallIcon,
-      largeIcon: DrawableResourceAndroidBitmap(largeIcon),
-      color: brandPrimaryColor,
+      largeIcon: largeIconBitmap,
+      color: medicine.colorValue != 0 ? Color(medicine.colorValue) : brandPrimaryColor,
       ticker: '$emoji Time for ${medicine.name} • ${medicine.dosage}',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
@@ -710,6 +750,8 @@ class NotificationService {
       'medicineName': medicine.name,
       'dosage': medicine.dosage,
       'medicineType': medicine.type.name,
+      'colorValue': medicine.colorValue,
+      'photoPath': medicine.photoPath,
       'instruction': medicine.instruction.title,
       'reminderTimeId': reminder.id,
       'isAlarm': reminder.isAlarm,

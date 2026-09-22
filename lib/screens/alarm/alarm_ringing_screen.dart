@@ -8,6 +8,7 @@ import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
+import '../../widgets/medicine_visual.dart';
 
 class AlarmRingingScreen extends StatelessWidget {
   final Medicine medicine;
@@ -24,6 +25,7 @@ class AlarmRingingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<LanguageProvider>().strings;
+    final gradients = MedicineVisual.getGradients(medicine.colorValue, medicine.type);
 
     return PopScope(
       canPop: true,
@@ -39,7 +41,7 @@ class AlarmRingingScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF070B14),
         body: Stack(
           children: [
-            // Background Ambient Aura Glow
+            // Background Ambient Aura Glow tailored to medicine color
             Positioned(
               top: -120,
               left: -80,
@@ -50,8 +52,8 @@ class AlarmRingingScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.primaryTeal.withValues(alpha: 0.28),
-                      AppColors.accentCyan.withValues(alpha: 0.12),
+                      gradients.first.withValues(alpha: 0.35),
+                      gradients.last.withValues(alpha: 0.12),
                       Colors.transparent,
                     ],
                   ),
@@ -113,13 +115,16 @@ class AlarmRingingScreen extends StatelessWidget {
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Pulsing Icon Squircle Container
+                        // Pulsing Icon Squircle Container with actual medicine visual
                         Container(
-                          width: 110,
-                          height: 110,
+                          width: 116,
+                          height: 116,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF0D9488), Color(0xFF06B6D4)],
+                            gradient: LinearGradient(
+                              colors: [
+                                gradients.first.withValues(alpha: 0.9),
+                                gradients.last.withValues(alpha: 0.7),
+                              ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -130,7 +135,7 @@ class AlarmRingingScreen extends StatelessWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF0D9488).withValues(alpha: 0.5),
+                                color: gradients.first.withValues(alpha: 0.45),
                                 blurRadius: 36,
                                 spreadRadius: 4,
                                 offset: const Offset(0, 8),
@@ -138,9 +143,10 @@ class AlarmRingingScreen extends StatelessWidget {
                             ],
                           ),
                           child: Center(
-                            child: Text(
-                              NotificationService.getEmojiForType(medicine.type),
-                              style: const TextStyle(fontSize: 48),
+                            child: MedicineVisual.fromMedicine(
+                              medicine,
+                              size: 78,
+                              hasGlow: true,
                             ),
                           ),
                         ).animate(onPlay: (c) => c.repeat(reverse: true))
@@ -193,23 +199,23 @@ class AlarmRingingScreen extends StatelessWidget {
 
                         const SizedBox(height: 8),
 
-                        // Dosage and Instructions
+                        // Dosage, Category and Instructions
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryTeal.withValues(alpha: 0.15),
+                            color: gradients.first.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppColors.primaryTeal.withValues(alpha: 0.35),
+                              color: gradients.first.withValues(alpha: 0.4),
                               width: 1,
                             ),
                           ),
                           child: Text(
-                            '${medicine.dosage} • ${medicine.instruction.title}',
+                            '${medicine.dosage.isNotEmpty ? medicine.dosage : "1 Dose"} • ${s.medicineTypeName(medicine.type.name)} • ${medicine.instruction.title}',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 15,
+                              fontSize: 14.5,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.accentEmerald,
+                              color: Colors.white,
                             ),
                           ),
                         ),
