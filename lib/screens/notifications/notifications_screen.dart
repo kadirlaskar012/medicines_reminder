@@ -6,7 +6,6 @@ import '../../core/theme/app_colors.dart';
 import '../../models/app_notification.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
-import '../../widgets/luxury_notification_card.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -529,7 +528,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  // ==================== LUXURY GLASSMORPHIC NOTIFICATION CARD ====================
+  // ==================== PURE ACTIVITY / NOTIFICATION CARD ====================
+  // Strictly notification and activity info: NO TAKE, SNOOZE, or SKIP buttons
   Widget _buildNotificationCard(
     BuildContext context,
     AppNotification notif, {
@@ -537,104 +537,219 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required AppStrings s,
     required Color textPrimary,
   }) {
-    final medProvider = context.read<MedicineProvider>();
+    final formattedTime = s.formatNotifTimestamp(notif.timestamp);
 
-    VoidCallback? onTake;
-    VoidCallback? onSnooze;
-    VoidCallback? onSkip;
-
-    if (notif.type == NotificationType.reminderDue) {
-      final medId = notif.medicineId ?? (notif.metadata?['medicineId'] as String?);
-      final remId = notif.metadata?['reminderTimeId'] as String?;
-      final med = medId != null
-          ? medProvider.medicines.where((m) => m.id == medId).firstOrNull
-          : null;
-      final remList = med != null ? (medProvider.remindersByMedicine[med.id] ?? []) : [];
-      final rem = (med != null && remId != null)
-          ? remList.where((r) => r.id == remId).firstOrNull
-          : (remList.isNotEmpty ? remList.first : null);
-
-      if (med != null && rem != null) {
-        onTake = () async {
-          await medProvider.markAsTaken(med, rem, DateTime.now());
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${med.name}: ${s.taken} 🎉'),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: const Color(0xFF0D9488),
-              ),
-            );
-          }
-        };
-
-        onSnooze = () async {
-          await medProvider.snoozeDose(med, rem, minutes: 10);
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(s.snoozedMessage(med.name, 10)),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: const Color(0xFF8B5CF6),
-              ),
-            );
-          }
-        };
-
-        onSkip = () async {
-          await medProvider.markAsSkipped(med, rem, DateTime.now());
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${med.name}: ${s.skipped}'),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: const Color(0xFFEF4444),
-              ),
-            );
-          }
-        };
-      } else {
-        // Fallback for test / demo reminders
-        onTake = () {
-          NotificationService.triggerHaptic(isSuccess: true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${notif.localizedTitle(s)}: ${s.taken} 🎉'),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: const Color(0xFF0D9488),
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: !notif.isRead
+              ? const Color(0xFF3B82F6).withValues(alpha: 0.5)
+              : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          width: !notif.isRead ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTypeIcon(notif.type),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _buildTypeBadge(notif.type, s),
+                    const Spacer(),
+                    Text(
+                      formattedTime,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  notif.localizedTitle(s),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: textPrimary,
+                  ),
+                ),
+                if (notif.localizedMessage(s).isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    notif.localizedMessage(s),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? AppColors.darkTextMuted : const Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ],
             ),
-          );
-        };
-        onSnooze = () {
-          NotificationService.triggerHaptic(isSuccess: false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(s.snooze10m),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: const Color(0xFF8B5CF6),
-            ),
-          );
-        };
-        onSkip = () {
-          NotificationService.triggerHaptic(isSuccess: false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(s.skip),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: const Color(0xFFEF4444),
-            ),
-          );
-        };
-      }
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== 3D SQUIRCLE ICON CONTAINER ====================
+  Widget _buildTypeIcon(NotificationType type) {
+    final List<Color> gradientColors;
+    final IconData iconData;
+
+    switch (type) {
+      case NotificationType.doseTaken:
+        gradientColors = [const Color(0xFF10B981), const Color(0xFF059669)];
+        iconData = Icons.check_circle_rounded;
+        break;
+      case NotificationType.doseSkipped:
+        gradientColors = [const Color(0xFFF59E0B), const Color(0xFFD97706)];
+        iconData = Icons.remove_circle_outline_rounded;
+        break;
+      case NotificationType.doseSnoozed:
+        gradientColors = [const Color(0xFF8B5CF6), const Color(0xFF6D28D9)];
+        iconData = Icons.snooze_rounded;
+        break;
+      case NotificationType.doseMissed:
+        gradientColors = [const Color(0xFFEF4444), const Color(0xFFB91C1C)];
+        iconData = Icons.alarm_off_rounded;
+        break;
+      case NotificationType.refillAdded:
+        gradientColors = [const Color(0xFF2563EB), const Color(0xFF0284C7)];
+        iconData = Icons.add_shopping_cart_rounded;
+        break;
+      case NotificationType.lowStock:
+        gradientColors = [const Color(0xFFF97316), const Color(0xFFEA580C)];
+        iconData = Icons.warning_amber_rounded;
+        break;
+      case NotificationType.medicineAdded:
+        gradientColors = [const Color(0xFF0D9488), const Color(0xFF14B8A6)];
+        iconData = Icons.add_circle_outline_rounded;
+        break;
+      case NotificationType.medicineUpdated:
+        gradientColors = [const Color(0xFF4F46E5), const Color(0xFF6366F1)];
+        iconData = Icons.edit_note_rounded;
+        break;
+      case NotificationType.reminderDue:
+      case NotificationType.testAlarm:
+        gradientColors = [const Color(0xFF7C3AED), const Color(0xFF9333EA)];
+        iconData = Icons.notifications_active_rounded;
+        break;
     }
 
-    return LuxuryNotificationCard(
-      notification: notif,
-      s: s,
-      isDark: isDark,
-      onTake: onTake,
-      onSnooze: onSnooze,
-      onSkip: onSkip,
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: gradientColors.first.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Icon(
+        iconData,
+        color: Colors.white,
+        size: 22,
+      ),
+    );
+  }
+
+  // ==================== TYPE BADGE ====================
+  Widget _buildTypeBadge(NotificationType type, AppStrings s) {
+    String label;
+    Color bg;
+    Color fg;
+
+    switch (type) {
+      case NotificationType.doseTaken:
+        label = s.badgeTaken;
+        bg = const Color(0xFF10B981).withValues(alpha: 0.15);
+        fg = const Color(0xFF059669);
+        break;
+      case NotificationType.doseSkipped:
+        label = s.badgeSkipped;
+        bg = const Color(0xFFF59E0B).withValues(alpha: 0.15);
+        fg = const Color(0xFFD97706);
+        break;
+      case NotificationType.doseSnoozed:
+        label = s.badgeSnoozed;
+        bg = const Color(0xFF8B5CF6).withValues(alpha: 0.15);
+        fg = const Color(0xFF7C3AED);
+        break;
+      case NotificationType.doseMissed:
+        label = s.badgeMissed;
+        bg = const Color(0xFFEF4444).withValues(alpha: 0.15);
+        fg = const Color(0xFFDC2626);
+        break;
+      case NotificationType.refillAdded:
+        label = s.badgeRefill;
+        bg = const Color(0xFF3B82F6).withValues(alpha: 0.15);
+        fg = const Color(0xFF2563EB);
+        break;
+      case NotificationType.lowStock:
+        label = s.badgeLowStock;
+        bg = const Color(0xFFEA580C).withValues(alpha: 0.15);
+        fg = const Color(0xFFC2410C);
+        break;
+      case NotificationType.medicineAdded:
+        label = s.badgeAdded;
+        bg = const Color(0xFF0D9488).withValues(alpha: 0.15);
+        fg = const Color(0xFF0F766E);
+        break;
+      case NotificationType.medicineUpdated:
+        label = s.badgeUpdated;
+        bg = const Color(0xFF6366F1).withValues(alpha: 0.15);
+        fg = const Color(0xFF4F46E5);
+        break;
+      case NotificationType.reminderDue:
+      case NotificationType.testAlarm:
+        label = s.badgeAlarm;
+        bg = const Color(0xFFEC4899).withValues(alpha: 0.15);
+        fg = const Color(0xFFDB2777);
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: fg,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
     );
   }
 

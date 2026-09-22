@@ -876,7 +876,7 @@ class AppStrings {
   }
 
   // ==================== NOTIFICATIONS & ALARMS ====================
-  String get notifActionMarkTaken => code == 'bn' ? 'ওষুধ নেওয়া হয়েছে' : (code == 'hi' ? 'दवा ले ली' : 'Mark Taken');
+  String get notifActionMarkTaken => code == 'bn' ? 'গ্রহণ করুন' : (code == 'hi' ? 'दवा लें' : 'Take');
   String get notifActionSnooze10m => code == 'bn' ? '১০ মিনিট পর' : (code == 'hi' ? '10 मिनट बाद' : 'Snooze 10m');
   String get notifActionSkip => code == 'bn' ? 'বাদ দিন' : (code == 'hi' ? 'छोड़ें' : 'Skip');
   String get notifActionDismiss => code == 'bn' ? 'বাতিল' : (code == 'hi' ? 'खारिज करें' : 'Dismiss');
@@ -889,12 +889,13 @@ class AppStrings {
     required String instruction,
     required String timeStr,
   }) {
+    final d = dosage.isNotEmpty ? ' • $dosage' : '';
     if (code == 'bn') {
-      return '<b><big>$medicineName</big></b><br>$dosage<br><br>$instruction ($timeStr) • দয়া করে সময়মতো ওষুধ গ্রহণ করুন।';
+      return '<b><big>$medicineName</big></b>$d<br>⏰ <b>$timeStr</b> • 🍽️ <b>$instruction</b><br><br><i><font color="#0D9488">✨ "$notifCursiveNote"</font></i>';
     } else if (code == 'hi') {
-      return '<b><big>$medicineName</big></b><br>$dosage<br><br>$instruction ($timeStr) • कृपया समय पर अपनी दवा लें।';
+      return '<b><big>$medicineName</big></b>$d<br>⏰ <b>$timeStr</b> • 🍽️ <b>$instruction</b><br><br><i><font color="#0D9488">✨ "$notifCursiveNote"</font></i>';
     }
-    return '<b><big>$medicineName</big></b><br>$dosage<br><br>$instruction ($timeStr) • Please take your medicine on time.';
+    return '<b><big>$medicineName</big></b>$d<br>⏰ <b>$timeStr</b> • 🍽️ <b>$instruction</b><br><br><i><font color="#0D9488">✨ "$notifCursiveNote"</font></i>';
   }
   String notifTimeForMed(String name, [String? dosage]) {
     final d = (dosage != null && dosage.isNotEmpty) ? ' ($dosage)' : '';

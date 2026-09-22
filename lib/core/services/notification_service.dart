@@ -9,9 +9,11 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import '../../models/app_notification.dart';
 import '../../models/intake_record.dart';
 import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
+import '../../widgets/luxury_heads_up_banner.dart';
 import '../database/db_helper.dart';
 import '../localization/app_strings.dart';
 
@@ -562,9 +564,9 @@ class NotificationService {
     final timeStr = reminder.formattedTime;
     final doseStr = medicine.dosage;
 
-    final notifTitle = '$emoji ${s.timeToTake}: ${medicine.name}';
-    final notifBody = '$doseStr • $instructionStr ($timeStr)';
-    final contentTitleExpanded = '$emoji <b>${s.timeToTake}</b>';
+    final notifTitle = '$emoji ${medicine.name}${doseStr.isNotEmpty ? ' • $doseStr' : ''}';
+    final notifBody = '${s.timeToTake} • $instructionStr ($timeStr)';
+    final contentTitleExpanded = '$emoji <b><big>${medicine.name}</big></b>${doseStr.isNotEmpty ? ' • <font color="#0D9488">$doseStr</font>' : ''}';
     final bigTextFormatted = s.notifDoseBigText(
       medicineName: medicine.name,
       dosage: doseStr,
@@ -581,6 +583,7 @@ class NotificationService {
       ongoing: false,
       autoCancel: false,
       showWhen: true,
+      subText: s.notifPartnerTagline,
       fullScreenIntent: reminder.isAlarm,
       category: reminder.isAlarm ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
       icon: smallIcon,
@@ -596,6 +599,8 @@ class NotificationService {
         htmlFormatBigText: true,
         contentTitle: contentTitleExpanded,
         htmlFormatContentTitle: true,
+        summaryText: s.doseReminderTitle,
+        htmlFormatSummaryText: true,
       ),
       actions: [
         AndroidNotificationAction(
@@ -740,9 +745,9 @@ class NotificationService {
     final timeStr = reminder.formattedTime;
     final doseStr = medicine.dosage;
 
-    final notifTitle = '$emoji ${s.timeToTake}: ${medicine.name}';
-    final notifBody = '$doseStr • $instructionStr ($timeStr)';
-    final contentTitleExpanded = '$emoji <b>${s.timeToTake}</b>';
+    final notifTitle = '$emoji ${medicine.name}${doseStr.isNotEmpty ? ' • $doseStr' : ''}';
+    final notifBody = '${s.timeToTake} • $instructionStr ($timeStr)';
+    final contentTitleExpanded = '$emoji <b><big>${medicine.name}</big></b>${doseStr.isNotEmpty ? ' • <font color="#0D9488">$doseStr</font>' : ''}';
     final bigTextFormatted = s.notifDoseBigText(
       medicineName: medicine.name,
       dosage: doseStr,
@@ -759,6 +764,7 @@ class NotificationService {
       ongoing: false,
       autoCancel: false,
       showWhen: true,
+      subText: s.notifPartnerTagline,
       fullScreenIntent: reminder.isAlarm,
       category: reminder.isAlarm ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
       icon: smallIcon,
@@ -772,11 +778,19 @@ class NotificationService {
         htmlFormatBigText: true,
         contentTitle: contentTitleExpanded,
         htmlFormatContentTitle: true,
+        summaryText: s.doseReminderTitle,
+        htmlFormatSummaryText: true,
       ),
       actions: [
         AndroidNotificationAction(
           actionTaken,
           s.notifActionMarkTaken,
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+        AndroidNotificationAction(
+          actionSnooze,
+          s.notifActionSnooze10m,
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -871,7 +885,7 @@ class NotificationService {
       icon: smallIcon,
       largeIcon: largeIconBitmap,
       color: colorValue != 0 ? Color(colorValue) : brandPrimaryColor,
-      subText: snoozedTitle,
+      subText: s.notifPartnerTagline,
       ticker: '$emoji $snoozedTitle',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
@@ -1083,9 +1097,9 @@ class NotificationService {
     final emoji = getEmojiForType(type);
     final timeStr = s.formatNotifTimestamp(DateTime.now());
 
-    final titleCollapsed = '$emoji ${s.timeToTake}: $medName';
-    final bodyCollapsed = '$dosage • $instruction ($timeStr)';
-    final contentTitleExpanded = '$emoji <b>${s.timeToTake}</b>';
+    final notifTitle = '$emoji $medName • $dosage';
+    final notifBody = '${s.timeToTake} • $instruction ($timeStr)';
+    final contentTitleExpanded = '$emoji <b><big>$medName</big></b> • <font color="#0D9488">$dosage</font>';
     final bigTextFormatted = s.notifDoseBigText(
       medicineName: medName,
       dosage: dosage,
@@ -1099,8 +1113,10 @@ class NotificationService {
       channelDescription: alarmChannelDesc,
       importance: Importance.max,
       priority: Priority.max,
-      ongoing: true,
-      autoCancel: false,
+      ongoing: false,
+      autoCancel: true,
+      showWhen: true,
+      subText: s.notifPartnerTagline,
       fullScreenIntent: true,
       category: AndroidNotificationCategory.alarm,
       icon: smallIcon,
@@ -1114,11 +1130,19 @@ class NotificationService {
         htmlFormatBigText: true,
         contentTitle: contentTitleExpanded,
         htmlFormatContentTitle: true,
+        summaryText: s.doseReminderTitle,
+        htmlFormatSummaryText: true,
       ),
       actions: [
         AndroidNotificationAction(
           actionTaken,
           s.notifActionMarkTaken,
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+        AndroidNotificationAction(
+          actionSnooze,
+          s.notifActionSnooze10m,
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -1133,11 +1157,72 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       id: 99990 + type.index,
-      title: titleCollapsed,
-      body: bodyCollapsed,
+      title: notifTitle,
+      body: notifBody,
       notificationDetails: NotificationDetails(android: androidDetails),
       payload: payload,
     );
+
+    // Show floating in-app luxury heads-up banner if app is active in foreground
+    final navContext = navigatorKey.currentContext;
+    if (navContext != null && navContext.mounted) {
+      LuxuryHeadsUpBanner.show(
+        context: navContext,
+        notification: AppNotification(
+          id: 'test_$testNotifId',
+          type: NotificationType.reminderDue,
+          title: notifTitle,
+          message: notifBody,
+          medicineName: medName,
+          timestamp: DateTime.now(),
+          metadata: {
+            'dosage': dosage,
+            'instruction': instruction,
+            'medicineType': type.name,
+            'time': timeStr,
+            'medicineId': testMedId,
+            'reminderTimeId': testRemId,
+          },
+        ),
+        s: s,
+        onTake: () {
+          NotificationService.triggerHaptic(isSuccess: true);
+          if (navContext.mounted) {
+            ScaffoldMessenger.of(navContext).showSnackBar(
+              SnackBar(
+                content: Text('$medName: ${s.taken} 🎉'),
+                backgroundColor: const Color(0xFF0D9488),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        onSnooze: () {
+          NotificationService.triggerHaptic(isSuccess: false);
+          if (navContext.mounted) {
+            ScaffoldMessenger.of(navContext).showSnackBar(
+              SnackBar(
+                content: Text(s.snooze10m),
+                backgroundColor: const Color(0xFF8B5CF6),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        onSkip: () {
+          NotificationService.triggerHaptic(isSuccess: false);
+          if (navContext.mounted) {
+            ScaffoldMessenger.of(navContext).showSnackBar(
+              SnackBar(
+                content: Text(s.skip),
+                backgroundColor: const Color(0xFFEF4444),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+      );
+    }
   }
 
   tz.TZDateTime _nextInstanceOfDayAndTime(int dayOfWeek, int hour, int minute) {
