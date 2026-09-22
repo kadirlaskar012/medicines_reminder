@@ -205,8 +205,8 @@ class NotificationService {
 
   NotificationService._init();
 
-  // Channels (version 5 with custom alarm sound, heads-up prominence, and vibration)
-  static const String alarmChannelId = 'med_alarm_channel_v5';
+  // Channels (version 6 with system alarm audio attributes, heads-up prominence, and vibration)
+  static const String alarmChannelId = 'med_alarm_channel_v6';
   static const String alarmChannelName = 'Medicine Dose Reminders & Alarms';
   static const String alarmChannelDesc = 'High-priority notifications and alerts for scheduled doses';
 
@@ -406,7 +406,6 @@ class NotificationService {
           description: alarmChannelDesc,
           importance: Importance.max,
           playSound: true,
-          sound: const RawResourceAndroidNotificationSound('gentle_chime'),
           enableVibration: true,
           vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
           enableLights: true,
@@ -580,7 +579,6 @@ class NotificationService {
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       playSound: true,
-      sound: reminder.isAlarm ? const RawResourceAndroidNotificationSound('gentle_chime') : null,
       vibrationPattern: reminder.isAlarm ? Int64List.fromList([0, 1000, 500, 1000, 500, 1000]) : null,
       styleInformation: BigTextStyleInformation(
         s.notifTakeBigText(instructionStr, reminder.formattedTime, medicine.dosage),
