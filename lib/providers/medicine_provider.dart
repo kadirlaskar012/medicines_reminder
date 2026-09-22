@@ -370,9 +370,13 @@ class MedicineProvider extends ChangeNotifier {
   Future<void> _backgroundStartupMaintenance() async {
     try {
       await autoSkipPastDueDoses(checkPastDays: true);
+    } catch (e) {
+      debugPrint('autoSkipPastDueDoses notice: $e');
+    }
+    try {
       await rescheduleAllActiveReminders();
     } catch (e) {
-      debugPrint('Background startup maintenance notice: $e');
+      debugPrint('rescheduleAllActiveReminders notice: $e');
     }
   }
 
@@ -411,14 +415,20 @@ class MedicineProvider extends ChangeNotifier {
   }
 
   Future<void> rescheduleAllActiveReminders() async {
-    // Purge any stale, zombie, or conflicting notifications & alarms from the device first
-    await _notifications.wipeAllDeviceNotificationsAndAlarms();
-    for (final med in _medicines) {
-      if (!med.isActive) continue;
-      final reminders = _remindersByMedicine[med.id] ?? [];
-      for (final rem in reminders) {
-        await _notifications.scheduleMedicineReminder(med, rem);
+    try {
+      await _notifications.wipeAllDeviceNotificationsAndAlarms();
+      int scheduledCount = 0;
+      for (final med in _medicines) {
+        if (!med.isActive) continue;
+        final reminders = _remindersByMedicine[med.id] ?? [];
+        for (final rem in reminders) {
+          await _notifications.scheduleMedicineReminder(med, rem);
+          scheduledCount++;
+        }
       }
+      debugPrint('MedicineProvider: Rescheduled $scheduledCount active reminder alarms across ${_medicines.length} medicines.');
+    } catch (e) {
+      debugPrint('MedicineProvider: Error in rescheduleAllActiveReminders: $e');
     }
   }
 

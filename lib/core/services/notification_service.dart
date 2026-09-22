@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -11,17 +12,65 @@ import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
 import '../database/db_helper.dart';
 
+/// Safely and accurately configures the device's true local timezone
+Future<void> configureLocalTimeZone() async {
+  tz.initializeTimeZones();
+  try {
+    final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+    final String timeZoneName = timezoneInfo.identifier;
+    debugPrint('NotificationService: FlutterTimezone detected: $timeZoneName');
+    try {
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+      debugPrint('NotificationService: Local location successfully set to $timeZoneName');
+      return;
+    } catch (locErr) {
+      debugPrint('NotificationService: tz.getLocation failed for $timeZoneName: $locErr, trying offset fallback...');
+    }
+  } catch (e) {
+    debugPrint('NotificationService: FlutterTimezone.getLocalTimezone error: $e');
+  }
+
+  // Fallback: match by local UTC offset
+  final offset = DateTime.now().timeZoneOffset;
+  debugPrint('NotificationService: Device UTC offset: $offset');
+  if (offset.inMinutes == 330) {
+    // IST: UTC+5:30 (India)
+    tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
+  } else if (offset.inMinutes == 360) {
+    // BST: UTC+6:00 (Bangladesh)
+    tz.setLocalLocation(tz.getLocation('Asia/Dhaka'));
+  } else if (offset.inMinutes == 300) {
+    // PKT: UTC+5:00 (Pakistan)
+    tz.setLocalLocation(tz.getLocation('Asia/Karachi'));
+  } else if (offset.inMinutes == 345) {
+    // NPT: UTC+5:45 (Nepal)
+    tz.setLocalLocation(tz.getLocation('Asia/Kathmandu'));
+  } else {
+    try {
+      bool found = false;
+      for (final loc in tz.timeZoneDatabase.locations.values) {
+        final nowInLoc = tz.TZDateTime.now(loc);
+        if (nowInLoc.timeZoneOffset == offset) {
+          tz.setLocalLocation(loc);
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        tz.setLocalLocation(tz.local);
+      }
+    } catch (_) {
+      tz.setLocalLocation(tz.local);
+    }
+  }
+  debugPrint('NotificationService: Final configured local timezone is: ${tz.local.name}');
+}
+
 // Top-level or static background action handler
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) async {
   WidgetsFlutterBinding.ensureInitialized();
-  tz.initializeTimeZones();
-  try {
-    final String currentTimeZone = DateTime.now().timeZoneName;
-    tz.setLocalLocation(tz.getLocation(currentTimeZone));
-  } catch (_) {
-    tz.setLocalLocation(tz.local);
-  }
+  await configureLocalTimeZone();
 
   debugPrint('Notification background response: actionId=${notificationResponse.actionId}, notifId=${notificationResponse.id}');
   final payload = notificationResponse.payload;
@@ -146,16 +195,16 @@ class NotificationService {
 
   NotificationService._init();
 
-  // Channels (version 3 with maximum heads-up prominence and clean presentation)
-  static const String alarmChannelId = 'med_alarm_channel_v3';
+  // Channels (version 4 with maximum heads-up prominence, sound, and vibration)
+  static const String alarmChannelId = 'med_alarm_channel_v4';
   static const String alarmChannelName = 'Medicine Dose Reminders & Alarms';
   static const String alarmChannelDesc = 'High-priority notifications and alerts for scheduled doses';
 
-  static const String gentleChannelId = 'med_gentle_channel_v3';
+  static const String gentleChannelId = 'med_gentle_channel_v4';
   static const String gentleChannelName = 'Gentle Medicine Reminders';
   static const String gentleChannelDesc = 'Reminders for daily vitamins and regular doses';
 
-  static const String refillChannelId = 'med_refill_channel_v3';
+  static const String refillChannelId = 'med_refill_channel_v4';
   static const String refillChannelName = 'Refill & Low Stock Alerts';
   static const String refillChannelDesc = 'Alerts when medicine stock is running low';
 
@@ -249,14 +298,8 @@ class NotificationService {
       return;
     }
 
-    // 1. Initialize Timezones
-    tz.initializeTimeZones();
-    try {
-      final String currentTimeZone = DateTime.now().timeZoneName;
-      tz.setLocalLocation(tz.getLocation(currentTimeZone));
-    } catch (_) {
-      tz.setLocalLocation(tz.local);
-    }
+    // 1. Initialize Timezones using device true timezone
+    await configureLocalTimeZone();
 
     // 2. Android Initialization Settings with fallback protection
     bool initSuccess = false;
@@ -336,15 +379,17 @@ class NotificationService {
 
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
+        AndroidNotificationChannel(
           alarmChannelId,
           alarmChannelName,
           description: alarmChannelDesc,
           importance: Importance.max,
           playSound: true,
           enableVibration: true,
+          vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
           enableLights: true,
           ledColor: brandPrimaryColor,
+          audioAttributesUsage: AudioAttributesUsage.alarm,
         ),
       );
 
@@ -371,9 +416,6 @@ class NotificationService {
       );
     }
 
-    // Purge any stale/zombie alarms from previous app builds
-    await wipeAllDeviceNotificationsAndAlarms();
-
     _isInitialized = true;
   }
 
@@ -392,20 +434,38 @@ class NotificationService {
   Future<bool> requestPermissions() async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return true;
 
+    final androidPlugin = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
     // 1. Android 13+ Notification Runtime Permission
-    if (await Permission.notification.isDenied) {
-      final status = await Permission.notification.request();
-      if (status.isDenied) return false;
+    bool notifAllowed = false;
+    try {
+      final res = await androidPlugin?.requestNotificationsPermission();
+      notifAllowed = res ?? false;
+    } catch (e) {
+      debugPrint('requestNotificationsPermission notice: $e');
+    }
+
+    if (!notifAllowed) {
+      try {
+        final status = await Permission.notification.request();
+        notifAllowed = status.isGranted;
+      } catch (e) {
+        debugPrint('Permission.notification.request notice: $e');
+      }
     }
 
     // 2. Android 12+ / 14+ Exact Alarm Permission
+    try {
+      await androidPlugin?.requestExactAlarmsPermission();
+    } catch (_) {}
     try {
       final alarmStatus = await Permission.scheduleExactAlarm.status;
       if (alarmStatus.isDenied) {
         await Permission.scheduleExactAlarm.request();
       }
     } catch (e) {
-      debugPrint('Schedule exact alarm permission check skipped: $e');
+      debugPrint('Schedule exact alarm check notice: $e');
     }
 
     // 3. Battery Optimizations Request
@@ -414,10 +474,10 @@ class NotificationService {
         await Permission.ignoreBatteryOptimizations.request();
       }
     } catch (e) {
-      debugPrint('Battery optimization ignore check skipped: $e');
+      debugPrint('Battery optimization check notice: $e');
     }
 
-    return true;
+    return notifAllowed;
   }
 
   // Check current permission statuses
@@ -473,6 +533,7 @@ class NotificationService {
       ticker: '$emoji Time for ${medicine.name} • ${medicine.dosage}',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
+      vibrationPattern: reminder.isAlarm ? Int64List.fromList([0, 1000, 500, 1000, 500, 1000]) : null,
       styleInformation: BigTextStyleInformation(
         '🍽️ <b>${medicine.instruction.title}</b> &nbsp;•&nbsp; ⏰ <b>${reminder.formattedTime}</b><br>Please take <b>${medicine.dosage}</b> now to stay on schedule.',
         htmlFormatBigText: true,
@@ -483,6 +544,12 @@ class NotificationService {
         AndroidNotificationAction(
           actionTaken,
           '✓ Mark Taken',
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+        AndroidNotificationAction(
+          actionSnooze,
+          '⏱ Snooze 10m',
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -512,8 +579,12 @@ class NotificationService {
         'isAlarm': reminder.isAlarm,
         'notificationId': uniqueNotificationId,
         'dayOfWeek': dayOfWeek,
+        'scheduledHour': reminder.hour,
+        'scheduledMinute': reminder.minute,
         'reminderBaseNotificationId': reminder.notificationId,
       });
+
+      debugPrint('NotificationService: Scheduling reminder "${medicine.name}" (${reminder.formattedTime}) for day $dayOfWeek at $scheduledDate (ID: $uniqueNotificationId, tz: ${scheduledDate.timeZoneName}, local: ${tz.local.name})');
 
       try {
         await _notificationsPlugin.zonedSchedule(
@@ -527,7 +598,7 @@ class NotificationService {
           payload: dayPayload,
         );
       } catch (e) {
-        debugPrint('Error scheduling exact reminder: $e');
+        debugPrint('Error scheduling exact reminder for ${medicine.name}: $e. Trying inexact fallback...');
         try {
           await _notificationsPlugin.zonedSchedule(
             id: uniqueNotificationId,
@@ -540,7 +611,7 @@ class NotificationService {
             payload: dayPayload,
           );
         } catch (fallbackError) {
-          debugPrint('Fallback scheduling also failed: $fallbackError');
+          debugPrint('Fallback scheduling also failed for ${medicine.name}: $fallbackError');
         }
       }
     }
@@ -919,19 +990,101 @@ class NotificationService {
   }
 
   tz.TZDateTime _nextInstanceOfDayAndTime(int dayOfWeek, int hour, int minute) {
-    tz.TZDateTime scheduledDate = _nextInstanceOfTime(hour, minute);
-    while (scheduledDate.weekday != dayOfWeek) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+      0,
+    );
+
+    if (scheduledDate.weekday == dayOfWeek) {
+      if (scheduledDate.isBefore(now.subtract(const Duration(seconds: 15)))) {
+        // Scheduled time for today already passed more than 15s ago, schedule for next week
+        scheduledDate = scheduledDate.add(const Duration(days: 7));
+      } else if (scheduledDate.isBefore(now)) {
+        // User scheduled within the current active minute (e.g. set 3:25 at 3:25:05)
+        // Fire 5 seconds from now so the user receives the alarm promptly!
+        scheduledDate = now.add(const Duration(seconds: 5));
+      }
+    } else {
+      while (scheduledDate.weekday != dayOfWeek || scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+        scheduledDate = tz.TZDateTime(
+          tz.local,
+          scheduledDate.year,
+          scheduledDate.month,
+          scheduledDate.day,
+          hour,
+          minute,
+          0,
+        );
+      }
     }
+
     return scheduledDate;
   }
 
-  tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-    return scheduledDate;
+  /// Schedules a quick test alarm that rings with sound, vibration, and full-screen alert
+  /// in [secondsFromNow] seconds (defaults to 5 seconds).
+  Future<void> scheduleQuickTestAlarm({int secondsFromNow = 5}) async {
+    final now = tz.TZDateTime.now(tz.local);
+    final scheduledDate = now.add(Duration(seconds: secondsFromNow));
+    const int testId = 777777;
+
+    final androidDetails = AndroidNotificationDetails(
+      alarmChannelId,
+      alarmChannelName,
+      channelDescription: alarmChannelDesc,
+      importance: Importance.max,
+      priority: Priority.max,
+      ongoing: true,
+      autoCancel: false,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.alarm,
+      icon: '@drawable/ic_notification',
+      color: brandPrimaryColor,
+      vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      ticker: '⏰ Test Alarm Ringing',
+      styleInformation: const BigTextStyleInformation(
+        '🔔 <b>Test Alarm Verified!</b><br>Your medicine alarm and notifications are working properly.',
+        htmlFormatBigText: true,
+        contentTitle: '⏰ <b>Test Alarm</b> • MediRemind',
+        htmlFormatContentTitle: true,
+      ),
+      actions: const [
+        AndroidNotificationAction(
+          actionTaken,
+          '✓ Dismiss',
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+      ],
+    );
+
+    final payload = jsonEncode({
+      'medicineId': 'test_demo',
+      'medicineName': 'Test Alarm',
+      'dosage': '1 Dose',
+      'reminderTimeId': 'test_rem',
+      'notificationId': testId,
+      'isAlarm': true,
+      'isTest': true,
+    });
+
+    await _notificationsPlugin.zonedSchedule(
+      id: testId,
+      title: '⏰ Test Alarm • MediRemind',
+      body: 'Your medicine alarm and notification are working perfectly!',
+      scheduledDate: scheduledDate,
+      notificationDetails: NotificationDetails(android: androidDetails),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: payload,
+    );
+    debugPrint('NotificationService: Quick test alarm scheduled for $scheduledDate (in $secondsFromNow seconds)');
   }
 }
