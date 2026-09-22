@@ -77,8 +77,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       final dosage = data['dosage'] as String? ?? '';
       final notifId = data['notificationId'] as int?;
 
-      // Immediately dismiss notification from tray
-      if (notifId != null) {
+      // Only dismiss notification from tray if user tapped an explicit action button
+      if (actionId != null && notifId != null) {
         await NotificationService.instance.cancelNotificationId(notifId);
       }
       if (!mounted) return;

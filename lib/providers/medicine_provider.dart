@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -895,11 +896,29 @@ class MedicineProvider extends ChangeNotifier {
   Future<void> snoozeDose(Medicine medicine, ReminderTime reminder, {int minutes = 10}) async {
     NotificationService.triggerHaptic(isSuccess: false);
     try {
+      final payload = jsonEncode({
+        'medicineId': medicine.id,
+        'medicineName': medicine.name,
+        'dosage': medicine.dosage,
+        'medicineType': medicine.type.name,
+        'colorValue': medicine.colorValue,
+        'photoPath': medicine.photoPath,
+        'reminderTimeId': reminder.id,
+        'isAlarm': reminder.isAlarm,
+        'isSnooze': true,
+        'dayOfWeek': DateTime.now().weekday,
+      });
+
       await _notifications.snoozeReminder(
         medicine.name,
         medicine.dosage,
-        'snooze_${medicine.id}',
+        payload,
         minutes: minutes,
+        type: medicine.type,
+        colorValue: medicine.colorValue,
+        photoPath: medicine.photoPath,
+        medicineId: medicine.id,
+        reminderTimeId: reminder.id,
       );
       await logAppNotification(
         type: NotificationType.doseSnoozed,
@@ -908,7 +927,9 @@ class MedicineProvider extends ChangeNotifier {
         medicineId: medicine.id,
         medicineName: medicine.name,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Error in snoozeDose: $e');
+    }
   }
 
 

@@ -306,13 +306,15 @@ class AlarmRingingScreen extends StatelessWidget {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () async {
-                                  await context.read<MedicineProvider>().snoozeDose(medicine, reminder, minutes: 10);
+                                  final provider = context.read<MedicineProvider>();
+                                  final nav = Navigator.of(context);
                                   await NotificationService.instance.dismissActiveReminderNotification(
                                     reminder: reminder,
                                     notificationId: notificationId,
                                   );
+                                  await provider.snoozeDose(medicine, reminder, minutes: 10);
                                   if (context.mounted) {
-                                    Navigator.pop(context);
+                                    nav.pop();
                                   }
                                 },
                                 icon: const Icon(Icons.snooze_rounded, color: Colors.white, size: 18),
@@ -335,14 +337,16 @@ class AlarmRingingScreen extends StatelessWidget {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () async {
+                                  final provider = context.read<MedicineProvider>();
+                                  final nav = Navigator.of(context);
                                   final now = DateTime.now();
-                                  await context.read<MedicineProvider>().markAsSkipped(medicine, reminder, now);
+                                  await provider.markAsSkipped(medicine, reminder, now);
                                   await NotificationService.instance.dismissActiveReminderNotification(
                                     reminder: reminder,
                                     notificationId: notificationId,
                                   );
                                   if (context.mounted) {
-                                    Navigator.pop(context);
+                                    nav.pop();
                                   }
                                 },
                                 icon: const Icon(Icons.close_rounded, color: AppColors.accentRose, size: 18),

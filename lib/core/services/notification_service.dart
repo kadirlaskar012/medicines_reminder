@@ -72,11 +72,12 @@ Future<void> configureLocalTimeZone() async {
 void notificationTapBackground(NotificationResponse notificationResponse) async {
   WidgetsFlutterBinding.ensureInitialized();
   await configureLocalTimeZone();
+  await NotificationService.instance.initialize();
 
   debugPrint('Notification background response: actionId=${notificationResponse.actionId}, notifId=${notificationResponse.id}');
   final payload = notificationResponse.payload;
 
-  // 1. Immediately dismiss/cancel the notification from the tray
+  // 1. Immediately dismiss/cancel the notification from the tray if taking action
   final plugin = FlutterLocalNotificationsPlugin();
   int? notifId = notificationResponse.id;
   Map<String, dynamic>? data;
@@ -108,6 +109,8 @@ void notificationTapBackground(NotificationResponse notificationResponse) async 
       final dosage = data['dosage'] as String? ?? '';
       final typeName = data['medicineType'] as String? ?? 'tablet';
       final dayOfWeek = data['dayOfWeek'] as int? ?? DateTime.now().weekday;
+      final colorValue = data['colorValue'] as int? ?? 0;
+      final photoPath = data['photoPath'] as String?;
       final type = MedicineType.values.firstWhere(
         (t) => t.name == typeName,
         orElse: () => MedicineType.tablet,
@@ -176,6 +179,10 @@ void notificationTapBackground(NotificationResponse notificationResponse) async 
             payload!,
             minutes: 10,
             type: type,
+            colorValue: colorValue,
+            photoPath: photoPath,
+            medicineId: medicineId,
+            reminderTimeId: reminderId,
           );
           debugPrint('Background dose SNOOZED for 10 min for $medicineName');
         }
@@ -332,19 +339,16 @@ class NotificationService {
         await _notificationsPlugin.initialize(
           settings: initSettings,
           onDidReceiveNotificationResponse: (NotificationResponse response) async {
-            if (response.id != null) {
-              try {
-                await _notificationsPlugin.cancel(id: response.id!);
-              } catch (_) {}
+            if (response.actionId == actionTaken ||
+                response.actionId == actionSkip ||
+                response.actionId == actionSnooze) {
+              if (response.id != null) {
+                try {
+                  await _notificationsPlugin.cancel(id: response.id!);
+                } catch (_) {}
+              }
             }
             if (response.payload != null && response.payload!.isNotEmpty) {
-              try {
-                final payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
-                final notifId = payloadData['notificationId'] as int?;
-                if (notifId != null) {
-                  await _notificationsPlugin.cancel(id: notifId);
-                }
-              } catch (_) {}
               if (_onNotificationAction != null) {
                 _onNotificationAction!(response.payload!, response.actionId);
               } else {
@@ -369,19 +373,14 @@ class NotificationService {
       final launchDetails = await _notificationsPlugin.getNotificationAppLaunchDetails();
       if (launchDetails != null && launchDetails.didNotificationLaunchApp && launchDetails.notificationResponse != null) {
         final res = launchDetails.notificationResponse!;
-        if (res.id != null) {
-          try {
-            await _notificationsPlugin.cancel(id: res.id!);
-          } catch (_) {}
+        if (res.actionId == actionTaken || res.actionId == actionSkip || res.actionId == actionSnooze) {
+          if (res.id != null) {
+            try {
+              await _notificationsPlugin.cancel(id: res.id!);
+            } catch (_) {}
+          }
         }
         if (res.payload != null && res.payload!.isNotEmpty) {
-          try {
-            final payloadData = jsonDecode(res.payload!) as Map<String, dynamic>;
-            final notifId = payloadData['notificationId'] as int?;
-            if (notifId != null) {
-              await _notificationsPlugin.cancel(id: notifId);
-            }
-          } catch (_) {}
           if (_onNotificationAction != null) {
             _onNotificationAction!(res.payload!, res.actionId);
           } else {
@@ -552,8 +551,9 @@ class NotificationService {
       channelDescription: reminder.isAlarm ? alarmChannelDesc : gentleChannelDesc,
       importance: Importance.max,
       priority: Priority.max,
-      ongoing: reminder.isAlarm,
-      autoCancel: !reminder.isAlarm,
+      ongoing: false,
+      autoCancel: false,
+      showWhen: true,
       fullScreenIntent: reminder.isAlarm,
       category: reminder.isAlarm ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
       icon: smallIcon,
@@ -713,8 +713,9 @@ class NotificationService {
       channelDescription: reminder.isAlarm ? alarmChannelDesc : gentleChannelDesc,
       importance: Importance.max,
       priority: Priority.max,
-      ongoing: reminder.isAlarm,
-      autoCancel: !reminder.isAlarm,
+      ongoing: false,
+      autoCancel: false,
+      showWhen: true,
       fullScreenIntent: reminder.isAlarm,
       category: reminder.isAlarm ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
       icon: smallIcon,
@@ -785,14 +786,29 @@ class NotificationService {
     String payload, {
     int minutes = 10,
     MedicineType type = MedicineType.tablet,
+    int colorValue = 0,
+    String? photoPath,
+    String? medicineId,
+    String? reminderTimeId,
   }) async {
+    await configureLocalTimeZone();
+
     final now = tz.TZDateTime.now(tz.local);
     final scheduledDate = now.add(Duration(minutes: minutes));
-    const snoozeId = 999999;
+
+    // Unique snooze ID per medicine so multiple medicines can be independently snoozed
+    final int snoozeId = 880000 + (medicineId != null ? medicineId.hashCode.abs() % 100000 : medicineName.hashCode.abs() % 100000);
 
     final smallIcon = getSmallIconForType(type);
     final largeIcon = getLargeIconForType(type);
     final emoji = getEmojiForType(type);
+
+    final AndroidBitmap<Object> largeIconBitmap;
+    if (photoPath != null && photoPath.isNotEmpty && File(photoPath).existsSync()) {
+      largeIconBitmap = FilePathAndroidBitmap(photoPath);
+    } else {
+      largeIconBitmap = DrawableResourceAndroidBitmap(largeIcon);
+    }
 
     final androidDetails = AndroidNotificationDetails(
       alarmChannelId,
@@ -800,19 +816,21 @@ class NotificationService {
       channelDescription: alarmChannelDesc,
       importance: Importance.max,
       priority: Priority.max,
-      ongoing: true,
+      ongoing: false,
       autoCancel: false,
+      showWhen: true,
       fullScreenIntent: true,
       category: AndroidNotificationCategory.alarm,
       icon: smallIcon,
-      largeIcon: DrawableResourceAndroidBitmap(largeIcon),
-      color: brandPrimaryColor,
+      largeIcon: largeIconBitmap,
+      color: colorValue != 0 ? Color(colorValue) : brandPrimaryColor,
       subText: '${type.label} Snoozed Dose',
       ticker: '$emoji Snoozed: $medicineName ($dosage)',
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
+      vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
       styleInformation: BigTextStyleInformation(
-        '⏱️ <b>Snooze elapsed!</b> Please take <b>$dosage</b> now.<br>Tap to log your dose.',
+        '⏱️ <b>10m Snooze elapsed!</b> Please take <b>$dosage</b> now.<br>Tap to log your dose.',
         htmlFormatBigText: true,
         contentTitle: '⏰ <b>$emoji Snoozed: $medicineName</b> ($dosage)',
         htmlFormatContentTitle: true,
@@ -822,19 +840,19 @@ class NotificationService {
       actions: const [
         AndroidNotificationAction(
           actionTaken,
-          '✓ TAKE',
+          '✓ Mark Taken',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSnooze,
-          '⏱ SNOOZE 10M',
+          '⏱ Snooze 10m',
           showsUserInterface: true,
           cancelNotification: true,
         ),
         AndroidNotificationAction(
           actionSkip,
-          '✕ SKIP',
+          '✕ Skip Dose',
           showsUserInterface: true,
           cancelNotification: true,
         ),
@@ -845,17 +863,47 @@ class NotificationService {
     try {
       payloadMap = jsonDecode(payload) as Map<String, dynamic>;
     } catch (_) {}
+    payloadMap['medicineId'] ??= medicineId;
+    payloadMap['reminderTimeId'] ??= reminderTimeId;
+    payloadMap['medicineName'] ??= medicineName;
+    payloadMap['dosage'] ??= dosage;
+    payloadMap['medicineType'] ??= type.name;
+    payloadMap['colorValue'] ??= colorValue;
+    payloadMap['photoPath'] ??= photoPath;
     payloadMap['notificationId'] = snoozeId;
+    payloadMap['isAlarm'] = true;
+    payloadMap['isSnooze'] = true;
 
-    await _notificationsPlugin.zonedSchedule(
-      id: snoozeId,
-      title: '⏰ $emoji Snoozed: $medicineName ($dosage)',
-      body: 'Time to take your snoozed dose now!',
-      scheduledDate: scheduledDate,
-      notificationDetails: NotificationDetails(android: androidDetails),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: jsonEncode(payloadMap),
-    );
+    debugPrint('NotificationService: Scheduling snooze alarm for $medicineName ($snoozeId) at $scheduledDate (in $minutes min, local tz: ${tz.local.name})');
+
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id: snoozeId,
+        title: '⏰ $emoji Snoozed: $medicineName ($dosage)',
+        body: '⏱️ Snooze elapsed! Please take $dosage now.',
+        scheduledDate: scheduledDate,
+        notificationDetails: NotificationDetails(android: androidDetails),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: jsonEncode(payloadMap),
+      );
+      debugPrint('NotificationService: Snooze alarm scheduled successfully with exactAllowWhileIdle for $scheduledDate');
+    } catch (e) {
+      debugPrint('Snooze exact schedule error: $e, falling back to inexactAllowWhileIdle...');
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id: snoozeId,
+          title: '⏰ $emoji Snoozed: $medicineName ($dosage)',
+          body: '⏱️ Snooze elapsed! Please take $dosage now.',
+          scheduledDate: scheduledDate,
+          notificationDetails: NotificationDetails(android: androidDetails),
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: jsonEncode(payloadMap),
+        );
+        debugPrint('NotificationService: Snooze fallback scheduled successfully for $scheduledDate');
+      } catch (fallbackError) {
+        debugPrint('NotificationService: Snooze fallback error: $fallbackError');
+      }
+    }
   }
 
   // ==================== HAPTICS & SOUND ====================
