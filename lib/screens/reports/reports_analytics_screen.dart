@@ -4,10 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/medicine.dart';
 import '../../models/reminder_time.dart';
 import '../../models/scheduled_dose.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
+import '../../widgets/medicine_visual.dart';
 import 'export_report_sheet.dart';
 
 class ReportsAnalyticsScreen extends StatefulWidget {
@@ -1331,26 +1333,8 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                             children: [
                               Row(
                                 children: [
-                                  // Medicine Squircle Icon
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Color(med.colorValue).withValues(alpha: isDark ? 0.25 : 0.12),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Color(med.colorValue).withValues(alpha: 0.4),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Icon(
-                                        med.type.icon,
-                                        color: Color(med.colorValue),
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
+                                  // Medicine Squircle Icon with 3D Visual
+                                  _buildMedicineVisualIcon(med, isDark, size: 42, visualSize: 30),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
@@ -2179,25 +2163,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                     // Top Row: Squircle icon + Title & Dosage + Status badge
                     Row(
                       children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Color(med.colorValue).withValues(alpha: isDark ? 0.25 : 0.12),
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(
-                              color: Color(med.colorValue).withValues(alpha: 0.4),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              med.type.icon,
-                              color: Color(med.colorValue),
-                              size: 22,
-                            ),
-                          ),
-                        ),
+                        _buildMedicineVisualIcon(med, isDark, size: 46, visualSize: 34),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
@@ -2301,6 +2267,48 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
       case TimeSlot.night:
         return s.nightSlot;
     }
+  }
+
+  Widget _buildMedicineVisualIcon(
+    Medicine med,
+    bool isDark, {
+    double size = 46,
+    double visualSize = 34,
+  }) {
+    final gradientColors = MedicineVisual.getGradients(med.colorValue, med.type);
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            gradientColors[0].withValues(alpha: isDark ? 0.16 : 0.08),
+            gradientColors[1].withValues(alpha: isDark ? 0.06 : 0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(size * 0.3),
+        border: Border.all(
+          color: gradientColors[0].withValues(alpha: isDark ? 0.35 : 0.22),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Center(
+        child: MedicineVisual.fromMedicine(
+          med,
+          size: visualSize,
+        ),
+      ),
+    );
   }
 
   Widget _buildDayStatPill({
