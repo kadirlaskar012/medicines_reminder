@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_svg_icons.dart';
 import '../../core/localization/app_strings.dart';
+import '../../core/services/alarm_audio_service.dart';
 import '../../core/services/local_backup_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -35,6 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // User-facing reminder preferences
   bool _soundEnabled = true;
+  String _selectedAlarmSound = 'gentle_chime';
   bool _vibrationEnabled = true;
   int _snoozeMinutes = 10;
   String _reminderBehavior = 'persistent'; // 'persistent' or 'normal'
@@ -49,8 +51,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
+    final soundId = await AlarmAudioService.instance.getSelectedSoundId();
     setState(() {
       _soundEnabled = prefs.getBool('reminder_sound_enabled') ?? true;
+      _selectedAlarmSound = soundId;
       _vibrationEnabled = prefs.getBool('reminder_vibration_enabled') ?? true;
       _snoozeMinutes = prefs.getInt('reminder_snooze_minutes') ?? 10;
       _reminderBehavior = prefs.getString('reminder_behavior') ?? 'persistent';
@@ -1058,6 +1062,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Divider(color: isDark ? Colors.white10 : const Color(0xFFF1F5F9), height: 1),
           const SizedBox(height: 16),
 
+          // Alarm Sound Tone Picker
+          if (_soundEnabled) ...[
+            InkWell(
+              onTap: () => _showAlarmSoundPickerSheet(context, isDark, s),
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    _buildSquircleIcon(
+                      icon: Icons.music_note_rounded,
+                      gradientColors: const [Color(0xFF0D9488), Color(0xFF06B6D4)],
+                      size: 38,
+                      iconSize: 19,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s.alarmSoundTitle,
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14.5,
+                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            s.alarmSoundName(_selectedAlarmSound),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Divider(color: isDark ? Colors.white10 : const Color(0xFFF1F5F9), height: 1),
+            const SizedBox(height: 16),
+          ],
+
           // Vibration toggle
           Row(
             children: [
@@ -1331,6 +1389,181 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  void _showAlarmSoundPickerSheet(BuildContext context, bool isDark, AppStrings s) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalContext, setModalState) {
+            final currentlyPreviewing = AlarmAudioService.instance.currentlyPreviewingId;
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _buildSquircleIcon(
+                        icon: Icons.music_note_rounded,
+                        gradientColors: const [Color(0xFF0D9488), Color(0xFF06B6D4)],
+                        size: 42,
+                        iconSize: 22,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              s.chooseAlarmSoundTitle,
+                              style: GoogleFonts.outfit(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              s.tapToPreviewSound,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  ...AlarmAudioService.availableSounds.map((sound) {
+                    final isSelected = _selectedAlarmSound == sound.id;
+                    final isPlaying = currentlyPreviewing == sound.id;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFF0FDFA))
+                            : (isDark ? const Color(0xFF131D33) : const Color(0xFFF8FAFC)),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF0D9488)
+                              : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                          width: isSelected ? 1.8 : 1,
+                        ),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        leading: _buildSquircleIcon(
+                          icon: sound.icon,
+                          gradientColors: isSelected
+                              ? const [Color(0xFF0D9488), Color(0xFF06B6D4)]
+                              : const [Color(0xFF64748B), Color(0xFF94A3B8)],
+                          size: 38,
+                          iconSize: 18,
+                        ),
+                        title: Text(
+                          s.alarmSoundName(sound.id),
+                          style: GoogleFonts.outfit(
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            fontSize: 15,
+                            color: isSelected
+                                ? (isDark ? Colors.white : const Color(0xFF0D9488))
+                                : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Play/Stop Preview Button
+                            IconButton(
+                              icon: Icon(
+                                isPlaying ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded,
+                                color: isPlaying
+                                    ? const Color(0xFFE11D48)
+                                    : (isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488)),
+                                size: 28,
+                              ),
+                              onPressed: () async {
+                                if (isPlaying) {
+                                  await AlarmAudioService.instance.stopPreview();
+                                } else {
+                                  await AlarmAudioService.instance.playPreview(
+                                    sound.id,
+                                    onComplete: () {
+                                      if (modalContext.mounted) {
+                                        setModalState(() {});
+                                      }
+                                    },
+                                  );
+                                }
+                                setModalState(() {});
+                              },
+                            ),
+                            if (isSelected)
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: Color(0xFF0D9488),
+                                size: 22,
+                              ),
+                          ],
+                        ),
+                        onTap: () async {
+                          await AlarmAudioService.instance.setSelectedSoundId(sound.id);
+                          await AlarmAudioService.instance.playPreview(
+                            sound.id,
+                            onComplete: () {
+                              if (modalContext.mounted) {
+                                setModalState(() {});
+                              }
+                            },
+                          );
+                          setState(() {
+                            _selectedAlarmSound = sound.id;
+                          });
+                          setModalState(() {});
+                        },
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      AlarmAudioService.instance.stopPreview();
+    });
   }
 
   // ================= 4. SYSTEM PERMISSIONS =================

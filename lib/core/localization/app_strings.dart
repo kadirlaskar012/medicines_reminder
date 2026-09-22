@@ -1482,6 +1482,27 @@ class AppStrings {
   String get reminderSoundDesc => code == 'bn'
       ? 'নির্ধারিত ওষুধের সময় শ্রবণযোগ্য সতর্কবার্তা বাজান'
       : (code == 'hi' ? 'निर्धारित दवा के समय श्रव्य चेतावनी बजाएं' : 'Play auditory alert during scheduled dose reminders');
+  String get alarmSoundTitle => code == 'bn' ? 'অ্যালার্ম সাউন্ড' : (code == 'hi' ? 'अलार्म साउंड' : 'Alarm Sound');
+  String get alarmSoundDesc => code == 'bn'
+      ? 'ওষুধের অনুস্মারকে বাজার জন্য পছন্দের রিংটোন নির্বাচন করুন'
+      : (code == 'hi' ? 'दवा के रिमाइंडर पर बजने वाली ध्वनि चुनें' : 'Choose the tone that plays for medicine reminders');
+  String get chooseAlarmSoundTitle => code == 'bn' ? 'অ্যালার্ম সাউন্ড নির্বাচন করুন' : (code == 'hi' ? 'अलार्म साउंड चुनें' : 'Select Alarm Sound');
+  String get tapToPreviewSound => code == 'bn' ? 'সাউন্ড শুনতে ট্যাপ করুন' : (code == 'hi' ? 'सुनने के लिए टैপ करें' : 'Tap to preview sound');
+  String get soundGentleChime => code == 'bn' ? 'শান্ত চাইম (ডিফল্ট)' : (code == 'hi' ? 'शांत चाइम (डिफ़ॉल्ट)' : 'Gentle Chime (Default)');
+  String get soundDigitalAlarm => code == 'bn' ? 'ডিজিটাল অ্যালার্ম' : (code == 'hi' ? 'डिजिटल अलार्म' : 'Digital Alarm');
+  String get soundMorningMarimba => code == 'bn' ? 'প্রভাত মারিম্বা' : (code == 'hi' ? 'प्रभात मारिम्बा' : 'Morning Marimba');
+  String get soundPeacefulBell => code == 'bn' ? 'প্রশান্ত ঘণ্টা' : (code == 'hi' ? 'शांत घंटी' : 'Peaceful Bell');
+  String get soundRadarPulse => code == 'bn' ? 'রাডার পালস' : (code == 'hi' ? 'रडार पल्स' : 'Radar Pulse');
+  String alarmSoundName(String soundId) {
+    switch (soundId) {
+      case 'gentle_chime': return soundGentleChime;
+      case 'digital_alarm': return soundDigitalAlarm;
+      case 'morning_marimba': return soundMorningMarimba;
+      case 'peaceful_bell': return soundPeacefulBell;
+      case 'radar_pulse': return soundRadarPulse;
+      default: return soundGentleChime;
+    }
+  }
   String get vibrationTitle => code == 'bn' ? 'কম্পন (ভাইব্রেশন)' : (code == 'hi' ? 'कंपन (वाइब्रेशन)' : 'Vibration');
   String get vibrationDesc => code == 'bn'
       ? 'ওষুধের অ্যালার্ম বাজার সময় ফোনটি কম্পিত করুন'

@@ -58,12 +58,21 @@ class MedicineVisual extends StatelessWidget {
     return c;
   }
 
-  /// Returns signature delicate harmonic gradient pairs tailored per MedicineType
+  /// Returns signature delicate harmonic gradient pairs tailored per Medicine color and type
   /// for clean, frosted squircle containers.
   static List<Color> getGradients(int colorValue, MedicineType type) {
+    if (colorValue != 0 && colorValue != 0xFFFFFFFF && colorValue != -1) {
+      final baseColor = resolveColor(colorValue);
+      if (baseColor != Colors.white && baseColor != Colors.transparent && baseColor.a > 0.1) {
+        final hsl = HSLColor.fromColor(baseColor);
+        final lighterHsl = hsl.withLightness((hsl.lightness + 0.14).clamp(0.0, 0.95));
+        return [baseColor, lighterHsl.toColor()];
+      }
+    }
+
     switch (type) {
       case MedicineType.tablet:
-        return const [Color(0xFF64748B), Color(0xFF94A3B8)]; // Silver Slate
+        return const [Color(0xFF0D9488), Color(0xFF14B8A6)]; // Vibrant Emerald Mint
       case MedicineType.capsule:
         return const [Color(0xFF3B82F6), Color(0xFF60A5FA)]; // Vibrant Royal Blue
       case MedicineType.syrup:
@@ -77,9 +86,9 @@ class MedicineVisual extends StatelessWidget {
       case MedicineType.ointment:
         return const [Color(0xFFEA580C), Color(0xFFFB923C)]; // Sunset Coral
       case MedicineType.supplement:
-        return const [Color(0xFF0D9488), Color(0xFF14B8A6)]; // Emerald Mint
+        return const [Color(0xFF10B981), Color(0xFF34D399)]; // Fresh Green
       case MedicineType.other:
-        return const [Color(0xFF64748B), Color(0xFF94A3B8)]; // Silver Slate
+        return const [Color(0xFF6366F1), Color(0xFF818CF8)]; // Radiant Indigo
     }
   }
 

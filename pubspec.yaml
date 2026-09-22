@@ -36,6 +36,7 @@ dependencies:
   image_picker: ^1.2.3
   flutter_displaymode: ^0.7.0
   flutter_timezone: ^5.1.0
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -48,3 +49,4 @@ flutter:
   assets:
     - assets/icons/
     - assets/icons/3d/
+    - assets/sounds/

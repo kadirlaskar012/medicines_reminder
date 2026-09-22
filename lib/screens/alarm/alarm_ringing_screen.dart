@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../core/services/alarm_audio_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/medicine.dart';
@@ -10,7 +11,7 @@ import '../../providers/language_provider.dart';
 import '../../providers/medicine_provider.dart';
 import '../../widgets/medicine_visual.dart';
 
-class AlarmRingingScreen extends StatelessWidget {
+class AlarmRingingScreen extends StatefulWidget {
   final Medicine medicine;
   final ReminderTime reminder;
   final int? notificationId;
@@ -23,25 +24,51 @@ class AlarmRingingScreen extends StatelessWidget {
   });
 
   @override
+  State<AlarmRingingScreen> createState() => _AlarmRingingScreenState();
+}
+
+class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Start playing the alarm tone in a loop
+    AlarmAudioService.instance.startAlarm();
+  }
+
+  @override
+  void dispose() {
+    // Ensure alarm stops if navigating away
+    AlarmAudioService.instance.stopAlarm();
+    super.dispose();
+  }
+
+  Future<void> _handlePopDismiss() async {
+    await AlarmAudioService.instance.stopAlarm();
+    await NotificationService.instance.dismissActiveReminderNotification(
+      reminder: widget.reminder,
+      notificationId: widget.notificationId,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final s = context.watch<LanguageProvider>().strings;
+    final medicine = widget.medicine;
+    final reminder = widget.reminder;
     final gradients = MedicineVisual.getGradients(medicine.colorValue, medicine.type);
 
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
-          NotificationService.instance.dismissActiveReminderNotification(
-            reminder: reminder,
-            notificationId: notificationId,
-          );
+          _handlePopDismiss();
         }
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF070B14),
         body: Stack(
           children: [
-            // Background Ambient Aura Glow tailored to medicine color
+            // Background Ambient Aura Glow tailored dynamically to medicine color
             Positioned(
               top: -120,
               left: -80,
@@ -52,8 +79,8 @@ class AlarmRingingScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      gradients.first.withValues(alpha: 0.35),
-                      gradients.last.withValues(alpha: 0.12),
+                      gradients.first.withValues(alpha: 0.38),
+                      gradients.last.withValues(alpha: 0.14),
                       Colors.transparent,
                     ],
                   ),
@@ -67,7 +94,7 @@ class AlarmRingingScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Top App Header
+                    // Top App Header: Pill Title + Symmetrical Close Button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -98,15 +125,27 @@ class AlarmRingingScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 24),
-                          onPressed: () {
-                            NotificationService.instance.dismissActiveReminderNotification(
-                              reminder: reminder,
-                              notificationId: notificationId,
-                            );
-                            Navigator.pop(context);
-                          },
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              width: 1,
+                            ),
+                          ),
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                            onPressed: () async {
+                              await _handlePopDismiss();
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                              }
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -117,8 +156,8 @@ class AlarmRingingScreen extends StatelessWidget {
                       children: [
                         // Pulsing Icon Squircle Container with actual medicine visual
                         Container(
-                          width: 116,
-                          height: 116,
+                          width: 118,
+                          height: 118,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -130,7 +169,7 @@ class AlarmRingingScreen extends StatelessWidget {
                             ),
                             borderRadius: BorderRadius.circular(36),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.35),
+                              color: Colors.white.withValues(alpha: 0.4),
                               width: 2,
                             ),
                             boxShadow: [
@@ -145,14 +184,14 @@ class AlarmRingingScreen extends StatelessWidget {
                           child: Center(
                             child: MedicineVisual.fromMedicine(
                               medicine,
-                              size: 78,
+                              size: 80,
                               hasGlow: true,
                             ),
                           ),
                         ).animate(onPlay: (c) => c.repeat(reverse: true))
                          .scaleXY(begin: 0.95, end: 1.05, duration: 1200.ms, curve: Curves.easeInOut),
 
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 26),
 
                         // Time Banner
                         Container(
@@ -183,39 +222,77 @@ class AlarmRingingScreen extends StatelessWidget {
                           ),
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 18),
 
-                        // Medicine Name
-                        Text(
-                          medicine.name,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.outfit(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
+                        // Medicine Name + Dose beside it
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 10,
+                            runSpacing: 6,
+                            children: [
+                              Text(
+                                medicine.name,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              if (medicine.dosage.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4.5),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        gradients.first.withValues(alpha: 0.35),
+                                        gradients.last.withValues(alpha: 0.18),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: gradients.first.withValues(alpha: 0.6),
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    medicine.unit.isNotEmpty
+                                        ? '${medicine.dosage} ${medicine.unit}'
+                                        : medicine.dosage,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
 
-                        // Dosage, Category and Instructions
+                        // Type & Timing / Food Instruction below
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                           decoration: BoxDecoration(
-                            color: gradients.first.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: gradients.first.withValues(alpha: 0.4),
+                              color: Colors.white.withValues(alpha: 0.16),
                               width: 1,
                             ),
                           ),
                           child: Text(
-                            '${medicine.dosage.isNotEmpty ? medicine.dosage : "1 Dose"} • ${s.medicineTypeName(medicine.type.name)} • ${medicine.instruction.title}',
+                            '${s.medicineTypeName(medicine.type.name)} • ${s.foodInstructionName(medicine.instruction.name)}',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14.5,
+                              fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                           ),
                         ),
@@ -266,11 +343,14 @@ class AlarmRingingScreen extends StatelessWidget {
                             child: InkWell(
                               borderRadius: BorderRadius.circular(20),
                               onTap: () async {
+                                await AlarmAudioService.instance.stopAlarm();
                                 final now = DateTime.now();
-                                await context.read<MedicineProvider>().markAsTaken(medicine, reminder, now);
+                                if (context.mounted) {
+                                  await context.read<MedicineProvider>().markAsTaken(medicine, reminder, now);
+                                }
                                 await NotificationService.instance.dismissActiveReminderNotification(
                                   reminder: reminder,
-                                  notificationId: notificationId,
+                                  notificationId: widget.notificationId,
                                 );
                                 if (context.mounted) {
                                   Navigator.pop(context);
@@ -306,11 +386,13 @@ class AlarmRingingScreen extends StatelessWidget {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () async {
+                                  await AlarmAudioService.instance.stopAlarm();
+                                  if (!context.mounted) return;
                                   final provider = context.read<MedicineProvider>();
                                   final nav = Navigator.of(context);
                                   await NotificationService.instance.dismissActiveReminderNotification(
                                     reminder: reminder,
-                                    notificationId: notificationId,
+                                    notificationId: widget.notificationId,
                                   );
                                   await provider.snoozeDose(medicine, reminder, minutes: 10);
                                   if (context.mounted) {
@@ -337,13 +419,15 @@ class AlarmRingingScreen extends StatelessWidget {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () async {
+                                  await AlarmAudioService.instance.stopAlarm();
+                                  if (!context.mounted) return;
                                   final provider = context.read<MedicineProvider>();
                                   final nav = Navigator.of(context);
                                   final now = DateTime.now();
                                   await provider.markAsSkipped(medicine, reminder, now);
                                   await NotificationService.instance.dismissActiveReminderNotification(
                                     reminder: reminder,
-                                    notificationId: notificationId,
+                                    notificationId: widget.notificationId,
                                   );
                                   if (context.mounted) {
                                     nav.pop();
