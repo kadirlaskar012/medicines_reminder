@@ -409,19 +409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 24),
 
-          // 5. APPEARANCE
-          _buildSectionHeader(
-            'APPEARANCE',
-            icon: Icons.palette_rounded,
-            accentColor: const Color(0xFF6366F1),
-            isDark: isDark,
-          ),
-          const SizedBox(height: 8),
-          _buildThemeSelector(context, themeProvider, s, isDark),
-
-          const SizedBox(height: 24),
-
-          // 6. LANGUAGE
+          // 5. LANGUAGE
           _buildSectionHeader(
             'LANGUAGE',
             icon: Icons.translate_rounded,
@@ -590,21 +578,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Row(
             children: [
               buildOption(
-                title: isBn ? 'লাইট' : 'Light',
+                title: s.themeLight,
                 icon: Icons.wb_sunny_rounded,
                 mode: ThemeMode.light,
                 activeGradient: const [Color(0xFF0D9488), Color(0xFF06B6D4)],
               ),
               const SizedBox(width: 8),
               buildOption(
-                title: isBn ? 'ডার্ক' : 'Dark',
+                title: s.themeDark,
                 icon: Icons.nightlight_round,
                 mode: ThemeMode.dark,
                 activeGradient: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
               ),
               const SizedBox(width: 8),
               buildOption(
-                title: isBn ? 'অটো' : 'Auto',
+                title: s.themeSystem,
                 icon: Icons.brightness_auto_rounded,
                 mode: ThemeMode.system,
                 activeGradient: const [Color(0xFF3B82F6), Color(0xFF0284C7)],
@@ -1512,154 +1500,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ================= 5. APPEARANCE =================
-  Widget _buildThemeSelector(
-    BuildContext context,
-    ThemeProvider themeProvider,
-    AppStrings s,
-    bool isDark,
-  ) {
-    return _buildCardContainer(
-      isDark: isDark,
-      accentGlow: const Color(0xFF6366F1),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              _buildSquircleIcon(
-                icon: Icons.palette_rounded,
-                gradientColors: const [Color(0xFF4F46E5), Color(0xFF818CF8)],
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      s.code == 'bn' ? 'অ্যাপের রূপ ও থিম' : (s.code == 'hi' ? 'ऐप थीम और रूप' : 'Theme & Appearance'),
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      s.code == 'bn' ? 'লাইট, ডার্ক অথবা সিস্টেম মোড বাছুন' : 'Choose Light, Dark, or System mode',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _buildThemeButton(
-                context,
-                ThemeMode.system,
-                s.themeSystem,
-                Icons.brightness_auto_rounded,
-                themeProvider.themeMode == ThemeMode.system,
-                isDark,
-              ),
-              const SizedBox(width: 8),
-              _buildThemeButton(
-                context,
-                ThemeMode.light,
-                s.themeLight,
-                Icons.wb_sunny_rounded,
-                themeProvider.themeMode == ThemeMode.light,
-                isDark,
-              ),
-              const SizedBox(width: 8),
-              _buildThemeButton(
-                context,
-                ThemeMode.dark,
-                s.themeDark,
-                Icons.nightlight_round,
-                themeProvider.themeMode == ThemeMode.dark,
-                isDark,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildThemeButton(
-    BuildContext context,
-    ThemeMode mode,
-    String label,
-    IconData icon,
-    bool isSelected,
-    bool isDark,
-  ) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => context.read<ThemeProvider>().setThemeMode(mode),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            gradient: isSelected
-                ? const LinearGradient(
-                    colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
-            color: isSelected
-                ? null
-                : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF6366F1)
-                  : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
-              width: 1.2,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 22,
-                color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                label,
-                style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ================= 6. LANGUAGE =================
+  // ================= 5. LANGUAGE =================
   Widget _buildLanguageSelector(
     BuildContext context,
     LanguageProvider lang,
